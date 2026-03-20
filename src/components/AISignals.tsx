@@ -90,10 +90,10 @@ function SentimentPanel({ sentiment }: { sentiment: Partial<SentimentData> }) {
         </div>
       )}
 
-      {sentiment.news.topHeadlines?.length > 0 && (
+      {news.topHeadlines?.length > 0 && (
         <div className="space-y-0.5">
           <span className="text-[9px] text-muted-foreground">Headlines</span>
-          {sentiment.news.topHeadlines.slice(0, 3).map((h, i) => (
+          {news.topHeadlines.slice(0, 3).map((h, i) => (
             <div key={i} className="text-[9px] text-foreground/70 pl-2 border-l border-border">
               {h}
             </div>
