@@ -69,7 +69,6 @@ export const useTradingStore = create<TradingState>((set, get) => ({
   selectedSymbol: 'RELIANCE',
   selectedTimeframe: '1D',
   watchlist: [],
-  aiSignals: initialSignals,
   watchlistLoaded: false,
 
   setSelectedSymbol: (symbol) => set({ selectedSymbol: symbol }),
