@@ -9,6 +9,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index.tsx";
 import Portfolio from "./pages/Portfolio.tsx";
 import CryptoPage from "./pages/CryptoPage.tsx";
+import BacktestPage from "./pages/BacktestPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
