@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Activity, Zap, BarChart3, Bitcoin, LogOut, FlaskConical, Menu, X, Info } from 'lucide-react';
+import { Activity, Zap, BarChart3, Bitcoin, LogOut, FlaskConical, Menu, X, Info, Shield, FileText } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
