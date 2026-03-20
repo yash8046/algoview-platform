@@ -1,10 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { fetchYahooFinanceData, type YahooCandle } from '@/lib/yahooFinance';
+import { fetchYahooFinanceData } from '@/lib/yahooFinance';
 import { type OHLCV, generateRuleBasedSignal, predictNextPrice } from '@/lib/technicalIndicators';
 import { supabase } from '@/integrations/supabase/client';
+import type { SentimentData } from './useAIAnalysis';
 
 export interface StockAIResult {
   signal: 'buy' | 'sell' | 'hold';
+  detailedSignal: string;
   confidence: number;
   reasoning: string;
   predictedMove: 'up' | 'down' | 'sideways';
@@ -25,8 +27,19 @@ export interface StockAIResult {
     positionSizePct: number;
     riskRewardRatio: number;
   };
+  sentiment: SentimentData;
+  positiveFactors: string[];
+  negativeFactors: string[];
   timestamp: number;
 }
+
+const fallbackSentiment: SentimentData = {
+  news: { score: 0, label: 'Neutral', topHeadlines: ['AI unavailable'] },
+  social: { score: 0, label: 'Neutral', buzz: 'low' },
+  technical: { score: 0, label: 'Neutral' },
+  finalScore: 0,
+  manipulation_warning: null,
+};
 
 export function useStockAIAnalysis(symbol: string, timeframe: string, autoRefreshMs = 30000) {
   const [result, setResult] = useState<StockAIResult | null>(null);
@@ -40,7 +53,6 @@ export function useStockAIAnalysis(symbol: string, timeframe: string, autoRefres
     setError(null);
 
     try {
-      // Fetch candle data from Yahoo Finance
       const data = await fetchYahooFinanceData(symbol, timeframe);
       if (!data.candles || data.candles.length < 50) {
         setError('Insufficient candle data');
@@ -55,7 +67,6 @@ export function useStockAIAnalysis(symbol: string, timeframe: string, autoRefres
       const ruleSignal = generateRuleBasedSignal(candles);
       const prediction = predictNextPrice(candles);
 
-      // Call AI edge function
       const { data: aiData, error: fnError } = await supabase.functions.invoke('ai-analysis', {
         body: {
           indicators: ruleSignal.indicators,
@@ -76,6 +87,7 @@ export function useStockAIAnalysis(symbol: string, timeframe: string, autoRefres
 
       setResult({
         signal: ensemble.signal as 'buy' | 'sell' | 'hold',
+        detailedSignal: ensemble.detailedSignal || ensemble.signal,
         confidence: ensemble.confidence,
         reasoning: ensemble.reasoning,
         predictedMove: ai.predictedMove,
@@ -87,12 +99,13 @@ export function useStockAIAnalysis(symbol: string, timeframe: string, autoRefres
         indicators: ruleSignal.indicators,
         regime: ruleSignal.regime,
         riskMetrics: ruleSignal.riskMetrics,
+        sentiment: aiData.sentiment || fallbackSentiment,
+        positiveFactors: aiData.positiveFactors || [],
+        negativeFactors: aiData.negativeFactors || [],
         timestamp: Date.now(),
       });
     } catch (e: any) {
       console.error(`Stock AI analysis error (${symbol}):`, e);
-
-      // Fallback to rule-based
       try {
         const data = await fetchYahooFinanceData(symbol, timeframe);
         const candles: OHLCV[] = data.candles.map(c => ({
@@ -103,6 +116,7 @@ export function useStockAIAnalysis(symbol: string, timeframe: string, autoRefres
 
         setResult({
           signal: ruleSignal.signal,
+          detailedSignal: ruleSignal.signal,
           confidence: ruleSignal.confidence,
           reasoning: ruleSignal.reasons.join('. '),
           predictedMove: prediction.direction === 'up' ? 'up' : prediction.direction === 'down' ? 'down' : 'sideways',
@@ -114,6 +128,9 @@ export function useStockAIAnalysis(symbol: string, timeframe: string, autoRefres
           indicators: ruleSignal.indicators,
           regime: ruleSignal.regime,
           riskMetrics: ruleSignal.riskMetrics,
+          sentiment: fallbackSentiment,
+          positiveFactors: [],
+          negativeFactors: [],
           timestamp: Date.now(),
         });
         setError('AI unavailable, using technical analysis');
@@ -125,7 +142,6 @@ export function useStockAIAnalysis(symbol: string, timeframe: string, autoRefres
     }
   }, [symbol, timeframe]);
 
-  // Auto analyze on symbol/timeframe change
   useEffect(() => {
     if (symbol !== lastSymbol.current) {
       lastSymbol.current = symbol;
@@ -133,7 +149,6 @@ export function useStockAIAnalysis(symbol: string, timeframe: string, autoRefres
     }
   }, [symbol, timeframe, analyze]);
 
-  // Auto refresh
   useEffect(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = setInterval(analyze, autoRefreshMs);

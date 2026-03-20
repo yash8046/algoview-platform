@@ -2,10 +2,18 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { type OHLCV, generateRuleBasedSignal, predictNextPrice, type TradeSignal } from '@/lib/technicalIndicators';
 
+export interface SentimentData {
+  news: { score: number; label: string; topHeadlines: string[] };
+  social: { score: number; label: string; buzz: string };
+  technical: { score: number; label: string };
+  finalScore: number;
+  manipulation_warning: string | null;
+}
+
 export interface AIAnalysisResult {
   ruleBasedSignal: TradeSignal;
   aiSignal: {
-    signal: 'buy' | 'sell' | 'hold';
+    signal: string;
     confidence: number;
     reasoning: string;
     predictedMove: 'up' | 'down' | 'sideways';
@@ -16,11 +24,15 @@ export interface AIAnalysisResult {
   };
   ensembleSignal: {
     signal: string;
+    detailedSignal: string;
     confidence: number;
     method: string;
     reasoning: string;
     factors: string[];
   };
+  sentiment: SentimentData;
+  positiveFactors: string[];
+  negativeFactors: string[];
   prediction: {
     predicted: number;
     direction: 'up' | 'down' | 'neutral';
@@ -28,6 +40,14 @@ export interface AIAnalysisResult {
   };
   timestamp: number;
 }
+
+const fallbackSentiment: SentimentData = {
+  news: { score: 0, label: 'Neutral', topHeadlines: ['AI unavailable'] },
+  social: { score: 0, label: 'Neutral', buzz: 'low' },
+  technical: { score: 0, label: 'Neutral' },
+  finalScore: 0,
+  manipulation_warning: null,
+};
 
 export function useAIAnalysis() {
   const [analysis, setAnalysis] = useState<AIAnalysisResult | null>(null);
@@ -66,12 +86,14 @@ export function useAIAnalysis() {
         ruleBasedSignal: ruleSignal,
         aiSignal: data.aiSignal,
         ensembleSignal: data.ensembleSignal,
+        sentiment: data.sentiment || fallbackSentiment,
+        positiveFactors: data.positiveFactors || [],
+        negativeFactors: data.negativeFactors || [],
         prediction,
         timestamp: Date.now(),
       });
     } catch (e: any) {
       console.error('AI analysis error:', e);
-      // Fallback to rule-based only
       const ruleSignal = generateRuleBasedSignal(candles);
       const prediction = predictNextPrice(candles);
       setAnalysis({
@@ -88,11 +110,15 @@ export function useAIAnalysis() {
         },
         ensembleSignal: {
           signal: ruleSignal.signal,
+          detailedSignal: ruleSignal.signal,
           confidence: ruleSignal.confidence,
           method: 'rule_only_fallback',
           reasoning: ruleSignal.reasons.join('. '),
           factors: ruleSignal.reasons,
         },
+        sentiment: fallbackSentiment,
+        positiveFactors: [],
+        negativeFactors: [],
         prediction,
         timestamp: Date.now(),
       });
