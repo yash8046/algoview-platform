@@ -3,7 +3,7 @@ import { useCryptoStore } from '@/stores/cryptoStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
 import { fetchYahooFinanceData } from '@/lib/yahooFinance';
-import { TrendingUp, TrendingDown, DollarSign, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, RefreshCw, Bitcoin, LineChart } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, RefreshCw, Bitcoin, LineChart, FlaskConical } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import TopBar from '@/components/TopBar';
 
@@ -50,19 +50,16 @@ export default function Portfolio() {
     setRefreshing(false);
   };
 
-  // Stock calculations
   const stockInvested = positions.reduce((s, p) => s + p.entryPrice * p.quantity, 0);
   const stockCurrent = positions.reduce((s, p) => s + p.currentPrice * p.quantity, 0);
   const stockUnrealizedPnl = stockCurrent - stockInvested;
   const stockRealizedPnl = trades.reduce((s, t) => s + (t.pnl || 0), 0);
 
-  // Crypto calculations
   const cryptoInvested = cryptoPositions.reduce((s, p) => s + p.entryPrice * p.quantity, 0);
   const cryptoCurrent = cryptoPositions.reduce((s, p) => s + p.currentPrice * p.quantity, 0);
   const cryptoUnrealizedPnl = cryptoCurrent - cryptoInvested;
   const cryptoRealizedPnl = cryptoTrades.reduce((s, t) => s + (t.pnl || 0), 0);
 
-  // Combined
   const totalPortfolioValue = balance + stockCurrent + cryptoBalance + cryptoCurrent;
   const totalInitial = initialBalance + cryptoInitBal;
   const totalPnl = (stockUnrealizedPnl + stockRealizedPnl) + (cryptoUnrealizedPnl + cryptoRealizedPnl);
@@ -74,12 +71,12 @@ export default function Portfolio() {
   const allTrades = [...trades.map(t => ({ ...t, market: 'stock' as const })), ...cryptoTrades.map(t => ({ ...t, symbol: t.pair, market: 'crypto' as const }))].sort((a, b) => b.timestamp - a.timestamp);
 
   const summaryCards = [
-    { label: 'Total Portfolio', value: formatINR(totalPortfolioValue), icon: DollarSign, positive: totalPortfolioValue >= totalInitial, sub: `${totalReturn >= 0 ? '+' : ''}${totalReturn.toFixed(2)}% return` },
+    { label: 'Sim Portfolio', value: formatINR(totalPortfolioValue), icon: DollarSign, positive: totalPortfolioValue >= totalInitial, sub: `${totalReturn >= 0 ? '+' : ''}${totalReturn.toFixed(2)}% return` },
     { label: 'Stock Holdings', value: formatINR(stockCurrent), icon: BarChart3, positive: stockUnrealizedPnl >= 0, sub: `${positions.length} positions` },
     { label: 'Crypto Holdings', value: formatINR(cryptoCurrent), icon: Bitcoin, positive: cryptoUnrealizedPnl >= 0, sub: `${cryptoPositions.length} positions` },
-    { label: 'Total P&L', value: `${totalPnl >= 0 ? '+' : ''}${formatINR(Math.abs(totalPnl))}`, icon: totalPnl >= 0 ? TrendingUp : TrendingDown, positive: totalPnl >= 0, sub: `${totalTrades} trades` },
+    { label: 'Sim P&L', value: `${totalPnl >= 0 ? '+' : ''}${formatINR(Math.abs(totalPnl))}`, icon: totalPnl >= 0 ? TrendingUp : TrendingDown, positive: totalPnl >= 0, sub: `${totalTrades} trades` },
     { label: 'Win Rate', value: totalTrades > 0 ? `${((winningTrades / (winningTrades + losingTrades || 1)) * 100).toFixed(0)}%` : '—', icon: LineChart, positive: winningTrades >= losingTrades, sub: `${winningTrades}W / ${losingTrades}L` },
-    { label: 'Cash Available', value: formatINR(balance + cryptoBalance), icon: DollarSign, positive: true, sub: `Stock: ${formatINR(balance)}` },
+    { label: 'Virtual Cash', value: formatINR(balance + cryptoBalance), icon: DollarSign, positive: true, sub: `Stock: ${formatINR(balance)}` },
   ];
 
   const tabs = [
@@ -92,6 +89,12 @@ export default function Portfolio() {
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
       <TopBar />
+
+      {/* Simulation banner */}
+      <div className="flex items-center gap-2 px-5 py-1.5 bg-warning/5 border-b border-warning/15">
+        <FlaskConical className="w-3.5 h-3.5 text-warning" />
+        <span className="text-[10px] text-warning font-medium">Simulation Portfolio · All values are virtual · No real money involved</span>
+      </div>
 
       <div className="flex items-center justify-between px-5 py-2 bg-card border-b border-border">
         <div className="flex items-center gap-2">
@@ -115,7 +118,6 @@ export default function Portfolio() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {summaryCards.map(card => (
             <div key={card.label} className="bg-card rounded-lg border border-border p-4 flex flex-col gap-2">
@@ -131,11 +133,10 @@ export default function Portfolio() {
           ))}
         </div>
 
-        {/* Tab Content */}
         {(activeTab === 'overview' || activeTab === 'stocks') && positions.length > 0 && (
           <div className="bg-card rounded-lg border border-border overflow-hidden">
             <div className="px-4 py-3 bg-panel-header border-b border-border flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-foreground">Stock Holdings</h2>
+              <h2 className="text-sm font-semibold text-foreground">Simulated Stock Holdings</h2>
               <span className="text-[11px] text-muted-foreground">{positions.length} stocks · Invested {formatINR(stockInvested)}</span>
             </div>
             <div className="overflow-x-auto">
@@ -148,7 +149,7 @@ export default function Portfolio() {
                     <th className="px-4 py-2.5 text-right font-medium">LTP</th>
                     <th className="px-4 py-2.5 text-right font-medium">Invested</th>
                     <th className="px-4 py-2.5 text-right font-medium">Current</th>
-                    <th className="px-4 py-2.5 text-right font-medium">P&L</th>
+                    <th className="px-4 py-2.5 text-right font-medium">Sim P&L</th>
                     <th className="px-4 py-2.5 text-right font-medium">Returns</th>
                   </tr>
                 </thead>
@@ -203,7 +204,7 @@ export default function Portfolio() {
         {(activeTab === 'overview' || activeTab === 'crypto') && cryptoPositions.length > 0 && (
           <div className="bg-card rounded-lg border border-border overflow-hidden">
             <div className="px-4 py-3 bg-panel-header border-b border-border flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5"><Bitcoin className="w-4 h-4" /> Crypto Holdings</h2>
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5"><Bitcoin className="w-4 h-4" /> Simulated Crypto Holdings</h2>
               <span className="text-[11px] text-muted-foreground">{cryptoPositions.length} positions · Invested {formatINR(cryptoInvested)}</span>
             </div>
             <div className="overflow-x-auto">
@@ -216,7 +217,7 @@ export default function Portfolio() {
                     <th className="px-4 py-2.5 text-right font-medium">Current (₹)</th>
                     <th className="px-4 py-2.5 text-right font-medium">Invested</th>
                     <th className="px-4 py-2.5 text-right font-medium">Current Val</th>
-                    <th className="px-4 py-2.5 text-right font-medium">P&L</th>
+                    <th className="px-4 py-2.5 text-right font-medium">Sim P&L</th>
                     <th className="px-4 py-2.5 text-right font-medium">Returns</th>
                   </tr>
                 </thead>
@@ -250,11 +251,11 @@ export default function Portfolio() {
         {(activeTab === 'overview' || activeTab === 'trades') && (
           <div className="bg-card rounded-lg border border-border overflow-hidden">
             <div className="px-4 py-3 bg-panel-header border-b border-border flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-foreground">Trade History</h2>
-              <span className="text-[11px] text-muted-foreground">{allTrades.length} total · Realized P&L: {formatINR(stockRealizedPnl + cryptoRealizedPnl)}</span>
+              <h2 className="text-sm font-semibold text-foreground">Simulation Trade History</h2>
+              <span className="text-[11px] text-muted-foreground">{allTrades.length} total · Sim P&L: {formatINR(stockRealizedPnl + cryptoRealizedPnl)}</span>
             </div>
             {allTrades.length === 0 ? (
-              <div className="p-8 text-center text-sm text-muted-foreground">No trades executed yet</div>
+              <div className="p-8 text-center text-sm text-muted-foreground">No simulated trades executed yet</div>
             ) : (
               <table className="w-full text-xs">
                 <thead>
@@ -266,7 +267,7 @@ export default function Portfolio() {
                     <th className="px-4 py-2.5 text-right font-medium">Price</th>
                     <th className="px-4 py-2.5 text-right font-medium">Qty</th>
                     <th className="px-4 py-2.5 text-right font-medium">Total</th>
-                    <th className="px-4 py-2.5 text-right font-medium">P&L</th>
+                    <th className="px-4 py-2.5 text-right font-medium">Sim P&L</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -283,7 +284,7 @@ export default function Portfolio() {
                       <td className="px-4 py-2 font-mono font-semibold text-foreground">{t.symbol}</td>
                       <td className="px-4 py-2">
                         <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${t.side === 'buy' ? 'bg-gain/15 text-gain' : 'bg-loss/15 text-loss'}`}>
-                          {t.side.toUpperCase()}
+                          {t.side === 'buy' ? 'LONG' : 'SHORT'}
                         </span>
                       </td>
                       <td className="px-4 py-2 text-right font-mono text-foreground">{formatINR(t.price)}</td>
@@ -303,11 +304,11 @@ export default function Portfolio() {
         {activeTab === 'overview' && positions.length === 0 && cryptoPositions.length === 0 && (
           <div className="bg-card rounded-lg border border-border p-12 text-center">
             <PieChart className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">No holdings yet</p>
-            <p className="text-xs text-muted-foreground/60 mt-1">Buy stocks or crypto to see your portfolio here</p>
+            <p className="text-sm text-muted-foreground">No simulated holdings yet</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">Use the simulator to practice trading with virtual money</p>
             <div className="flex items-center justify-center gap-3 mt-4">
-              <Link to="/" className="text-xs text-primary hover:underline">Trade Stocks →</Link>
-              <Link to="/crypto" className="text-xs text-warning hover:underline">Trade Crypto →</Link>
+              <Link to="/" className="text-xs text-primary hover:underline">Analyze Stocks →</Link>
+              <Link to="/crypto" className="text-xs text-warning hover:underline">Analyze Crypto →</Link>
             </div>
           </div>
         )}
