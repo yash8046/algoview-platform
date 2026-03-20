@@ -12,6 +12,8 @@ import Portfolio from "./pages/Portfolio.tsx";
 import CryptoPage from "./pages/CryptoPage.tsx";
 import BacktestPage from "./pages/BacktestPage.tsx";
 import DisclaimerPage from "./pages/DisclaimerPage.tsx";
+import PrivacyPolicy from "./pages/PrivacyPolicy.tsx";
+import TermsOfService from "./pages/TermsOfService.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -36,6 +38,8 @@ const App = () => {
             <Route path="/crypto" element={<ProtectedRoute><CryptoPage /></ProtectedRoute>} />
             <Route path="/backtest" element={<ProtectedRoute><BacktestPage /></ProtectedRoute>} />
             <Route path="/disclaimer" element={<ProtectedRoute><DisclaimerPage /></ProtectedRoute>} />
+            <Route path="/privacy" element={<ProtectedRoute><PrivacyPolicy /></ProtectedRoute>} />
+            <Route path="/terms" element={<ProtectedRoute><TermsOfService /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
