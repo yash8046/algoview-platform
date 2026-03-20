@@ -1,18 +1,17 @@
-import { Brain, TrendingUp, TrendingDown, Minus, RefreshCw, Target, AlertTriangle, Zap, Shield } from 'lucide-react';
+import { Brain, TrendingUp, TrendingDown, Minus, RefreshCw, Target, AlertTriangle, Zap, Shield, Newspaper, Users, BarChart3, AlertOctagon } from 'lucide-react';
 import { useTradingStore } from '@/stores/tradingStore';
 import { useStockAIAnalysis } from '@/hooks/useStockAIAnalysis';
+import type { SentimentData } from '@/hooks/useAIAnalysis';
 
 const signalConfig = {
+  strong_buy: { icon: TrendingUp, color: 'text-gain', bg: 'bg-gain/15', border: 'border-gain/30', label: 'STRONG BUY' },
   buy: { icon: TrendingUp, color: 'text-gain', bg: 'bg-gain/10', border: 'border-gain/20', label: 'BUY' },
   sell: { icon: TrendingDown, color: 'text-loss', bg: 'bg-loss/10', border: 'border-loss/20', label: 'SELL' },
+  strong_sell: { icon: TrendingDown, color: 'text-loss', bg: 'bg-loss/15', border: 'border-loss/30', label: 'STRONG SELL' },
   hold: { icon: Minus, color: 'text-warning', bg: 'bg-warning/10', border: 'border-warning/20', label: 'HOLD' },
 };
 
-const riskColors = {
-  low: 'text-gain',
-  medium: 'text-warning',
-  high: 'text-loss',
-};
+const riskColors = { low: 'text-gain', medium: 'text-warning', high: 'text-loss' };
 
 function ConfidenceBar({ value, label }: { value: number; label: string }) {
   const pct = Math.round(value * 100);
@@ -30,11 +29,110 @@ function ConfidenceBar({ value, label }: { value: number; label: string }) {
   );
 }
 
+function SentimentScore({ score, label }: { score: number; label: string }) {
+  const color = score > 0.1 ? 'text-gain' : score < -0.1 ? 'text-loss' : 'text-warning';
+  const bg = score > 0.1 ? 'bg-gain' : score < -0.1 ? 'bg-loss' : 'bg-warning';
+  const pct = Math.round(((score + 1) / 2) * 100);
+  return (
+    <div className="space-y-0.5">
+      <div className="flex justify-between text-[10px]">
+        <span className="text-muted-foreground">{label}</span>
+        <span className={`font-mono font-semibold ${color}`}>{score > 0 ? '+' : ''}{score.toFixed(2)}</span>
+      </div>
+      <div className="h-1 bg-secondary rounded-full overflow-hidden">
+        <div className={`h-full ${bg} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function SentimentPanel({ sentiment }: { sentiment: SentimentData }) {
+  return (
+    <div className="p-2.5 rounded-md bg-secondary/30 border border-border space-y-2">
+      <div className="flex items-center gap-1.5 mb-1">
+        <BarChart3 className="w-3 h-3 text-primary" />
+        <span className="text-[10px] font-semibold text-foreground">Sentiment Analysis</span>
+      </div>
+
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-1.5">
+          <Newspaper className="w-3 h-3 text-muted-foreground" />
+          <SentimentScore score={sentiment.news.score} label={`News — ${sentiment.news.label}`} />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Users className="w-3 h-3 text-muted-foreground" />
+          <SentimentScore score={sentiment.social.score} label={`Social — ${sentiment.social.label} (${sentiment.social.buzz} buzz)`} />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <BarChart3 className="w-3 h-3 text-muted-foreground" />
+          <SentimentScore score={sentiment.technical.score} label={`Technical — ${sentiment.technical.label}`} />
+        </div>
+      </div>
+
+      <div className="pt-1.5 border-t border-border/50">
+        <div className="flex justify-between text-[10px]">
+          <span className="text-muted-foreground font-medium">Weighted Final Score</span>
+          <span className={`font-mono font-bold ${sentiment.finalScore > 0.1 ? 'text-gain' : sentiment.finalScore < -0.1 ? 'text-loss' : 'text-warning'}`}>
+            {sentiment.finalScore > 0 ? '+' : ''}{sentiment.finalScore.toFixed(3)}
+          </span>
+        </div>
+      </div>
+
+      {sentiment.manipulation_warning && (
+        <div className="flex items-start gap-1.5 p-1.5 rounded bg-loss/10 border border-loss/20">
+          <AlertOctagon className="w-3 h-3 text-loss flex-shrink-0 mt-0.5" />
+          <span className="text-[9px] text-loss">{sentiment.manipulation_warning}</span>
+        </div>
+      )}
+
+      {sentiment.news.topHeadlines?.length > 0 && (
+        <div className="space-y-0.5">
+          <span className="text-[9px] text-muted-foreground">Headlines</span>
+          {sentiment.news.topHeadlines.slice(0, 3).map((h, i) => (
+            <div key={i} className="text-[9px] text-foreground/70 pl-2 border-l border-border">
+              {h}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FactorsList({ positive, negative }: { positive: string[]; negative: string[] }) {
+  if (!positive.length && !negative.length) return null;
+  return (
+    <div className="space-y-1.5">
+      {positive.length > 0 && (
+        <div>
+          <span className="text-[10px] text-gain block mb-0.5">⬆ Positive Factors</span>
+          {positive.slice(0, 3).map((f, i) => (
+            <div key={i} className="flex items-start gap-1.5 text-[10px] text-foreground/80">
+              <span className="text-gain mt-0.5">+</span><span>{f}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {negative.length > 0 && (
+        <div>
+          <span className="text-[10px] text-loss block mb-0.5">⬇ Negative Factors</span>
+          {negative.slice(0, 3).map((f, i) => (
+            <div key={i} className="flex items-start gap-1.5 text-[10px] text-foreground/80">
+              <span className="text-loss mt-0.5">−</span><span>{f}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AISignals() {
   const { selectedSymbol, selectedTimeframe } = useTradingStore();
   const { result, loading, error, refresh } = useStockAIAnalysis(selectedSymbol, selectedTimeframe, 30000);
 
-  const cfg = result ? (signalConfig[result.signal] || signalConfig.hold) : signalConfig.hold;
+  const detailedKey = result?.detailedSignal || result?.signal || 'hold';
+  const cfg = signalConfig[detailedKey as keyof typeof signalConfig] || signalConfig[result?.signal as keyof typeof signalConfig] || signalConfig.hold;
   const Icon = cfg.icon;
 
   return (
@@ -45,12 +143,8 @@ export default function AISignals() {
           <h2 className="text-sm font-semibold text-foreground">AI Signals</h2>
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-mono">LIVE</span>
         </div>
-        <button
-          onClick={refresh}
-          disabled={loading}
-          className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40"
-          title="Refresh analysis"
-        >
+        <button onClick={refresh} disabled={loading}
+          className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40">
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
@@ -59,7 +153,7 @@ export default function AISignals() {
           <div className="flex flex-col items-center justify-center py-8 gap-2">
             <RefreshCw className="w-6 h-6 text-primary animate-spin" />
             <span className="text-xs text-muted-foreground">Analyzing {selectedSymbol}...</span>
-            <span className="text-[10px] text-muted-foreground/60">Computing indicators & AI prediction</span>
+            <span className="text-[10px] text-muted-foreground/60">Computing indicators, sentiment & AI prediction</span>
           </div>
         )}
 
@@ -87,6 +181,12 @@ export default function AISignals() {
               </div>
               <p className="text-[11px] text-muted-foreground leading-relaxed">{result.reasoning}</p>
             </div>
+
+            {/* Sentiment */}
+            {result.sentiment && <SentimentPanel sentiment={result.sentiment} />}
+
+            {/* Positive/Negative factors */}
+            <FactorsList positive={result.positiveFactors} negative={result.negativeFactors} />
 
             {/* Prediction */}
             <div className="p-2.5 rounded-md bg-secondary/50 border border-border">
@@ -165,19 +265,6 @@ export default function AISignals() {
                   <span className={`text-[10px] font-mono ${ind.warn ? 'text-warning' : 'text-foreground'}`}>{ind.value}</span>
                 </div>
               ))}
-            </div>
-
-            {/* Key factors */}
-            <div>
-              <span className="text-[10px] text-muted-foreground block mb-1">Key Factors</span>
-              <div className="space-y-0.5">
-                {result.keyFactors.slice(0, 4).map((f, i) => (
-                  <div key={i} className="flex items-start gap-1.5 text-[10px] text-foreground/80">
-                    <span className="text-muted-foreground/60 mt-0.5">•</span>
-                    <span>{f}</span>
-                  </div>
-                ))}
-              </div>
             </div>
 
             <div className="pt-2 border-t border-border">
