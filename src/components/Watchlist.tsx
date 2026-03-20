@@ -1,7 +1,7 @@
 import { useTradingStore } from '@/stores/tradingStore';
 import { useEffect, useState } from 'react';
 import { fetchYahooFinanceData } from '@/lib/yahooFinance';
-import { Search, Plus, X, Star } from 'lucide-react';
+import { Search, X, Star, BookmarkPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -15,9 +15,9 @@ interface MasterStock {
 export default function Watchlist() {
   const { watchlist, selectedSymbol, setSelectedSymbol, updatePrice, loadUserWatchlist, watchlistLoaded } = useTradingStore();
   const [search, setSearch] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
   const [masterStocks, setMasterStocks] = useState<MasterStock[]>([]);
-  const [addSearch, setAddSearch] = useState('');
+  const [modalSearch, setModalSearch] = useState('');
   const [userSymbols, setUserSymbols] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState<string | null>(null);
 
@@ -25,12 +25,11 @@ export default function Watchlist() {
     if (!watchlistLoaded) loadUserWatchlist();
   }, [watchlistLoaded]);
 
-  // Keep userSymbols in sync
   useEffect(() => {
     setUserSymbols(new Set(watchlist.map(w => w.symbol)));
   }, [watchlist]);
 
-  // Fetch prices for watchlist items
+  // Fetch prices
   useEffect(() => {
     if (watchlist.length === 0) return;
     const fetchAll = async () => {
@@ -55,9 +54,9 @@ export default function Watchlist() {
     return () => clearInterval(interval);
   }, [watchlist.length]);
 
-  // Load master stock list when modal opens
+  // Load master stocks when modal opens
   useEffect(() => {
-    if (!showAddModal) return;
+    if (!showSearchModal) return;
     (async () => {
       const { data } = await supabase
         .from('watchlist_stocks')
@@ -66,16 +65,13 @@ export default function Watchlist() {
         .order('symbol');
       if (data) setMasterStocks(data);
     })();
-  }, [showAddModal]);
+  }, [showSearchModal]);
 
   const handleAdd = async (stock: MasterStock) => {
     setAdding(stock.symbol);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from('user_watchlist').insert({
-      user_id: user.id,
-      symbol: stock.symbol,
-    });
+    await supabase.from('user_watchlist').insert({ user_id: user.id, symbol: stock.symbol });
     await loadUserWatchlist();
     setAdding(null);
   };
@@ -91,47 +87,49 @@ export default function Watchlist() {
     ? watchlist.filter(i => i.symbol.toLowerCase().includes(search.toLowerCase()) || i.name.toLowerCase().includes(search.toLowerCase()))
     : watchlist;
 
-  const filteredMaster = addSearch
-    ? masterStocks.filter(s => s.symbol.toLowerCase().includes(addSearch.toLowerCase()) || s.name.toLowerCase().includes(addSearch.toLowerCase()))
+  const filteredMaster = modalSearch
+    ? masterStocks.filter(s => s.symbol.toLowerCase().includes(modalSearch.toLowerCase()) || s.name.toLowerCase().includes(modalSearch.toLowerCase()))
     : masterStocks;
 
   return (
     <div className="flex flex-col h-full bg-card rounded-lg border border-border overflow-hidden">
       <div className="px-4 py-2 bg-panel-header border-b border-border flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-foreground">My Watchlist</h2>
+        <h2 className="text-sm font-semibold text-foreground">Watchlist</h2>
         <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 font-medium transition-colors"
+          onClick={() => setShowSearchModal(true)}
+          className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+          title="Search & add stocks"
         >
-          <Plus className="w-3.5 h-3.5" />
-          Add
+          <Search className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Search within watchlist */}
-      <div className="px-3 py-2 border-b border-border">
-        <div className="flex items-center gap-2 bg-secondary rounded px-2 py-1">
-          <Search className="w-3 h-3 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search watchlist..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none flex-1"
-          />
+      {/* Quick filter within watchlist */}
+      {watchlist.length > 0 && (
+        <div className="px-3 py-2 border-b border-border">
+          <div className="flex items-center gap-2 bg-secondary rounded px-2 py-1">
+            <Search className="w-3 h-3 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Filter watchlist..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none flex-1"
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex-1 overflow-y-auto scrollbar-thin">
-        {filtered.length === 0 && watchlist.length === 0 && (
+        {watchlist.length === 0 && (
           <div className="p-6 text-center">
             <Star className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
             <p className="text-xs text-muted-foreground mb-2">Your watchlist is empty</p>
             <button
-              onClick={() => setShowAddModal(true)}
+              onClick={() => setShowSearchModal(true)}
               className="text-xs text-primary hover:underline font-medium"
             >
-              + Add stocks to get started
+              Search & add stocks
             </button>
           </div>
         )}
@@ -177,23 +175,24 @@ export default function Watchlist() {
         )}
       </div>
 
-      {/* Add Stock Modal */}
-      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+      {/* Search & Add Modal */}
+      <Dialog open={showSearchModal} onOpenChange={setShowSearchModal}>
         <DialogContent className="max-w-md max-h-[70vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle className="text-base">Add Stocks to Watchlist</DialogTitle>
+            <DialogTitle className="text-base">Search Stocks</DialogTitle>
           </DialogHeader>
           <div className="flex items-center gap-2 bg-secondary rounded-md px-3 py-2">
             <Search className="w-4 h-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search stocks by name or symbol..."
-              value={addSearch}
-              onChange={(e) => setAddSearch(e.target.value)}
+              placeholder="Search by name or symbol..."
+              value={modalSearch}
+              onChange={(e) => setModalSearch(e.target.value)}
               className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none flex-1"
               autoFocus
             />
           </div>
+          <p className="text-[11px] text-muted-foreground">{masterStocks.length} stocks available</p>
           <div className="flex-1 overflow-y-auto -mx-6 px-6 space-y-0.5 min-h-0">
             {filteredMaster.map(stock => {
               const isAdded = userSymbols.has(stock.symbol);
@@ -202,24 +201,26 @@ export default function Watchlist() {
                   key={stock.symbol}
                   className="flex items-center justify-between py-2.5 px-2 rounded-md hover:bg-accent transition-colors"
                 >
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="font-mono text-sm font-semibold text-foreground">{stock.symbol}</div>
                     <div className="text-xs text-muted-foreground truncate">{stock.name}</div>
                   </div>
                   {isAdded ? (
                     <button
                       onClick={() => handleRemove(stock.symbol)}
-                      className="text-xs text-destructive hover:text-destructive/80 font-medium px-3 py-1 rounded border border-destructive/30 transition-colors"
+                      className="text-xs text-destructive hover:text-destructive/80 font-medium px-3 py-1 rounded border border-destructive/30 transition-colors flex items-center gap-1"
                     >
+                      <X className="w-3 h-3" />
                       Remove
                     </button>
                   ) : (
                     <button
                       onClick={() => handleAdd(stock)}
                       disabled={adding === stock.symbol}
-                      className="text-xs text-primary hover:text-primary/80 font-medium px-3 py-1 rounded border border-primary/30 hover:bg-primary/10 transition-colors disabled:opacity-50"
+                      className="text-xs text-primary hover:text-primary/80 font-medium px-3 py-1 rounded border border-primary/30 hover:bg-primary/10 transition-colors disabled:opacity-50 flex items-center gap-1"
                     >
-                      {adding === stock.symbol ? '...' : '+ Add'}
+                      <BookmarkPlus className="w-3 h-3" />
+                      {adding === stock.symbol ? 'Adding...' : 'Add'}
                     </button>
                   )}
                 </div>
