@@ -4,6 +4,8 @@ import { useCryptoData } from '@/hooks/useCryptoData';
 import { useCryptoStore, CRYPTO_PAIRS } from '@/stores/cryptoStore';
 import { formatINR } from '@/lib/exchangeRate';
 import { calcSMA, calcEMA, calcBollingerBands } from '@/lib/technicalIndicators';
+import ChartDrawingTools from '@/components/ChartDrawingTools';
+import { useChartDrawings } from '@/hooks/useChartDrawings';
 
 const INTERVALS = [
   { label: '1m', value: '1m' },
@@ -25,6 +27,15 @@ export default function CryptoChart() {
   const ema26Ref = useRef<any>(null);
   const bbUpperRef = useRef<any>(null);
   const bbLowerRef = useRef<any>(null);
+
+  const {
+    drawingMode,
+    setDrawingMode,
+    drawings,
+    addHorizontalLine,
+    clearAllDrawings,
+    restoreDrawings,
+  } = useChartDrawings(selectedPair, chartInstance.current);
 
   useEffect(() => {
     if (livePrice > 0) updatePositionPrice(selectedPair, livePrice);
@@ -61,26 +72,20 @@ export default function CryptoChart() {
     });
     volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
 
-    // Indicator overlays
-    const sma20Series = chart.addSeries(LineSeries, {
-      color: 'rgba(255, 193, 7, 0.6)', lineWidth: 1, priceLineVisible: false,
-      lastValueVisible: false,
-    });
-    const ema12Series = chart.addSeries(LineSeries, {
-      color: 'rgba(33, 150, 243, 0.6)', lineWidth: 1, priceLineVisible: false,
-      lastValueVisible: false,
-    });
-    const ema26Series = chart.addSeries(LineSeries, {
-      color: 'rgba(156, 39, 176, 0.6)', lineWidth: 1, priceLineVisible: false,
-      lastValueVisible: false,
-    });
-    const bbUpperSeries = chart.addSeries(LineSeries, {
-      color: 'rgba(128, 128, 128, 0.3)', lineWidth: 1, lineStyle: 2,
-      priceLineVisible: false, lastValueVisible: false,
-    });
-    const bbLowerSeries = chart.addSeries(LineSeries, {
-      color: 'rgba(128, 128, 128, 0.3)', lineWidth: 1, lineStyle: 2,
-      priceLineVisible: false, lastValueVisible: false,
+    const sma20Series = chart.addSeries(LineSeries, { color: 'rgba(255, 193, 7, 0.6)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+    const ema12Series = chart.addSeries(LineSeries, { color: 'rgba(33, 150, 243, 0.6)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+    const ema26Series = chart.addSeries(LineSeries, { color: 'rgba(156, 39, 176, 0.6)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+    const bbUpperSeries = chart.addSeries(LineSeries, { color: 'rgba(128, 128, 128, 0.3)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
+    const bbLowerSeries = chart.addSeries(LineSeries, { color: 'rgba(128, 128, 128, 0.3)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
+
+    // Handle click for drawing
+    chart.subscribeClick((param) => {
+      if (drawingMode === 'hline' && param.point) {
+        const price = candleSeries.coordinateToPrice(param.point.y);
+        if (price !== null) {
+          addHorizontalLine(price, candleSeries);
+        }
+      }
     });
 
     chartInstance.current = chart;
@@ -100,7 +105,6 @@ export default function CryptoChart() {
     return () => { observer.disconnect(); chart.remove(); chartInstance.current = null; };
   }, [selectedPair, selectedInterval]);
 
-  // Compute indicators
   const indicators = useMemo(() => {
     if (candles.length < 26) return null;
     const closes = candles.map(c => c.close * usdToInr);
@@ -117,31 +121,29 @@ export default function CryptoChart() {
 
     const formatted = candles.map((c) => ({
       time: c.time as any,
-      open: c.open * usdToInr,
-      high: c.high * usdToInr,
-      low: c.low * usdToInr,
-      close: c.close * usdToInr,
+      open: c.open * usdToInr, high: c.high * usdToInr,
+      low: c.low * usdToInr, close: c.close * usdToInr,
     }));
     const volumes = candles.map((c) => ({
-      time: c.time as any,
-      value: c.volume,
+      time: c.time as any, value: c.volume,
       color: c.close >= c.open ? 'rgba(76, 175, 80, 0.3)' : 'rgba(239, 68, 68, 0.3)',
     }));
 
     candleSeriesRef.current.setData(formatted);
     volumeSeriesRef.current.setData(volumes);
 
-    // Set indicator data
     if (indicators) {
       const toLine = (arr: number[]) =>
         arr.map((v, i) => ({ time: candles[i].time as any, value: v })).filter(d => !isNaN(d.value));
-
       sma20Ref.current?.setData(toLine(indicators.sma20));
       ema12Ref.current?.setData(toLine(indicators.ema12));
       ema26Ref.current?.setData(toLine(indicators.ema26));
       bbUpperRef.current?.setData(toLine(indicators.bb.map(b => b.upper)));
       bbLowerRef.current?.setData(toLine(indicators.bb.map(b => b.lower)));
     }
+
+    // Restore drawings
+    restoreDrawings(candleSeriesRef.current);
 
     chartInstance.current?.timeScale().fitContent();
   }, [candles, usdToInr, indicators]);
@@ -150,12 +152,12 @@ export default function CryptoChart() {
 
   return (
     <div className="flex flex-col h-full bg-card rounded-lg border border-border overflow-hidden">
-      <div className="px-4 py-2 bg-panel-header border-b border-border flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="px-2 sm:px-4 py-1.5 sm:py-2 bg-panel-header border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-0">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <select
             value={selectedPair}
             onChange={(e) => setSelectedPair(e.target.value)}
-            className="bg-secondary text-foreground text-xs font-mono font-semibold px-2 py-1 rounded border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+            className="bg-secondary text-foreground text-xs font-mono font-semibold px-2 py-1.5 rounded border border-border focus:outline-none focus:ring-1 focus:ring-primary min-h-[32px]"
           >
             {CRYPTO_PAIRS.map((p) => (
               <option key={p.symbol} value={p.symbol}>{p.label}</option>
@@ -163,45 +165,43 @@ export default function CryptoChart() {
           </select>
 
           {livePrice > 0 && (
-            <span className="font-mono text-sm font-bold text-foreground">
-              {formatINR(livePriceINR)}
-            </span>
+            <span className="font-mono text-xs sm:text-sm font-bold text-foreground">{formatINR(livePriceINR)}</span>
           )}
           {livePrice > 0 && (
-            <span className="font-mono text-[10px] text-muted-foreground">
+            <span className="font-mono text-[9px] sm:text-[10px] text-muted-foreground hidden sm:inline">
               (${livePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
             </span>
           )}
-
-          {/* Indicator legend */}
-          <div className="hidden md:flex items-center gap-3 text-[9px] font-mono">
-            <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded" style={{ background: 'rgba(255, 193, 7, 0.6)' }} />SMA20</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded" style={{ background: 'rgba(33, 150, 243, 0.6)' }} />EMA12</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded" style={{ background: 'rgba(156, 39, 176, 0.6)' }} />EMA26</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded border-t border-dashed" style={{ borderColor: 'rgba(128, 128, 128, 0.5)', width: 12 }} />BB</span>
-          </div>
 
           {loading && <span className="text-[10px] text-muted-foreground animate-pulse">Loading...</span>}
           {error && <span className="text-[10px] text-loss">{error}</span>}
         </div>
 
-        <div className="flex gap-0.5">
-          {INTERVALS.map((i) => (
-            <button
-              key={i.value}
-              onClick={() => setSelectedInterval(i.value)}
-              className={`px-2.5 py-1 text-[11px] font-mono rounded transition-colors ${
-                selectedInterval === i.value
-                  ? 'bg-primary/20 text-primary font-semibold'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-              }`}
-            >
-              {i.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto justify-between sm:justify-end">
+          <ChartDrawingTools
+            activeMode={drawingMode}
+            onModeChange={setDrawingMode}
+            drawings={drawings}
+            onClearAll={clearAllDrawings}
+          />
+          <div className="flex gap-0.5">
+            {INTERVALS.map((i) => (
+              <button
+                key={i.value}
+                onClick={() => setSelectedInterval(i.value)}
+                className={`px-1.5 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-mono rounded transition-colors min-h-[32px] active:scale-95 ${
+                  selectedInterval === i.value
+                    ? 'bg-primary/20 text-primary font-semibold'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                }`}
+              >
+                {i.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-      <div ref={chartRef} className="flex-1 bg-chart" />
+      <div ref={chartRef} className={`flex-1 bg-chart ${drawingMode !== 'none' ? 'cursor-crosshair' : ''}`} />
     </div>
   );
 }

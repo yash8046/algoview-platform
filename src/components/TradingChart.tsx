@@ -3,15 +3,27 @@ import { createChart, ColorType, IChartApi, CandlestickSeries, HistogramSeries, 
 import { useTradingStore } from '@/stores/tradingStore';
 import { fetchYahooFinanceData } from '@/lib/yahooFinance';
 import { calculateSMA } from '@/lib/mockData';
+import ChartDrawingTools, { type DrawingMode } from '@/components/ChartDrawingTools';
+import { useChartDrawings } from '@/hooks/useChartDrawings';
 
 const TIMEFRAMES = ['1m', '5m', '15m', '1H', '4H', '1D', '1W'];
 
 export default function TradingChart() {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<IChartApi | null>(null);
+  const candleSeriesRef = useRef<any>(null);
   const { selectedSymbol, selectedTimeframe, setSelectedTimeframe, updatePrice } = useTradingStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const {
+    drawingMode,
+    setDrawingMode,
+    drawings,
+    addHorizontalLine,
+    clearAllDrawings,
+    restoreDrawings,
+  } = useChartDrawings(selectedSymbol, chartInstance.current);
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -47,6 +59,7 @@ export default function TradingChart() {
       wickDownColor: '#ef4444',
       wickUpColor: '#22c55e',
     });
+    candleSeriesRef.current = candleSeries;
 
     const volumeSeries = chart.addSeries(HistogramSeries, {
       priceFormat: { type: 'volume' },
@@ -57,16 +70,23 @@ export default function TradingChart() {
     const sma20Series = chart.addSeries(LineSeries, { color: '#26c6da', lineWidth: 1, title: 'SMA 20' });
     const sma50Series = chart.addSeries(LineSeries, { color: '#f59e0b', lineWidth: 1, title: 'SMA 50' });
 
-    // Fetch real data
+    // Handle click for drawing mode
+    chart.subscribeClick((param) => {
+      if (drawingMode === 'hline' && param.point) {
+        const price = candleSeries.coordinateToPrice(param.point.y);
+        if (price !== null) {
+          addHorizontalLine(price, candleSeries);
+        }
+      }
+    });
+
     setLoading(true);
     setError(null);
 
     fetchYahooFinanceData(selectedSymbol, selectedTimeframe)
       .then((resp) => {
-        const isIntraday = ['1m', '5m', '15m', '1H', '4H'].includes(selectedTimeframe);
-
         const candleData = resp.candles.map(c => ({
-          time: (isIntraday ? c.time : c.time) as any,
+          time: c.time as any,
           open: +c.open.toFixed(2),
           high: +c.high.toFixed(2),
           low: +c.low.toFixed(2),
@@ -82,26 +102,24 @@ export default function TradingChart() {
         candleSeries.setData(candleData);
         volumeSeries.setData(volData);
 
-        // SMA
         if (candleData.length >= 20) {
-          const sma20 = calculateSMA(candleData, 20);
-          sma20Series.setData(sma20 as any);
+          sma20Series.setData(calculateSMA(candleData, 20) as any);
         }
         if (candleData.length >= 50) {
-          const sma50 = calculateSMA(candleData, 50);
-          sma50Series.setData(sma50 as any);
+          sma50Series.setData(calculateSMA(candleData, 50) as any);
         }
 
         chart.timeScale().fitContent();
 
-        // Update store with latest price
+        // Restore drawings
+        restoreDrawings(candleSeries);
+
         if (resp.regularMarketPrice) {
           updatePrice(selectedSymbol, resp.regularMarketPrice, resp.previousClose || resp.regularMarketPrice);
         } else if (candleData.length > 0) {
           const last = candleData[candleData.length - 1];
           updatePrice(selectedSymbol, last.close, resp.previousClose || last.open);
         }
-
         setLoading(false);
       })
       .catch((err) => {
@@ -110,16 +128,14 @@ export default function TradingChart() {
         setLoading(false);
       });
 
-    const handleResize = () => {
+    const observer = new ResizeObserver(() => {
       if (chartRef.current) {
         chart.applyOptions({
           width: chartRef.current.clientWidth,
           height: chartRef.current.clientHeight,
         });
       }
-    };
-
-    const observer = new ResizeObserver(handleResize);
+    });
     observer.observe(chartRef.current);
 
     return () => {
@@ -130,30 +146,41 @@ export default function TradingChart() {
 
   return (
     <div className="flex flex-col h-full bg-card rounded-lg border border-border overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 bg-panel-header border-b border-border">
-        <div className="flex items-center gap-3">
-          <h2 className="font-mono text-sm font-semibold text-foreground">{selectedSymbol}.NS</h2>
-          <span className="text-xs text-muted-foreground">NSE</span>
+      <div className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2 bg-panel-header border-b border-border gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <h2 className="font-mono text-xs sm:text-sm font-semibold text-foreground truncate">{selectedSymbol}.NS</h2>
+          <span className="text-[10px] text-muted-foreground hidden sm:inline">NSE</span>
           {loading && <span className="text-[10px] text-primary animate-pulse">Loading...</span>}
-          {error && <span className="text-[10px] text-loss">Error: {error}</span>}
+          {error && <span className="text-[10px] text-loss truncate max-w-[100px]">Error</span>}
         </div>
-        <div className="flex items-center gap-1">
-          {TIMEFRAMES.map(tf => (
-            <button
-              key={tf}
-              onClick={() => setSelectedTimeframe(tf)}
-              className={`px-2 py-1 text-xs font-mono rounded transition-colors ${
-                selectedTimeframe === tf
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-              }`}
-            >
-              {tf}
-            </button>
-          ))}
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+          <ChartDrawingTools
+            activeMode={drawingMode}
+            onModeChange={setDrawingMode}
+            drawings={drawings}
+            onClearAll={clearAllDrawings}
+          />
+          <div className="flex items-center gap-0.5">
+            {TIMEFRAMES.map(tf => (
+              <button
+                key={tf}
+                onClick={() => setSelectedTimeframe(tf)}
+                className={`px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs font-mono rounded transition-colors min-h-[32px] active:scale-95 ${
+                  selectedTimeframe === tf
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                }`}
+              >
+                {tf}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-      <div ref={chartRef} className="flex-1 bg-chart" />
+      <div
+        ref={chartRef}
+        className={`flex-1 bg-chart ${drawingMode !== 'none' ? 'cursor-crosshair' : ''}`}
+      />
     </div>
   );
 }
