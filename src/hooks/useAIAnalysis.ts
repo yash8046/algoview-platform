@@ -155,6 +155,9 @@ export function useAIAnalysis() {
         positiveFactors: [],
         negativeFactors: [],
         prediction,
+        priceRange: null,
+        timeHorizon: null,
+        volatilityCategory: null,
         timestamp: Date.now(),
       };
       cache.set(cacheKey, { result: fallbackResult, expiry: Date.now() + CACHE_TTL });
