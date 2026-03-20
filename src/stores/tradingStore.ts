@@ -59,6 +59,7 @@ interface TradingState {
   closePosition: (positionId: string) => void;
   updatePrice: (symbol: string, price: number, prevClose: number) => void;
   loadWatchlistFromDB: () => Promise<void>;
+  loadUserWatchlist: () => Promise<void>;
   loadFromDB: () => Promise<void>;
 }
 
