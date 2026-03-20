@@ -62,7 +62,7 @@ export default function TradingChart() {
     volumeSeries.setData(volumeData as any);
 
     const sma20 = calculateSMA(candleData, 20);
-    const sma20Series = chart.addLineSeries({ color: '#26c6da', lineWidth: 1, title: 'SMA 20' });
+    const sma20Series = chart.addSeries(LineSeries, { color: '#26c6da', lineWidth: 1, title: 'SMA 20' });
     sma20Series.setData(sma20 as any);
 
     const sma50 = calculateSMA(candleData, 50);
