@@ -71,6 +71,7 @@ export const useTradingStore = create<TradingState>((set, get) => ({
   selectedTimeframe: '1D',
   watchlist: [],
   watchlistLoaded: false,
+  currentChartPrice: 0,
 
   setSelectedSymbol: (symbol) => set({ selectedSymbol: symbol }),
   setSelectedTimeframe: (tf) => set({ selectedTimeframe: tf }),
