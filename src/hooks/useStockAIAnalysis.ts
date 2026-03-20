@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { fetchYahooFinanceData } from '@/lib/yahooFinance';
 import { type OHLCV, generateRuleBasedSignal, predictNextPrice } from '@/lib/technicalIndicators';
 import { supabase } from '@/integrations/supabase/client';
-import type { SentimentData } from './useAIAnalysis';
+import type { SentimentData, PriceRange, TimeHorizon } from './useAIAnalysis';
 
 export interface StockAIResult {
   signal: 'buy' | 'sell' | 'hold';
