@@ -62,23 +62,23 @@ function SentimentPanel({ sentiment }: { sentiment: Partial<SentimentData> }) {
       <div className="space-y-1.5">
         <div className="flex items-center gap-1.5">
           <Newspaper className="w-3 h-3 text-muted-foreground" />
-          <SentimentScore score={sentiment.news.score} label={`News — ${sentiment.news.label}`} />
+          <SentimentScore score={news.score} label={`News — ${news.label}`} />
         </div>
         <div className="flex items-center gap-1.5">
           <Users className="w-3 h-3 text-muted-foreground" />
-          <SentimentScore score={sentiment.social.score} label={`Social — ${sentiment.social.label} (${sentiment.social.buzz} buzz)`} />
+          <SentimentScore score={social.score} label={`Social — ${social.label} (${social.buzz} buzz)`} />
         </div>
         <div className="flex items-center gap-1.5">
           <BarChart3 className="w-3 h-3 text-muted-foreground" />
-          <SentimentScore score={sentiment.technical.score} label={`Technical — ${sentiment.technical.label}`} />
+          <SentimentScore score={technical.score} label={`Technical — ${technical.label}`} />
         </div>
       </div>
 
       <div className="pt-1.5 border-t border-border/50">
         <div className="flex justify-between text-[10px]">
           <span className="text-muted-foreground font-medium">Weighted Final Score</span>
-          <span className={`font-mono font-bold ${sentiment.finalScore > 0.1 ? 'text-gain' : sentiment.finalScore < -0.1 ? 'text-loss' : 'text-warning'}`}>
-            {sentiment.finalScore > 0 ? '+' : ''}{sentiment.finalScore.toFixed(3)}
+          <span className={`font-mono font-bold ${finalScore > 0.1 ? 'text-gain' : finalScore < -0.1 ? 'text-loss' : 'text-warning'}`}>
+            {finalScore > 0 ? '+' : ''}{finalScore.toFixed(3)}
           </span>
         </div>
       </div>
