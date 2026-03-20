@@ -112,6 +112,8 @@ export function useStockAIAnalysis(symbol: string, timeframe: string, autoRefres
           stopLoss: null,
           prediction,
           indicators: ruleSignal.indicators,
+          regime: ruleSignal.regime,
+          riskMetrics: ruleSignal.riskMetrics,
           timestamp: Date.now(),
         });
         setError('AI unavailable, using technical analysis');
