@@ -29,15 +29,16 @@ function ConfidenceBar({ value, label }: { value: number; label: string }) {
   );
 }
 
-function SentimentScore({ score, label }: { score: number; label: string }) {
-  const color = score > 0.1 ? 'text-gain' : score < -0.1 ? 'text-loss' : 'text-warning';
-  const bg = score > 0.1 ? 'bg-gain' : score < -0.1 ? 'bg-loss' : 'bg-warning';
-  const pct = Math.round(((score + 1) / 2) * 100);
+function SentimentScore({ score, label }: { score: number | undefined | null; label: string }) {
+  const s = typeof score === 'number' ? score : 0;
+  const color = s > 0.1 ? 'text-gain' : s < -0.1 ? 'text-loss' : 'text-warning';
+  const bg = s > 0.1 ? 'bg-gain' : s < -0.1 ? 'bg-loss' : 'bg-warning';
+  const pct = Math.round(((s + 1) / 2) * 100);
   return (
     <div className="space-y-0.5">
       <div className="flex justify-between text-[10px]">
         <span className="text-muted-foreground">{label}</span>
-        <span className={`font-mono font-semibold ${color}`}>{score > 0 ? '+' : ''}{score.toFixed(2)}</span>
+        <span className={`font-mono font-semibold ${color}`}>{s > 0 ? '+' : ''}{s.toFixed(2)}</span>
       </div>
       <div className="h-1 bg-secondary rounded-full overflow-hidden">
         <div className={`h-full ${bg} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
@@ -46,7 +47,11 @@ function SentimentScore({ score, label }: { score: number; label: string }) {
   );
 }
 
-function SentimentPanel({ sentiment }: { sentiment: SentimentData }) {
+function SentimentPanel({ sentiment }: { sentiment: Partial<SentimentData> }) {
+  const news = sentiment?.news || { score: 0, label: 'Neutral', topHeadlines: [] };
+  const social = sentiment?.social || { score: 0, label: 'Neutral', buzz: 'low' };
+  const technical = sentiment?.technical || { score: 0, label: 'Neutral' };
+  const finalScore = typeof sentiment?.finalScore === 'number' ? sentiment.finalScore : 0;
   return (
     <div className="p-2.5 rounded-md bg-secondary/30 border border-border space-y-2">
       <div className="flex items-center gap-1.5 mb-1">
@@ -57,23 +62,23 @@ function SentimentPanel({ sentiment }: { sentiment: SentimentData }) {
       <div className="space-y-1.5">
         <div className="flex items-center gap-1.5">
           <Newspaper className="w-3 h-3 text-muted-foreground" />
-          <SentimentScore score={sentiment.news.score} label={`News — ${sentiment.news.label}`} />
+          <SentimentScore score={news.score} label={`News — ${news.label}`} />
         </div>
         <div className="flex items-center gap-1.5">
           <Users className="w-3 h-3 text-muted-foreground" />
-          <SentimentScore score={sentiment.social.score} label={`Social — ${sentiment.social.label} (${sentiment.social.buzz} buzz)`} />
+          <SentimentScore score={social.score} label={`Social — ${social.label} (${social.buzz} buzz)`} />
         </div>
         <div className="flex items-center gap-1.5">
           <BarChart3 className="w-3 h-3 text-muted-foreground" />
-          <SentimentScore score={sentiment.technical.score} label={`Technical — ${sentiment.technical.label}`} />
+          <SentimentScore score={technical.score} label={`Technical — ${technical.label}`} />
         </div>
       </div>
 
       <div className="pt-1.5 border-t border-border/50">
         <div className="flex justify-between text-[10px]">
           <span className="text-muted-foreground font-medium">Weighted Final Score</span>
-          <span className={`font-mono font-bold ${sentiment.finalScore > 0.1 ? 'text-gain' : sentiment.finalScore < -0.1 ? 'text-loss' : 'text-warning'}`}>
-            {sentiment.finalScore > 0 ? '+' : ''}{sentiment.finalScore.toFixed(3)}
+          <span className={`font-mono font-bold ${finalScore > 0.1 ? 'text-gain' : finalScore < -0.1 ? 'text-loss' : 'text-warning'}`}>
+            {finalScore > 0 ? '+' : ''}{finalScore.toFixed(3)}
           </span>
         </div>
       </div>
@@ -85,10 +90,10 @@ function SentimentPanel({ sentiment }: { sentiment: SentimentData }) {
         </div>
       )}
 
-      {sentiment.news.topHeadlines?.length > 0 && (
+      {news.topHeadlines?.length > 0 && (
         <div className="space-y-0.5">
           <span className="text-[9px] text-muted-foreground">Headlines</span>
-          {sentiment.news.topHeadlines.slice(0, 3).map((h, i) => (
+          {news.topHeadlines.slice(0, 3).map((h, i) => (
             <div key={i} className="text-[9px] text-foreground/70 pl-2 border-l border-border">
               {h}
             </div>
