@@ -71,7 +71,7 @@ export default function Portfolio() {
   const winningTrades = [...trades, ...cryptoTrades].filter(t => (t.pnl ?? 0) > 0).length;
   const losingTrades = [...trades, ...cryptoTrades].filter(t => (t.pnl ?? 0) < 0).length;
 
-  const allTrades = [...trades.map(t => ({ ...t, market: 'stock' as const })), ...cryptoTrades.map(t => ({ ...t, symbol: t.pair || t.symbol, market: 'crypto' as const }))].sort((a, b) => b.timestamp - a.timestamp);
+  const allTrades = [...trades.map(t => ({ ...t, market: 'stock' as const })), ...cryptoTrades.map(t => ({ ...t, symbol: t.pair, market: 'crypto' as const }))].sort((a, b) => b.timestamp - a.timestamp);
 
   const summaryCards = [
     { label: 'Total Portfolio', value: formatINR(totalPortfolioValue), icon: DollarSign, positive: totalPortfolioValue >= totalInitial, sub: `${totalReturn >= 0 ? '+' : ''}${totalReturn.toFixed(2)}% return` },
