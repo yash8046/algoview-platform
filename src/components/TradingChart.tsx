@@ -41,7 +41,7 @@ export default function TradingChart() {
     chartInstance.current = chart;
 
     const candleData = generateCandlestickData(120);
-    const candleSeries = chart.addCandlestickSeries({
+    const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor: '#22c55e',
       downColor: '#ef4444',
       borderDownColor: '#ef4444',
