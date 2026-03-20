@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
-import { createChart, CandlestickSeries, HistogramSeries, type IChartApi } from 'lightweight-charts';
+import { useEffect, useRef, useMemo } from 'react';
+import { createChart, CandlestickSeries, HistogramSeries, LineSeries, type IChartApi } from 'lightweight-charts';
 import { useCryptoData } from '@/hooks/useCryptoData';
 import { useCryptoStore, CRYPTO_PAIRS } from '@/stores/cryptoStore';
 import { formatINR } from '@/lib/exchangeRate';
+import { calcSMA, calcEMA, calcBollingerBands } from '@/lib/technicalIndicators';
 
 const INTERVALS = [
   { label: '1m', value: '1m' },
@@ -19,6 +20,11 @@ export default function CryptoChart() {
   const chartInstance = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<any>(null);
   const volumeSeriesRef = useRef<any>(null);
+  const sma20Ref = useRef<any>(null);
+  const ema12Ref = useRef<any>(null);
+  const ema26Ref = useRef<any>(null);
+  const bbUpperRef = useRef<any>(null);
+  const bbLowerRef = useRef<any>(null);
 
   useEffect(() => {
     if (livePrice > 0) updatePositionPrice(selectedPair, livePrice);
@@ -55,9 +61,36 @@ export default function CryptoChart() {
     });
     volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
 
+    // Indicator overlays
+    const sma20Series = chart.addSeries(LineSeries, {
+      color: 'rgba(255, 193, 7, 0.6)', lineWidth: 1, priceLineVisible: false,
+      lastValueVisible: false,
+    });
+    const ema12Series = chart.addSeries(LineSeries, {
+      color: 'rgba(33, 150, 243, 0.6)', lineWidth: 1, priceLineVisible: false,
+      lastValueVisible: false,
+    });
+    const ema26Series = chart.addSeries(LineSeries, {
+      color: 'rgba(156, 39, 176, 0.6)', lineWidth: 1, priceLineVisible: false,
+      lastValueVisible: false,
+    });
+    const bbUpperSeries = chart.addSeries(LineSeries, {
+      color: 'rgba(128, 128, 128, 0.3)', lineWidth: 1, lineStyle: 2,
+      priceLineVisible: false, lastValueVisible: false,
+    });
+    const bbLowerSeries = chart.addSeries(LineSeries, {
+      color: 'rgba(128, 128, 128, 0.3)', lineWidth: 1, lineStyle: 2,
+      priceLineVisible: false, lastValueVisible: false,
+    });
+
     chartInstance.current = chart;
     candleSeriesRef.current = candleSeries;
     volumeSeriesRef.current = volumeSeries;
+    sma20Ref.current = sma20Series;
+    ema12Ref.current = ema12Series;
+    ema26Ref.current = ema26Series;
+    bbUpperRef.current = bbUpperSeries;
+    bbLowerRef.current = bbLowerSeries;
 
     const observer = new ResizeObserver(() => {
       if (chartRef.current) chart.applyOptions({ width: chartRef.current.clientWidth, height: chartRef.current.clientHeight });
@@ -67,10 +100,21 @@ export default function CryptoChart() {
     return () => { observer.disconnect(); chart.remove(); chartInstance.current = null; };
   }, [selectedPair, selectedInterval]);
 
+  // Compute indicators
+  const indicators = useMemo(() => {
+    if (candles.length < 26) return null;
+    const closes = candles.map(c => c.close * usdToInr);
+    return {
+      sma20: calcSMA(closes, 20),
+      ema12: calcEMA(closes, 12),
+      ema26: calcEMA(closes, 26),
+      bb: calcBollingerBands(closes, 20, 2),
+    };
+  }, [candles, usdToInr]);
+
   useEffect(() => {
     if (!candleSeriesRef.current || candles.length === 0) return;
 
-    // Convert candles to INR for display
     const formatted = candles.map((c) => ({
       time: c.time as any,
       open: c.open * usdToInr,
@@ -86,8 +130,21 @@ export default function CryptoChart() {
 
     candleSeriesRef.current.setData(formatted);
     volumeSeriesRef.current.setData(volumes);
+
+    // Set indicator data
+    if (indicators) {
+      const toLine = (arr: number[]) =>
+        arr.map((v, i) => ({ time: candles[i].time as any, value: v })).filter(d => !isNaN(d.value));
+
+      sma20Ref.current?.setData(toLine(indicators.sma20));
+      ema12Ref.current?.setData(toLine(indicators.ema12));
+      ema26Ref.current?.setData(toLine(indicators.ema26));
+      bbUpperRef.current?.setData(toLine(indicators.bb.map(b => b.upper)));
+      bbLowerRef.current?.setData(toLine(indicators.bb.map(b => b.lower)));
+    }
+
     chartInstance.current?.timeScale().fitContent();
-  }, [candles, usdToInr]);
+  }, [candles, usdToInr, indicators]);
 
   const livePriceINR = livePrice * usdToInr;
 
@@ -115,6 +172,14 @@ export default function CryptoChart() {
               (${livePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
             </span>
           )}
+
+          {/* Indicator legend */}
+          <div className="hidden md:flex items-center gap-3 text-[9px] font-mono">
+            <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded" style={{ background: 'rgba(255, 193, 7, 0.6)' }} />SMA20</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded" style={{ background: 'rgba(33, 150, 243, 0.6)' }} />EMA12</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded" style={{ background: 'rgba(156, 39, 176, 0.6)' }} />EMA26</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded border-t border-dashed" style={{ borderColor: 'rgba(128, 128, 128, 0.5)', width: 12 }} />BB</span>
+          </div>
 
           {loading && <span className="text-[10px] text-muted-foreground animate-pulse">Loading...</span>}
           {error && <span className="text-[10px] text-loss">{error}</span>}
