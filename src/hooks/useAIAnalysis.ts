@@ -10,6 +10,20 @@ export interface SentimentData {
   manipulation_warning: string | null;
 }
 
+export interface PriceRange {
+  low: number;
+  high: number;
+  lowPct: number;
+  highPct: number;
+}
+
+export interface TimeHorizon {
+  minDays: number;
+  maxDays: number;
+  label: string;
+  catalyst: string | null;
+}
+
 export interface AIAnalysisResult {
   ruleBasedSignal: TradeSignal;
   aiSignal: {
@@ -38,6 +52,9 @@ export interface AIAnalysisResult {
     direction: 'up' | 'down' | 'neutral';
     strength: number;
   };
+  priceRange: PriceRange | null;
+  timeHorizon: TimeHorizon | null;
+  volatilityCategory: 'low' | 'medium' | 'high' | null;
   timestamp: number;
 }
 
@@ -102,6 +119,9 @@ export function useAIAnalysis() {
         positiveFactors: data.positiveFactors || [],
         negativeFactors: data.negativeFactors || [],
         prediction,
+        priceRange: data.priceRange || null,
+        timeHorizon: data.timeHorizon || null,
+        volatilityCategory: data.volatilityCategory || null,
         timestamp: Date.now(),
       };
 
@@ -135,6 +155,9 @@ export function useAIAnalysis() {
         positiveFactors: [],
         negativeFactors: [],
         prediction,
+        priceRange: null,
+        timeHorizon: null,
+        volatilityCategory: null,
         timestamp: Date.now(),
       };
       cache.set(cacheKey, { result: fallbackResult, expiry: Date.now() + CACHE_TTL });

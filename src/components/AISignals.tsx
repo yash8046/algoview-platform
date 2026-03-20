@@ -1,4 +1,4 @@
-import { Brain, TrendingUp, TrendingDown, Minus, RefreshCw, Target, AlertTriangle, Zap, Shield, Newspaper, Users, BarChart3, AlertOctagon } from 'lucide-react';
+import { Brain, TrendingUp, TrendingDown, Minus, RefreshCw, Target, AlertTriangle, Zap, Shield, Newspaper, Users, BarChart3, AlertOctagon, Clock, Activity } from 'lucide-react';
 import { useTradingStore } from '@/stores/tradingStore';
 import { useStockAIAnalysis } from '@/hooks/useStockAIAnalysis';
 import type { SentimentData } from '@/hooks/useAIAnalysis';
@@ -194,6 +194,59 @@ export default function AISignals() {
 
             {/* Positive/Negative factors */}
             <FactorsList positive={result.positiveFactors} negative={result.negativeFactors} />
+
+            {/* Price Range & Time Horizon */}
+            {(result.priceRange || result.timeHorizon) && (
+              <div className="p-2.5 rounded-md bg-primary/5 border border-primary/20 space-y-2">
+                {result.priceRange && (
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Target className="w-3 h-3 text-primary" />
+                      <span className="text-[10px] font-semibold text-foreground">Expected Price Range</span>
+                    </div>
+                    <div className="flex justify-between text-[10px]">
+                      <span className="text-muted-foreground">Range</span>
+                      <span className="font-mono text-foreground">₹{result.priceRange.low.toFixed(2)} – ₹{result.priceRange.high.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-[10px]">
+                      <span className="text-muted-foreground">% Move</span>
+                      <span className={`font-mono ${result.priceRange.lowPct >= 0 ? 'text-gain' : 'text-loss'}`}>
+                        {result.priceRange.lowPct > 0 ? '+' : ''}{result.priceRange.lowPct.toFixed(1)}% to {result.priceRange.highPct > 0 ? '+' : ''}{result.priceRange.highPct.toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {result.timeHorizon && (
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Clock className="w-3 h-3 text-primary" />
+                      <span className="text-[10px] font-semibold text-foreground">Time Horizon</span>
+                    </div>
+                    <div className="flex justify-between text-[10px]">
+                      <span className="text-muted-foreground">Estimated</span>
+                      <span className="font-mono text-foreground">{result.timeHorizon.label}</span>
+                    </div>
+                    {result.timeHorizon.catalyst && (
+                      <div className="flex justify-between text-[10px] mt-0.5">
+                        <span className="text-muted-foreground">Catalyst</span>
+                        <span className="font-mono text-warning">{result.timeHorizon.catalyst}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {result.volatilityCategory && (
+                  <div className="flex justify-between text-[10px]">
+                    <div className="flex items-center gap-1">
+                      <Activity className="w-3 h-3 text-muted-foreground" />
+                      <span className="text-muted-foreground">Volatility</span>
+                    </div>
+                    <span className={`font-mono font-medium capitalize ${
+                      result.volatilityCategory === 'high' ? 'text-loss' : result.volatilityCategory === 'medium' ? 'text-warning' : 'text-gain'
+                    }`}>{result.volatilityCategory}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Prediction */}
             <div className="p-2.5 rounded-md bg-secondary/50 border border-border">

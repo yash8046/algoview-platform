@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { fetchYahooFinanceData } from '@/lib/yahooFinance';
 import { type OHLCV, generateRuleBasedSignal, predictNextPrice } from '@/lib/technicalIndicators';
 import { supabase } from '@/integrations/supabase/client';
-import type { SentimentData } from './useAIAnalysis';
+import type { SentimentData, PriceRange, TimeHorizon } from './useAIAnalysis';
 
 export interface StockAIResult {
   signal: 'buy' | 'sell' | 'hold';
@@ -30,6 +30,9 @@ export interface StockAIResult {
   sentiment: SentimentData;
   positiveFactors: string[];
   negativeFactors: string[];
+  priceRange: PriceRange | null;
+  timeHorizon: TimeHorizon | null;
+  volatilityCategory: 'low' | 'medium' | 'high' | null;
   timestamp: number;
 }
 
@@ -130,6 +133,9 @@ export function useStockAIAnalysis(symbol: string, timeframe: string) {
         sentiment: aiData.sentiment || fallbackSentiment,
         positiveFactors: aiData.positiveFactors || [],
         negativeFactors: aiData.negativeFactors || [],
+        priceRange: aiData.priceRange || null,
+        timeHorizon: aiData.timeHorizon || null,
+        volatilityCategory: aiData.volatilityCategory || null,
         timestamp: Date.now(),
       };
 
@@ -162,6 +168,9 @@ export function useStockAIAnalysis(symbol: string, timeframe: string) {
           sentiment: fallbackSentiment,
           positiveFactors: [],
           negativeFactors: [],
+          priceRange: null,
+          timeHorizon: null,
+          volatilityCategory: null,
           timestamp: Date.now(),
         };
 
