@@ -44,6 +44,7 @@ interface TradingState {
   selectedTimeframe: string;
   watchlist: WatchlistItem[];
   watchlistLoaded: boolean;
+  currentChartPrice: number;
   setSelectedSymbol: (symbol: string) => void;
   setSelectedTimeframe: (tf: string) => void;
   executeTrade: (symbol: string, side: 'buy' | 'sell', price: number, quantity: number) => void;
