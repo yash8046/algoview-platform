@@ -34,9 +34,11 @@ const Index = () => {
               <TradeHistory />
             </div>
           </div>
-          <div className="w-72 flex-shrink-0 flex flex-col gap-2 overflow-y-auto scrollbar-thin">
-            <TradePanel />
-            <div className="min-h-[350px] flex-1">
+          <div className="w-72 flex-shrink-0 flex flex-col gap-2 min-h-0 overflow-y-auto scrollbar-thin">
+            <div className="flex-shrink-0">
+              <TradePanel />
+            </div>
+            <div className="flex-shrink-0">
               <AISignals />
             </div>
           </div>
