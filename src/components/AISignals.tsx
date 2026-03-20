@@ -118,13 +118,47 @@ export default function AISignals() {
             {/* Confidence */}
             <ConfidenceBar value={result.confidence} label="Ensemble Confidence" />
 
+            {/* Regime & Risk */}
+            {result.regime && (
+              <div className="p-2 rounded-md bg-secondary/30 border border-border space-y-1">
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-muted-foreground">Regime</span>
+                  <span className="font-mono text-foreground capitalize">{result.regime.regime.replace('_', ' ')}</span>
+                </div>
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-muted-foreground">ADX</span>
+                  <span className={`font-mono ${result.regime.adx > 25 ? 'text-gain' : 'text-muted-foreground'}`}>{result.regime.adx.toFixed(1)}</span>
+                </div>
+                {result.riskMetrics && result.riskMetrics.suggestedStopLoss > 0 && (
+                  <>
+                    <div className="flex justify-between text-[10px]">
+                      <span className="text-muted-foreground">Stop Loss</span>
+                      <span className="font-mono text-loss">₹{result.riskMetrics.suggestedStopLoss.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-[10px]">
+                      <span className="text-muted-foreground">Take Profit</span>
+                      <span className="font-mono text-gain">₹{result.riskMetrics.suggestedTakeProfit.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-[10px]">
+                      <span className="text-muted-foreground">R:R Ratio</span>
+                      <span className="font-mono text-foreground">{result.riskMetrics.riskRewardRatio.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-[10px]">
+                      <span className="text-muted-foreground">Position Size</span>
+                      <span className="font-mono text-foreground">{(result.riskMetrics.positionSizePct * 100).toFixed(1)}%</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             {/* Indicators */}
             <div className="grid grid-cols-2 gap-1.5">
               {[
                 { label: 'RSI', value: result.indicators.rsi?.toFixed(1), warn: result.indicators.rsi > 70 || result.indicators.rsi < 30 },
                 { label: 'MACD', value: result.indicators.macd?.toFixed(4), warn: false },
                 { label: 'ATR', value: result.indicators.atr?.toFixed(2), warn: false },
-                { label: 'Price', value: `₹${result.indicators.price?.toFixed(2)}`, warn: false },
+                { label: 'ADX', value: result.indicators.adx?.toFixed(1), warn: false },
               ].map(ind => (
                 <div key={ind.label} className="flex justify-between bg-secondary/30 rounded px-2 py-1">
                   <span className="text-[10px] text-muted-foreground">{ind.label}</span>
