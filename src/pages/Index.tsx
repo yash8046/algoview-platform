@@ -22,7 +22,7 @@ const Index = () => {
     return (
       <div className="flex flex-col h-screen overflow-hidden">
         <TopBar />
-        <div className="flex-1 overflow-y-auto scrollbar-thin">
+        <div className="flex-1 overflow-y-auto scrollbar-thin pb-16">
           <div className="p-2 space-y-2">
             <PortfolioSummary />
             <div className="h-64">
