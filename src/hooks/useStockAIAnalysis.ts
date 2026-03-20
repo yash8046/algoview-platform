@@ -85,6 +85,8 @@ export function useStockAIAnalysis(symbol: string, timeframe: string, autoRefres
         stopLoss: ai.stopLoss,
         prediction,
         indicators: ruleSignal.indicators,
+        regime: ruleSignal.regime,
+        riskMetrics: ruleSignal.riskMetrics,
         timestamp: Date.now(),
       });
     } catch (e: any) {
