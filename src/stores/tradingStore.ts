@@ -44,6 +44,7 @@ interface TradingState {
   selectedTimeframe: string;
   watchlist: WatchlistItem[];
   watchlistLoaded: boolean;
+  currentChartPrice: number;
   setSelectedSymbol: (symbol: string) => void;
   setSelectedTimeframe: (tf: string) => void;
   executeTrade: (symbol: string, side: 'buy' | 'sell', price: number, quantity: number) => void;
@@ -70,8 +71,9 @@ export const useTradingStore = create<TradingState>((set, get) => ({
   selectedTimeframe: '1D',
   watchlist: [],
   watchlistLoaded: false,
+  currentChartPrice: 0,
 
-  setSelectedSymbol: (symbol) => set({ selectedSymbol: symbol }),
+  setSelectedSymbol: (symbol) => set({ selectedSymbol: symbol, currentChartPrice: 0 }),
   setSelectedTimeframe: (tf) => set({ selectedTimeframe: tf }),
 
   loadWatchlistFromDB: async () => {
@@ -204,7 +206,8 @@ export const useTradingStore = create<TradingState>((set, get) => ({
   },
 
   updatePrice: (symbol, price, prevClose) => {
-    set((state) => ({
+    const state = get();
+    const updates: any = {
       watchlist: state.watchlist.map(item =>
         item.symbol === symbol
           ? {
@@ -218,7 +221,11 @@ export const useTradingStore = create<TradingState>((set, get) => ({
       positions: state.positions.map(pos =>
         pos.symbol === symbol ? { ...pos, currentPrice: price } : pos
       ),
-    }));
+    };
+    if (symbol === state.selectedSymbol) {
+      updates.currentChartPrice = price;
+    }
+    set(updates);
   },
 
   executeTrade: async (symbol, side, price, quantity) => {

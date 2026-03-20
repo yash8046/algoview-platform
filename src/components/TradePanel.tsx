@@ -4,14 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { BookmarkPlus, BookmarkCheck, FlaskConical } from 'lucide-react';
 
 export default function TradePanel() {
-  const { selectedSymbol, watchlist, executeTrade, balance, loadUserWatchlist } = useTradingStore();
+  const { selectedSymbol, watchlist, executeTrade, balance, loadUserWatchlist, currentChartPrice } = useTradingStore();
   const [quantity, setQuantity] = useState('1');
   const [orderType, setOrderType] = useState<'market' | 'limit'>('market');
   const [addingToWatchlist, setAddingToWatchlist] = useState(false);
 
   const currentAsset = watchlist.find(w => w.symbol === selectedSymbol);
   const isInWatchlist = !!currentAsset;
-  const price = currentAsset?.price || 0;
+  const price = currentAsset?.price || currentChartPrice || 0;
   const total = price * Number(quantity);
   const canBuy = total <= balance && Number(quantity) > 0 && price > 0;
 
