@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Position {
   id: string;
@@ -51,40 +52,15 @@ interface TradingState {
   selectedTimeframe: string;
   watchlist: WatchlistItem[];
   aiSignals: AISignal[];
+  watchlistLoaded: boolean;
   setSelectedSymbol: (symbol: string) => void;
   setSelectedTimeframe: (tf: string) => void;
   executeTrade: (symbol: string, side: 'buy' | 'sell', price: number, quantity: number) => void;
   closePosition: (positionId: string) => void;
   updatePrice: (symbol: string, price: number, prevClose: number) => void;
+  loadWatchlistFromDB: () => Promise<void>;
+  loadFromDB: () => Promise<void>;
 }
-
-const w = (symbol: string, name: string, yahooSymbol?: string): WatchlistItem => ({
-  symbol, name, price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock' as const,
-  yahooSymbol: yahooSymbol || `${symbol}.NS`,
-});
-
-const initialWatchlist: WatchlistItem[] = [
-  w('RELIANCE', 'Reliance Industries'),
-  w('TCS', 'Tata Consultancy'),
-  w('INFY', 'Infosys Ltd.'),
-  w('HDFCBANK', 'HDFC Bank'),
-  w('ICICIBANK', 'ICICI Bank'),
-  w('SBIN', 'State Bank of India'),
-  w('LT', 'Larsen & Toubro'),
-  w('WIPRO', 'Wipro Ltd.'),
-  w('ITC', 'ITC Ltd.'),
-  w('BAJFINANCE', 'Bajaj Finance'),
-  w('ADANIENT', 'Adani Enterprises'),
-  w('MARUTI', 'Maruti Suzuki'),
-  w('SUNPHARMA', 'Sun Pharma'),
-  w('TATASTEEL', 'Tata Steel'),
-  w('AXISBANK', 'Axis Bank'),
-  w('KOTAKBANK', 'Kotak Mahindra Bank'),
-  w('BHARTIARTL', 'Bharti Airtel'),
-  w('HCLTECH', 'HCL Technologies'),
-  w('ASIANPAINT', 'Asian Paints'),
-  w('HINDUNILVR', 'Hindustan Unilever'),
-];
 
 const initialSignals: AISignal[] = [
   { id: '1', symbol: 'RELIANCE', signal: 'buy', confidence: 0.87, model: 'LSTM', reason: 'Bullish divergence on RSI with EMA crossover at ₹1,280 support', timestamp: Date.now() - 300000 },
@@ -101,11 +77,95 @@ export const useTradingStore = create<TradingState>((set, get) => ({
   trades: [],
   selectedSymbol: 'RELIANCE',
   selectedTimeframe: '1D',
-  watchlist: initialWatchlist,
+  watchlist: [],
   aiSignals: initialSignals,
+  watchlistLoaded: false,
 
   setSelectedSymbol: (symbol) => set({ selectedSymbol: symbol }),
   setSelectedTimeframe: (tf) => set({ selectedTimeframe: tf }),
+
+  loadWatchlistFromDB: async () => {
+    try {
+      const { data, error } = await supabase
+        .from('watchlist_stocks')
+        .select('*')
+        .eq('is_active', true)
+        .order('symbol');
+      if (error) throw error;
+      if (data) {
+        const watchlist: WatchlistItem[] = data.map((d: any) => ({
+          symbol: d.symbol,
+          name: d.name,
+          price: 0,
+          change: 0,
+          changePercent: 0,
+          volume: '—',
+          type: d.stock_type as 'stock' | 'crypto',
+          yahooSymbol: d.yahoo_symbol,
+        }));
+        set({ watchlist, watchlistLoaded: true });
+      }
+    } catch (e) {
+      console.error('Failed to load watchlist from DB:', e);
+    }
+  },
+
+  loadFromDB: async () => {
+    try {
+      // Load balance
+      const { data: balData } = await supabase
+        .from('portfolio_balance')
+        .select('*')
+        .eq('market', 'stock')
+        .single();
+      if (balData) {
+        set({ balance: Number(balData.balance), initialBalance: Number(balData.initial_balance) });
+      }
+
+      // Load positions
+      const { data: posData } = await supabase
+        .from('paper_positions')
+        .select('*')
+        .eq('market', 'stock');
+      if (posData) {
+        set({
+          positions: posData.map((p: any) => ({
+            id: p.id,
+            symbol: p.symbol,
+            side: p.side as 'long' | 'short',
+            entryPrice: Number(p.entry_price),
+            quantity: Number(p.quantity),
+            currentPrice: Number(p.current_price),
+            timestamp: new Date(p.created_at).getTime(),
+          })),
+        });
+      }
+
+      // Load recent trades
+      const { data: tradeData } = await supabase
+        .from('paper_trades')
+        .select('*')
+        .eq('market', 'stock')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (tradeData) {
+        set({
+          trades: tradeData.map((t: any) => ({
+            id: t.id,
+            symbol: t.symbol,
+            side: t.side as 'buy' | 'sell',
+            price: Number(t.price),
+            quantity: Number(t.quantity),
+            total: Number(t.total),
+            timestamp: new Date(t.created_at).getTime(),
+            pnl: t.pnl ? Number(t.pnl) : undefined,
+          })),
+        });
+      }
+    } catch (e) {
+      console.error('Failed to load from DB:', e);
+    }
+  },
 
   updatePrice: (symbol, price, prevClose) => {
     set((state) => ({
@@ -125,7 +185,7 @@ export const useTradingStore = create<TradingState>((set, get) => ({
     }));
   },
 
-  executeTrade: (symbol, side, price, quantity) => {
+  executeTrade: async (symbol, side, price, quantity) => {
     const total = price * quantity;
     const state = get();
 
@@ -133,62 +193,73 @@ export const useTradingStore = create<TradingState>((set, get) => ({
 
     const trade: Trade = {
       id: crypto.randomUUID(),
-      symbol,
-      side,
-      price,
-      quantity,
-      total,
+      symbol, side, price, quantity, total,
       timestamp: Date.now(),
     };
 
     if (side === 'buy') {
       const position: Position = {
         id: crypto.randomUUID(),
-        symbol,
-        side: 'long',
-        entryPrice: price,
-        quantity,
-        currentPrice: price,
+        symbol, side: 'long', entryPrice: price, quantity, currentPrice: price,
         timestamp: Date.now(),
       };
+      const newBalance = state.balance - total;
       set({
-        balance: state.balance - total,
+        balance: newBalance,
         positions: [...state.positions, position],
         trades: [trade, ...state.trades],
       });
+
+      // Persist to Supabase
+      await Promise.all([
+        supabase.from('paper_trades').insert({ id: trade.id, symbol, side, price, quantity, total, market: 'stock', currency: 'INR' }),
+        supabase.from('paper_positions').insert({ id: position.id, symbol, side: 'long', entry_price: price, quantity, current_price: price, market: 'stock', currency: 'INR' }),
+        supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'stock'),
+      ]);
     } else {
       const pos = state.positions.find(p => p.symbol === symbol);
       if (pos) {
         const pnl = (price - pos.entryPrice) * pos.quantity;
         trade.pnl = pnl;
+        const newBalance = state.balance + total;
         set({
-          balance: state.balance + total,
+          balance: newBalance,
           positions: state.positions.filter(p => p.id !== pos.id),
           trades: [trade, ...state.trades],
         });
+
+        await Promise.all([
+          supabase.from('paper_trades').insert({ id: trade.id, symbol, side, price, quantity, total, pnl, market: 'stock', currency: 'INR' }),
+          supabase.from('paper_positions').delete().eq('id', pos.id),
+          supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'stock'),
+        ]);
       }
     }
   },
 
-  closePosition: (positionId) => {
+  closePosition: async (positionId) => {
     const state = get();
     const pos = state.positions.find(p => p.id === positionId);
     if (!pos) return;
     const pnl = (pos.currentPrice - pos.entryPrice) * pos.quantity;
     const trade: Trade = {
       id: crypto.randomUUID(),
-      symbol: pos.symbol,
-      side: 'sell',
-      price: pos.currentPrice,
-      quantity: pos.quantity,
+      symbol: pos.symbol, side: 'sell',
+      price: pos.currentPrice, quantity: pos.quantity,
       total: pos.currentPrice * pos.quantity,
-      timestamp: Date.now(),
-      pnl,
+      timestamp: Date.now(), pnl,
     };
+    const newBalance = state.balance + trade.total;
     set({
-      balance: state.balance + trade.total,
+      balance: newBalance,
       positions: state.positions.filter(p => p.id !== positionId),
       trades: [trade, ...state.trades],
     });
+
+    await Promise.all([
+      supabase.from('paper_trades').insert({ id: trade.id, symbol: pos.symbol, side: 'sell', price: pos.currentPrice, quantity: pos.quantity, total: trade.total, pnl, market: 'stock', currency: 'INR' }),
+      supabase.from('paper_positions').delete().eq('id', positionId),
+      supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'stock'),
+    ]);
   },
 }));

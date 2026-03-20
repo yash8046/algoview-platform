@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { supabase } from '@/integrations/supabase/client';
+import { getUsdToInrRate } from '@/lib/exchangeRate';
 
 export interface CryptoPosition {
   id: string;
@@ -46,68 +48,149 @@ interface CryptoState {
   selectedInterval: string;
   positions: CryptoPosition[];
   trades: CryptoTrade[];
+  usdToInr: number;
   setSelectedPair: (pair: string) => void;
   setSelectedInterval: (interval: string) => void;
   executeTrade: (pair: string, side: 'buy' | 'sell', price: number, quantity: number) => void;
   closePosition: (id: string) => void;
   updatePositionPrice: (pair: string, price: number) => void;
+  loadExchangeRate: () => Promise<void>;
+  loadFromDB: () => Promise<void>;
 }
 
 export const useCryptoStore = create<CryptoState>((set, get) => ({
-  balance: 10000,
-  initialBalance: 10000,
+  balance: 1000000,
+  initialBalance: 1000000,
   selectedPair: 'BTCUSDT',
   selectedInterval: '1m',
   positions: [],
   trades: [],
+  usdToInr: 84.5,
 
   setSelectedPair: (pair) => set({ selectedPair: pair }),
   setSelectedInterval: (interval) => set({ selectedInterval: interval }),
 
-  updatePositionPrice: (pair, price) =>
+  loadExchangeRate: async () => {
+    const rate = await getUsdToInrRate();
+    set({ usdToInr: rate });
+  },
+
+  loadFromDB: async () => {
+    try {
+      const { data: balData } = await supabase
+        .from('portfolio_balance')
+        .select('*')
+        .eq('market', 'crypto')
+        .single();
+      if (balData) {
+        set({ balance: Number(balData.balance), initialBalance: Number(balData.initial_balance) });
+      }
+
+      const { data: posData } = await supabase
+        .from('paper_positions')
+        .select('*')
+        .eq('market', 'crypto');
+      if (posData) {
+        set({
+          positions: posData.map((p: any) => ({
+            id: p.id,
+            pair: p.symbol,
+            side: p.side as 'long' | 'short',
+            entryPrice: Number(p.entry_price),
+            quantity: Number(p.quantity),
+            currentPrice: Number(p.current_price),
+            timestamp: new Date(p.created_at).getTime(),
+          })),
+        });
+      }
+
+      const { data: tradeData } = await supabase
+        .from('paper_trades')
+        .select('*')
+        .eq('market', 'crypto')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (tradeData) {
+        set({
+          trades: tradeData.map((t: any) => ({
+            id: t.id,
+            pair: t.symbol,
+            side: t.side as 'buy' | 'sell',
+            price: Number(t.price),
+            quantity: Number(t.quantity),
+            total: Number(t.total),
+            timestamp: new Date(t.created_at).getTime(),
+            pnl: t.pnl ? Number(t.pnl) : undefined,
+          })),
+        });
+      }
+    } catch (e) {
+      console.error('Failed to load crypto data from DB:', e);
+    }
+  },
+
+  updatePositionPrice: (pair, price) => {
+    const { usdToInr } = get();
+    const inrPrice = price * usdToInr;
     set((s) => ({
       positions: s.positions.map((p) =>
-        p.pair === pair ? { ...p, currentPrice: price } : p
+        p.pair === pair ? { ...p, currentPrice: inrPrice } : p
       ),
-    })),
+    }));
+  },
 
-  executeTrade: (pair, side, price, quantity) => {
-    const total = price * quantity;
+  executeTrade: async (pair, side, price, quantity) => {
     const state = get();
+    const inrPrice = price * state.usdToInr;
+    const total = inrPrice * quantity;
     if (side === 'buy' && total > state.balance) return;
 
     const trade: CryptoTrade = {
       id: crypto.randomUUID(),
-      pair, side, price, quantity, total,
+      pair, side, price: inrPrice, quantity, total,
       timestamp: Date.now(),
     };
 
     if (side === 'buy') {
       const pos: CryptoPosition = {
         id: crypto.randomUUID(),
-        pair, side: 'long', entryPrice: price, quantity, currentPrice: price,
+        pair, side: 'long', entryPrice: inrPrice, quantity, currentPrice: inrPrice,
         timestamp: Date.now(),
       };
+      const newBalance = state.balance - total;
       set({
-        balance: state.balance - total,
+        balance: newBalance,
         positions: [...state.positions, pos],
         trades: [trade, ...state.trades],
       });
+
+      await Promise.all([
+        supabase.from('paper_trades').insert({ id: trade.id, symbol: pair, side, price: inrPrice, quantity, total, market: 'crypto', currency: 'INR' }),
+        supabase.from('paper_positions').insert({ id: pos.id, symbol: pair, side: 'long', entry_price: inrPrice, quantity, current_price: inrPrice, market: 'crypto', currency: 'INR' }),
+        supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'crypto'),
+      ]);
     } else {
       const pos = state.positions.find((p) => p.pair === pair);
       if (pos) {
-        const pnl = (price - pos.entryPrice) * pos.quantity;
+        const pnl = (inrPrice - pos.entryPrice) * pos.quantity;
         trade.pnl = pnl;
+        const newBalance = state.balance + total;
         set({
-          balance: state.balance + total,
+          balance: newBalance,
           positions: state.positions.filter((p) => p.id !== pos.id),
           trades: [trade, ...state.trades],
         });
+
+        await Promise.all([
+          supabase.from('paper_trades').insert({ id: trade.id, symbol: pair, side, price: inrPrice, quantity, total, pnl, market: 'crypto', currency: 'INR' }),
+          supabase.from('paper_positions').delete().eq('id', pos.id),
+          supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'crypto'),
+        ]);
       }
     }
   },
 
-  closePosition: (id) => {
+  closePosition: async (id) => {
     const state = get();
     const pos = state.positions.find((p) => p.id === id);
     if (!pos) return;
@@ -119,10 +202,17 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
       total: pos.currentPrice * pos.quantity,
       timestamp: Date.now(), pnl,
     };
+    const newBalance = state.balance + trade.total;
     set({
-      balance: state.balance + trade.total,
+      balance: newBalance,
       positions: state.positions.filter((p) => p.id !== id),
       trades: [trade, ...state.trades],
     });
+
+    await Promise.all([
+      supabase.from('paper_trades').insert({ id: trade.id, symbol: pos.pair, side: 'sell', price: pos.currentPrice, quantity: pos.quantity, total: trade.total, pnl, market: 'crypto', currency: 'INR' }),
+      supabase.from('paper_positions').delete().eq('id', id),
+      supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'crypto'),
+    ]);
   },
 }));
