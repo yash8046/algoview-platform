@@ -34,8 +34,14 @@ serve(async (req) => {
     if (!response.ok) {
       const text = await response.text();
       console.error("Yahoo Finance error:", response.status, text);
-      return new Response(JSON.stringify({ error: `Yahoo Finance API error: ${response.status}` }), {
-        status: 502,
+      // Try parsing the error for more context
+      let errorMsg = `Symbol ${yahooSymbol} not found or unavailable`;
+      try {
+        const errData = JSON.parse(text);
+        errorMsg = errData?.chart?.error?.description || errorMsg;
+      } catch {}
+      return new Response(JSON.stringify({ error: errorMsg }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
