@@ -47,7 +47,11 @@ function SentimentScore({ score, label }: { score: number | undefined | null; la
   );
 }
 
-function SentimentPanel({ sentiment }: { sentiment: SentimentData }) {
+function SentimentPanel({ sentiment }: { sentiment: Partial<SentimentData> }) {
+  const news = sentiment?.news || { score: 0, label: 'Neutral', topHeadlines: [] };
+  const social = sentiment?.social || { score: 0, label: 'Neutral', buzz: 'low' };
+  const technical = sentiment?.technical || { score: 0, label: 'Neutral' };
+  const finalScore = typeof sentiment?.finalScore === 'number' ? sentiment.finalScore : 0;
   return (
     <div className="p-2.5 rounded-md bg-secondary/30 border border-border space-y-2">
       <div className="flex items-center gap-1.5 mb-1">
