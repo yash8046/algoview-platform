@@ -41,14 +41,42 @@ const fallbackSentiment: SentimentData = {
   manipulation_warning: null,
 };
 
-export function useStockAIAnalysis(symbol: string, timeframe: string, autoRefreshMs = 30000) {
+// Cache: reuse results within 5 minutes for same symbol+timeframe
+const cache = new Map<string, { result: StockAIResult; expiry: number }>();
+const CACHE_TTL = 5 * 60 * 1000;
+
+export function useStockAIAnalysis(symbol: string, timeframe: string) {
   const [result, setResult] = useState<StockAIResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const lastSymbol = useRef('');
+
+  // Clear result when symbol changes
+  const lastSymbol = useRef(symbol);
+  useEffect(() => {
+    if (symbol !== lastSymbol.current) {
+      lastSymbol.current = symbol;
+      // Check cache for new symbol
+      const cacheKey = `${symbol}-${timeframe}`;
+      const cached = cache.get(cacheKey);
+      if (cached && cached.expiry > Date.now()) {
+        setResult(cached.result);
+        setError(null);
+      } else {
+        setResult(null);
+        setError(null);
+      }
+    }
+  }, [symbol, timeframe]);
 
   const analyze = useCallback(async () => {
+    // Check cache first
+    const cacheKey = `${symbol}-${timeframe}`;
+    const cached = cache.get(cacheKey);
+    if (cached && cached.expiry > Date.now()) {
+      setResult(cached.result);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -85,7 +113,7 @@ export function useStockAIAnalysis(symbol: string, timeframe: string, autoRefres
       const ensemble = aiData.ensembleSignal;
       const ai = aiData.aiSignal;
 
-      setResult({
+      const newResult: StockAIResult = {
         signal: ensemble.signal as 'buy' | 'sell' | 'hold',
         detailedSignal: ensemble.detailedSignal || ensemble.signal,
         confidence: ensemble.confidence,
@@ -103,7 +131,10 @@ export function useStockAIAnalysis(symbol: string, timeframe: string, autoRefres
         positiveFactors: aiData.positiveFactors || [],
         negativeFactors: aiData.negativeFactors || [],
         timestamp: Date.now(),
-      });
+      };
+
+      cache.set(cacheKey, { result: newResult, expiry: Date.now() + CACHE_TTL });
+      setResult(newResult);
     } catch (e: any) {
       console.error(`Stock AI analysis error (${symbol}):`, e);
       try {
@@ -114,7 +145,7 @@ export function useStockAIAnalysis(symbol: string, timeframe: string, autoRefres
         const ruleSignal = generateRuleBasedSignal(candles);
         const prediction = predictNextPrice(candles);
 
-        setResult({
+        const fallbackResult: StockAIResult = {
           signal: ruleSignal.signal,
           detailedSignal: ruleSignal.signal,
           confidence: ruleSignal.confidence,
@@ -132,7 +163,10 @@ export function useStockAIAnalysis(symbol: string, timeframe: string, autoRefres
           positiveFactors: [],
           negativeFactors: [],
           timestamp: Date.now(),
-        });
+        };
+
+        cache.set(cacheKey, { result: fallbackResult, expiry: Date.now() + CACHE_TTL });
+        setResult(fallbackResult);
         setError('AI unavailable, using technical analysis');
       } catch {
         setError('Failed to analyze stock data');
@@ -141,19 +175,6 @@ export function useStockAIAnalysis(symbol: string, timeframe: string, autoRefres
       setLoading(false);
     }
   }, [symbol, timeframe]);
-
-  useEffect(() => {
-    if (symbol !== lastSymbol.current) {
-      lastSymbol.current = symbol;
-      analyze();
-    }
-  }, [symbol, timeframe, analyze]);
-
-  useEffect(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(analyze, autoRefreshMs);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [analyze, autoRefreshMs]);
 
   return { result, loading, error, refresh: analyze };
 }
