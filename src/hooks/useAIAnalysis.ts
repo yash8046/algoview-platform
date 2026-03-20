@@ -10,6 +10,20 @@ export interface SentimentData {
   manipulation_warning: string | null;
 }
 
+export interface PriceRange {
+  low: number;
+  high: number;
+  lowPct: number;
+  highPct: number;
+}
+
+export interface TimeHorizon {
+  minDays: number;
+  maxDays: number;
+  label: string;
+  catalyst: string | null;
+}
+
 export interface AIAnalysisResult {
   ruleBasedSignal: TradeSignal;
   aiSignal: {
@@ -38,6 +52,9 @@ export interface AIAnalysisResult {
     direction: 'up' | 'down' | 'neutral';
     strength: number;
   };
+  priceRange: PriceRange | null;
+  timeHorizon: TimeHorizon | null;
+  volatilityCategory: 'low' | 'medium' | 'high' | null;
   timestamp: number;
 }
 
