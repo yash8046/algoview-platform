@@ -7,6 +7,7 @@ import CryptoAISignals from '@/components/CryptoAISignals';
 import { useCryptoStore } from '@/stores/cryptoStore';
 import { formatINR } from '@/lib/exchangeRate';
 import { DollarSign, TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 function CryptoSummary() {
   const { balance, initialBalance, positions, trades } = useCryptoStore();
@@ -27,15 +28,15 @@ function CryptoSummary() {
   ];
 
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
       {stats.map((s) => (
-        <div key={s.label} className="bg-card rounded-lg border border-border p-3 flex items-center gap-3">
-          <div className={`p-2 rounded-md ${s.positive ? 'bg-gain/10' : 'bg-loss/10'}`}>
-            <s.icon className={`w-4 h-4 ${s.positive ? 'text-gain' : 'text-loss'}`} />
+        <div key={s.label} className="bg-card rounded-lg border border-border p-2 sm:p-3 flex items-center gap-2 sm:gap-3">
+          <div className={`p-1.5 sm:p-2 rounded-md ${s.positive ? 'bg-gain/10' : 'bg-loss/10'}`}>
+            <s.icon className={`w-3.5 sm:w-4 h-3.5 sm:h-4 ${s.positive ? 'text-gain' : 'text-loss'}`} />
           </div>
-          <div>
-            <div className="text-[11px] text-muted-foreground">{s.label}</div>
-            <div className={`font-mono text-sm font-semibold ${s.positive ? 'text-gain' : 'text-loss'}`}>{s.value}</div>
+          <div className="min-w-0">
+            <div className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{s.label}</div>
+            <div className={`font-mono text-xs sm:text-sm font-semibold truncate ${s.positive ? 'text-gain' : 'text-loss'}`}>{s.value}</div>
           </div>
         </div>
       ))}
@@ -45,11 +46,33 @@ function CryptoSummary() {
 
 export default function CryptoPage() {
   const { loadExchangeRate, loadFromDB } = useCryptoStore();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     loadExchangeRate();
     loadFromDB();
   }, []);
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col h-screen overflow-hidden">
+        <TopBar />
+        <div className="flex-1 overflow-y-auto scrollbar-thin">
+          <div className="p-2 space-y-2">
+            <CryptoSummary />
+            <div className="h-64">
+              <CryptoChart />
+            </div>
+            <CryptoTradePanel />
+            <CryptoAISignals />
+            <div className="h-48">
+              <CryptoPositions />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
@@ -65,9 +88,11 @@ export default function CryptoPage() {
               <CryptoPositions />
             </div>
           </div>
-          <div className="w-72 flex-shrink-0 flex flex-col gap-2">
-            <CryptoTradePanel />
-            <div className="flex-1 min-h-0">
+          <div className="w-72 flex-shrink-0 flex flex-col gap-2 min-h-0 overflow-y-auto scrollbar-thin">
+            <div className="flex-shrink-0">
+              <CryptoTradePanel />
+            </div>
+            <div className="flex-shrink-0">
               <CryptoAISignals />
             </div>
           </div>
