@@ -22,7 +22,13 @@ serve(async (req) => {
     }
 
     // Yahoo Finance v8 chart API
-    const yahooSymbol = symbol.includes(".") ? symbol : `${symbol}.NS`;
+    // Map special index symbols
+    const INDEX_MAP: Record<string, string> = {
+      'NIFTY 50': '^NSEI',
+      'SENSEX': '^BSESN',
+      'BANKNIFTY': '^NSEBANK',
+    };
+    const yahooSymbol = INDEX_MAP[symbol] || (symbol.includes(".") || symbol.startsWith("^") ? symbol : `${symbol}.NS`);
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=${interval || "1d"}&range=${range || "6mo"}&includePrePost=false`;
 
     const response = await fetch(url, {

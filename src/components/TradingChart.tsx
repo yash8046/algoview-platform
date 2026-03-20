@@ -148,7 +148,9 @@ export default function TradingChart() {
     <div className="flex flex-col h-full bg-card rounded-lg border border-border overflow-hidden">
       <div className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2 bg-panel-header border-b border-border gap-2">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <h2 className="font-mono text-xs sm:text-sm font-semibold text-foreground truncate">{selectedSymbol}.NS</h2>
+          <h2 className="font-mono text-xs sm:text-sm font-semibold text-foreground truncate">
+            {selectedSymbol === 'NIFTY 50' ? 'NIFTY 50' : `${selectedSymbol}.NS`}
+          </h2>
           <span className="text-[10px] text-muted-foreground hidden sm:inline">NSE</span>
           {loading && <span className="text-[10px] text-primary animate-pulse">Loading...</span>}
           {error && <span className="text-[10px] text-loss truncate max-w-[100px]">Error</span>}
