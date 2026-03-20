@@ -28,11 +28,23 @@ const INTERVAL_MAP: Record<string, { interval: string; range: string }> = {
   '1W': { interval: '1wk', range: '2y' },
 };
 
+const BACKTEST_INTERVAL_MAP: Record<string, { interval: string; range: string }> = {
+  '1m': { interval: '1m', range: '7d' },
+  '5m': { interval: '5m', range: '60d' },
+  '15m': { interval: '15m', range: '60d' },
+  '1H': { interval: '1h', range: '2y' },
+  '4H': { interval: '1h', range: '2y' },
+  '1D': { interval: '1d', range: '5y' },
+  '1W': { interval: '1wk', range: '10y' },
+};
+
 export async function fetchYahooFinanceData(
   symbol: string,
-  timeframe: string = '1D'
+  timeframe: string = '1D',
+  backtest: boolean = false
 ): Promise<YahooResponse> {
-  const params = INTERVAL_MAP[timeframe] || INTERVAL_MAP['1D'];
+  const map = backtest ? BACKTEST_INTERVAL_MAP : INTERVAL_MAP;
+  const params = map[timeframe] || map['1D'];
 
   const { data, error } = await supabase.functions.invoke('yahoo-finance', {
     body: { symbol, interval: params.interval, range: params.range },

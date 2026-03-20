@@ -139,12 +139,12 @@ export default function BacktestPage() {
         candles = raw.map(c => ({ time: c.time, open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume }));
       } else {
         const tf = interval === '1h' ? '1H' : interval === '1d' ? '1D' : '1D';
-        const data = await fetchYahooFinanceData(symbol, tf);
+        const data = await fetchYahooFinanceData(symbol, tf, true);
         candles = data.candles.map(c => ({ time: c.time, open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume }));
       }
 
-      if (candles.length < 150) {
-        setError(`Only ${candles.length} candles available. Need at least 150 for meaningful backtest.`);
+      if (candles.length < 80) {
+        setError(`Only ${candles.length} candles available. Need at least 80 for backtest. Try a longer interval (1D).`);
         setRunning(false);
         return;
       }
