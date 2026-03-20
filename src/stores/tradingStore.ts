@@ -58,17 +58,32 @@ interface TradingState {
   updatePrice: (symbol: string, price: number, prevClose: number) => void;
 }
 
+const w = (symbol: string, name: string, yahooSymbol?: string): WatchlistItem => ({
+  symbol, name, price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock' as const,
+  yahooSymbol: yahooSymbol || `${symbol}.NS`,
+});
+
 const initialWatchlist: WatchlistItem[] = [
-  { symbol: 'RELIANCE', name: 'Reliance Industries', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'RELIANCE.NS' },
-  { symbol: 'TCS', name: 'Tata Consultancy', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'TCS.NS' },
-  { symbol: 'INFY', name: 'Infosys Ltd.', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'INFY.NS' },
-  { symbol: 'HDFCBANK', name: 'HDFC Bank', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'HDFCBANK.NS' },
-  { symbol: 'ICICIBANK', name: 'ICICI Bank', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'ICICIBANK.NS' },
-  { symbol: 'SBIN', name: 'State Bank of India', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'SBIN.NS' },
-  { symbol: 'LT', name: 'Larsen & Toubro', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'LT.NS' },
-  { symbol: 'WIPRO', name: 'Wipro Ltd.', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'WIPRO.NS' },
-  { symbol: 'ITC', name: 'ITC Ltd.', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'ITC.NS' },
-  { symbol: 'BAJFINANCE', name: 'Bajaj Finance', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'BAJFINANCE.NS' },
+  w('RELIANCE', 'Reliance Industries'),
+  w('TCS', 'Tata Consultancy'),
+  w('INFY', 'Infosys Ltd.'),
+  w('HDFCBANK', 'HDFC Bank'),
+  w('ICICIBANK', 'ICICI Bank'),
+  w('SBIN', 'State Bank of India'),
+  w('LT', 'Larsen & Toubro'),
+  w('WIPRO', 'Wipro Ltd.'),
+  w('ITC', 'ITC Ltd.'),
+  w('BAJFINANCE', 'Bajaj Finance'),
+  w('ADANIENT', 'Adani Enterprises'),
+  w('MARUTI', 'Maruti Suzuki'),
+  w('SUNPHARMA', 'Sun Pharma'),
+  w('TATASTEEL', 'Tata Steel'),
+  w('AXISBANK', 'Axis Bank'),
+  w('KOTAKBANK', 'Kotak Mahindra Bank'),
+  w('BHARTIARTL', 'Bharti Airtel'),
+  w('HCLTECH', 'HCL Technologies'),
+  w('ASIANPAINT', 'Asian Paints'),
+  w('HINDUNILVR', 'Hindustan Unilever'),
 ];
 
 const initialSignals: AISignal[] = [
