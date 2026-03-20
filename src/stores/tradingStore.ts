@@ -66,7 +66,7 @@ export const useTradingStore = create<TradingState>((set, get) => ({
   initialBalance: 1000000,
   positions: [],
   trades: [],
-  selectedSymbol: 'RELIANCE',
+  selectedSymbol: 'NIFTY 50',
   selectedTimeframe: '1D',
   watchlist: [],
   watchlistLoaded: false,
