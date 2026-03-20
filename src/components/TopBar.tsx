@@ -1,4 +1,4 @@
-import { Activity, Zap, BarChart3, Bitcoin, LogOut } from 'lucide-react';
+import { Activity, Zap, BarChart3, Bitcoin, LogOut, FlaskConical } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -35,6 +35,13 @@ export default function TopBar() {
           >
             <BarChart3 className="w-3 h-3" />
             Portfolio
+          </Link>
+          <Link
+            to="/backtest"
+            className={`text-xs px-3 py-1.5 rounded-md transition-colors flex items-center gap-1 ${location.pathname === '/backtest' ? 'bg-primary/15 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}
+          >
+            <FlaskConical className="w-3 h-3" />
+            Backtest
           </Link>
         </nav>
         <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium border border-primary/20">

@@ -16,7 +16,14 @@ export interface StockAIResult {
   indicators: {
     rsi: number; macd: number; sma20: number; sma50: number;
     ema12: number; ema26: number; bbUpper: number; bbLower: number;
-    atr: number; price: number;
+    atr: number; price: number; adx: number; vwap: number;
+  };
+  regime: { regime: string; adx: number; trendStrength: number; volatilityLevel: string };
+  riskMetrics: {
+    suggestedStopLoss: number;
+    suggestedTakeProfit: number;
+    positionSizePct: number;
+    riskRewardRatio: number;
   };
   timestamp: number;
 }
@@ -78,6 +85,8 @@ export function useStockAIAnalysis(symbol: string, timeframe: string, autoRefres
         stopLoss: ai.stopLoss,
         prediction,
         indicators: ruleSignal.indicators,
+        regime: ruleSignal.regime,
+        riskMetrics: ruleSignal.riskMetrics,
         timestamp: Date.now(),
       });
     } catch (e: any) {
@@ -103,6 +112,8 @@ export function useStockAIAnalysis(symbol: string, timeframe: string, autoRefres
           stopLoss: null,
           prediction,
           indicators: ruleSignal.indicators,
+          regime: ruleSignal.regime,
+          riskMetrics: ruleSignal.riskMetrics,
           timestamp: Date.now(),
         });
         setError('AI unavailable, using technical analysis');
