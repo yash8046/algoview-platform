@@ -2,7 +2,7 @@ import { Brain, TrendingUp, TrendingDown, Minus, RefreshCw, Shield, Target, Aler
 import { useAIAnalysis, type AIAnalysisResult, type SentimentData } from '@/hooks/useAIAnalysis';
 import { useCryptoData } from '@/hooks/useCryptoData';
 import { useCryptoStore } from '@/stores/cryptoStore';
-import { useEffect, useRef } from 'react';
+import { useState } from 'react';
 
 const signalConfig = {
   strong_buy: { icon: TrendingUp, color: 'text-gain', bg: 'bg-gain/15', border: 'border-gain/30', label: 'STRONG BUY' },
@@ -34,15 +34,16 @@ function ConfidenceBar({ value, label }: { value: number; label: string }) {
   );
 }
 
-function SentimentScore({ score, label }: { score: number; label: string }) {
-  const color = score > 0.1 ? 'text-gain' : score < -0.1 ? 'text-loss' : 'text-warning';
-  const bg = score > 0.1 ? 'bg-gain' : score < -0.1 ? 'bg-loss' : 'bg-warning';
-  const pct = Math.round(((score + 1) / 2) * 100);
+function SentimentScore({ score, label }: { score: number | undefined | null; label: string }) {
+  const s = typeof score === 'number' ? score : 0;
+  const color = s > 0.1 ? 'text-gain' : s < -0.1 ? 'text-loss' : 'text-warning';
+  const bg = s > 0.1 ? 'bg-gain' : s < -0.1 ? 'bg-loss' : 'bg-warning';
+  const pct = Math.round(((s + 1) / 2) * 100);
   return (
     <div className="flex-1 space-y-0.5">
       <div className="flex justify-between text-[10px]">
         <span className="text-muted-foreground">{label}</span>
-        <span className={`font-mono font-semibold ${color}`}>{score > 0 ? '+' : ''}{score.toFixed(2)}</span>
+        <span className={`font-mono font-semibold ${color}`}>{s > 0 ? '+' : ''}{s.toFixed(2)}</span>
       </div>
       <div className="h-1 bg-secondary rounded-full overflow-hidden">
         <div className={`h-full ${bg} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
@@ -51,7 +52,11 @@ function SentimentScore({ score, label }: { score: number; label: string }) {
   );
 }
 
-function SentimentPanel({ sentiment }: { sentiment: SentimentData }) {
+function SentimentPanel({ sentiment }: { sentiment: Partial<SentimentData> }) {
+  const news = sentiment?.news || { score: 0, label: 'Neutral', topHeadlines: [] };
+  const social = sentiment?.social || { score: 0, label: 'Neutral', buzz: 'low' };
+  const technical = sentiment?.technical || { score: 0, label: 'Neutral' };
+  const finalScore = typeof sentiment?.finalScore === 'number' ? sentiment.finalScore : 0;
   return (
     <div className="p-2.5 rounded-md bg-secondary/30 border border-border space-y-2">
       <div className="flex items-center gap-1.5 mb-1">
@@ -61,35 +66,35 @@ function SentimentPanel({ sentiment }: { sentiment: SentimentData }) {
       <div className="space-y-1.5">
         <div className="flex items-center gap-1.5">
           <Newspaper className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-          <SentimentScore score={sentiment.news.score} label={`News — ${sentiment.news.label}`} />
+          <SentimentScore score={news.score} label={`News — ${news.label}`} />
         </div>
         <div className="flex items-center gap-1.5">
           <Users className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-          <SentimentScore score={sentiment.social.score} label={`Social — ${sentiment.social.label} (${sentiment.social.buzz} buzz)`} />
+          <SentimentScore score={social.score} label={`Social — ${social.label} (${social.buzz} buzz)`} />
         </div>
         <div className="flex items-center gap-1.5">
           <BarChart3 className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-          <SentimentScore score={sentiment.technical.score} label={`Technical — ${sentiment.technical.label}`} />
+          <SentimentScore score={technical.score} label={`Technical — ${technical.label}`} />
         </div>
       </div>
       <div className="pt-1.5 border-t border-border/50">
         <div className="flex justify-between text-[10px]">
           <span className="text-muted-foreground font-medium">Weighted Final Score</span>
-          <span className={`font-mono font-bold ${sentiment.finalScore > 0.1 ? 'text-gain' : sentiment.finalScore < -0.1 ? 'text-loss' : 'text-warning'}`}>
-            {sentiment.finalScore > 0 ? '+' : ''}{sentiment.finalScore.toFixed(3)}
+          <span className={`font-mono font-bold ${finalScore > 0.1 ? 'text-gain' : finalScore < -0.1 ? 'text-loss' : 'text-warning'}`}>
+            {finalScore > 0 ? '+' : ''}{finalScore.toFixed(3)}
           </span>
         </div>
       </div>
-      {sentiment.manipulation_warning && (
+      {sentiment?.manipulation_warning && (
         <div className="flex items-start gap-1.5 p-1.5 rounded bg-loss/10 border border-loss/20">
           <AlertOctagon className="w-3 h-3 text-loss flex-shrink-0 mt-0.5" />
           <span className="text-[9px] text-loss">{sentiment.manipulation_warning}</span>
         </div>
       )}
-      {sentiment.news.topHeadlines?.length > 0 && (
+      {news.topHeadlines?.length > 0 && (
         <div className="space-y-0.5">
           <span className="text-[9px] text-muted-foreground">Headlines</span>
-          {sentiment.news.topHeadlines.slice(0, 3).map((h, i) => (
+          {news.topHeadlines.slice(0, 3).map((h, i) => (
             <div key={i} className="text-[9px] text-foreground/70 pl-2 border-l border-border">{h}</div>
           ))}
         </div>
@@ -111,7 +116,6 @@ function SignalCard({ result }: { result: AIAnalysisResult }) {
 
   return (
     <div className="space-y-3">
-      {/* Main ensemble signal */}
       <div className={`p-3 rounded-lg border ${cfg.border} ${cfg.bg}`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
@@ -120,9 +124,7 @@ function SignalCard({ result }: { result: AIAnalysisResult }) {
           </div>
           <div className="flex items-center gap-2">
             <span className={`text-[10px] ${risk.color} font-medium`}>{risk.label}</span>
-            <span className={`text-xs font-mono font-bold ${cfg.color}`}>
-              {Math.round(ensemble.confidence * 100)}%
-            </span>
+            <span className={`text-xs font-mono font-bold ${cfg.color}`}>{Math.round(ensemble.confidence * 100)}%</span>
           </div>
         </div>
         <p className="text-[11px] text-muted-foreground leading-relaxed">{ensemble.reasoning}</p>
@@ -132,10 +134,8 @@ function SignalCard({ result }: { result: AIAnalysisResult }) {
         </div>
       </div>
 
-      {/* Sentiment */}
       {result.sentiment && <SentimentPanel sentiment={result.sentiment} />}
 
-      {/* Positive/Negative factors */}
       {(result.positiveFactors?.length > 0 || result.negativeFactors?.length > 0) && (
         <div className="space-y-1.5">
           {result.positiveFactors?.length > 0 && (
@@ -161,7 +161,6 @@ function SignalCard({ result }: { result: AIAnalysisResult }) {
         </div>
       )}
 
-      {/* Prediction */}
       <div className="p-2.5 rounded-md bg-secondary/50 border border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
@@ -188,14 +187,12 @@ function SignalCard({ result }: { result: AIAnalysisResult }) {
         )}
       </div>
 
-      {/* Confidence breakdown */}
       <div className="space-y-2">
         <ConfidenceBar value={rule.confidence} label="Technical Analysis" />
         <ConfidenceBar value={ai.confidence} label="AI + Sentiment" />
         <ConfidenceBar value={ensemble.confidence} label="Ensemble" />
       </div>
 
-      {/* Key indicators */}
       <div className="grid grid-cols-2 gap-1.5">
         {[
           { label: 'RSI', value: rule.indicators.rsi?.toFixed(1), warn: rule.indicators.rsi > 70 || rule.indicators.rsi < 30 },
@@ -210,18 +207,19 @@ function SignalCard({ result }: { result: AIAnalysisResult }) {
         ))}
       </div>
 
-      {/* Key factors */}
-      <div>
-        <span className="text-[10px] text-muted-foreground block mb-1">Key Factors</span>
-        <div className="space-y-0.5">
-          {(ensemble.factors || []).slice(0, 4).map((f, i) => (
-            <div key={i} className="flex items-start gap-1.5 text-[10px] text-foreground/80">
-              <span className="text-muted-foreground/60 mt-0.5">•</span>
-              <span>{f}</span>
-            </div>
-          ))}
+      {(ensemble.factors || []).length > 0 && (
+        <div>
+          <span className="text-[10px] text-muted-foreground block mb-1">Key Factors</span>
+          <div className="space-y-0.5">
+            {ensemble.factors.slice(0, 4).map((f, i) => (
+              <div key={i} className="flex items-start gap-1.5 text-[10px] text-foreground/80">
+                <span className="text-muted-foreground/60 mt-0.5">•</span>
+                <span>{f}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -230,28 +228,9 @@ export default function CryptoAISignals() {
   const { selectedPair, selectedInterval } = useCryptoStore();
   const { candles } = useCryptoData(selectedPair, selectedInterval);
   const { analysis, loading, error, analyze } = useAIAnalysis();
-  const lastAnalyzed = useRef<string>('');
 
-  useEffect(() => {
-    const key = `${selectedPair}-${selectedInterval}`;
-    if (candles.length >= 50 && key !== lastAnalyzed.current) {
-      lastAnalyzed.current = key;
-      analyze(candles, selectedPair, selectedInterval);
-    }
-  }, [candles.length, selectedPair, selectedInterval]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (candles.length >= 50) {
-        analyze(candles, selectedPair, selectedInterval);
-      }
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [candles, selectedPair, selectedInterval, analyze]);
-
-  const handleRefresh = () => {
+  const handlePredict = () => {
     if (candles.length >= 50) {
-      lastAnalyzed.current = '';
       analyze(candles, selectedPair, selectedInterval);
     }
   };
@@ -262,12 +241,14 @@ export default function CryptoAISignals() {
         <div className="flex items-center gap-2">
           <Brain className="w-3.5 h-3.5 text-primary" />
           <h2 className="text-sm font-semibold text-foreground">AI Analysis</h2>
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-mono">LIVE</span>
+          {analysis && <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-mono">READY</span>}
         </div>
-        <button onClick={handleRefresh} disabled={loading}
-          className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40">
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-        </button>
+        {analysis && (
+          <button onClick={handlePredict} disabled={loading}
+            className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40">
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        )}
       </div>
       <div className="flex-1 overflow-y-auto scrollbar-thin p-3">
         {loading && !analysis && (
@@ -285,15 +266,26 @@ export default function CryptoAISignals() {
         )}
         {analysis && <SignalCard result={analysis} />}
         {!analysis && !loading && (
-          <div className="flex flex-col items-center justify-center py-8 gap-2">
-            <Shield className="w-8 h-8 text-muted-foreground/30" />
-            <span className="text-xs text-muted-foreground">Waiting for market data...</span>
+          <div className="flex flex-col items-center justify-center py-8 gap-3">
+            <Shield className="w-10 h-10 text-muted-foreground/20" />
+            <span className="text-xs text-muted-foreground">{selectedPair} ready for analysis</span>
+            <button
+              onClick={handlePredict}
+              disabled={loading || candles.length < 50}
+              className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition-all disabled:opacity-50"
+            >
+              <Brain className="w-4 h-4" />
+              Start Prediction
+            </button>
+            <span className="text-[9px] text-muted-foreground/40">
+              {candles.length < 50 ? `Loading data... (${candles.length}/50 candles)` : 'Uses AI + technical indicators + sentiment analysis'}
+            </span>
           </div>
         )}
         {analysis && (
           <div className="mt-3 pt-2 border-t border-border">
             <span className="text-[9px] text-muted-foreground/50 font-mono">
-              Updated: {new Date(analysis.timestamp).toLocaleTimeString()} • Auto-refresh 5s • Not financial advice
+              Updated: {new Date(analysis.timestamp).toLocaleTimeString()} • Cached 5min • Not financial advice
             </span>
           </div>
         )}

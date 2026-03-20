@@ -134,7 +134,7 @@ function FactorsList({ positive, negative }: { positive: string[]; negative: str
 
 export default function AISignals() {
   const { selectedSymbol, selectedTimeframe } = useTradingStore();
-  const { result, loading, error, refresh } = useStockAIAnalysis(selectedSymbol, selectedTimeframe, 30000);
+  const { result, loading, error, refresh } = useStockAIAnalysis(selectedSymbol, selectedTimeframe);
 
   const detailedKey = result?.detailedSignal || result?.signal || 'hold';
   const cfg = signalConfig[detailedKey as keyof typeof signalConfig] || signalConfig[result?.signal as keyof typeof signalConfig] || signalConfig.hold;
@@ -146,12 +146,14 @@ export default function AISignals() {
         <div className="flex items-center gap-2">
           <Brain className="w-3.5 h-3.5 text-primary" />
           <h2 className="text-sm font-semibold text-foreground">AI Signals</h2>
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-mono">LIVE</span>
+          {result && <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-mono">READY</span>}
         </div>
-        <button onClick={refresh} disabled={loading}
-          className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40">
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-        </button>
+        {result && (
+          <button onClick={refresh} disabled={loading}
+            className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40">
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        )}
       </div>
       <div className="flex-1 overflow-y-auto scrollbar-thin p-3">
         {loading && !result && (
@@ -276,7 +278,7 @@ export default function AISignals() {
               <div className="flex items-center gap-1">
                 <Zap className="w-3 h-3 text-muted-foreground/40" />
                 <span className="text-[9px] text-muted-foreground/50 font-mono">
-                  Updated: {new Date(result.timestamp).toLocaleTimeString()} • Auto-refresh 30s • Not financial advice
+                  Updated: {new Date(result.timestamp).toLocaleTimeString()} • Cached 5min • Not financial advice
                 </span>
               </div>
             </div>
@@ -284,9 +286,18 @@ export default function AISignals() {
         )}
 
         {!result && !loading && (
-          <div className="flex flex-col items-center justify-center py-8 gap-2">
-            <Shield className="w-8 h-8 text-muted-foreground/30" />
-            <span className="text-xs text-muted-foreground">Select a stock to analyze</span>
+          <div className="flex flex-col items-center justify-center py-8 gap-3">
+            <Shield className="w-10 h-10 text-muted-foreground/20" />
+            <span className="text-xs text-muted-foreground">{selectedSymbol} ready for analysis</span>
+            <button
+              onClick={refresh}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition-all disabled:opacity-50"
+            >
+              <Brain className="w-4 h-4" />
+              Start Prediction
+            </button>
+            <span className="text-[9px] text-muted-foreground/40">Uses AI + technical indicators + sentiment analysis</span>
           </div>
         )}
       </div>

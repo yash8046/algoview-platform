@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { type OHLCV, generateRuleBasedSignal, predictNextPrice, type TradeSignal } from '@/lib/technicalIndicators';
 
@@ -49,6 +49,10 @@ const fallbackSentiment: SentimentData = {
   manipulation_warning: null,
 };
 
+// Cache: reuse results within 5 minutes
+const cache = new Map<string, { result: AIAnalysisResult; expiry: number }>();
+const CACHE_TTL = 5 * 60 * 1000;
+
 export function useAIAnalysis() {
   const [analysis, setAnalysis] = useState<AIAnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -57,6 +61,14 @@ export function useAIAnalysis() {
   const analyze = useCallback(async (candles: OHLCV[], pair: string, timeframe: string) => {
     if (candles.length < 50) {
       setError('Need at least 50 candles for analysis');
+      return;
+    }
+
+    // Check cache
+    const cacheKey = `${pair}-${timeframe}`;
+    const cached = cache.get(cacheKey);
+    if (cached && cached.expiry > Date.now()) {
+      setAnalysis(cached.result);
       return;
     }
 
@@ -82,7 +94,7 @@ export function useAIAnalysis() {
 
       if (fnError) throw fnError;
 
-      setAnalysis({
+      const result: AIAnalysisResult = {
         ruleBasedSignal: ruleSignal,
         aiSignal: data.aiSignal,
         ensembleSignal: data.ensembleSignal,
@@ -91,12 +103,15 @@ export function useAIAnalysis() {
         negativeFactors: data.negativeFactors || [],
         prediction,
         timestamp: Date.now(),
-      });
+      };
+
+      cache.set(cacheKey, { result, expiry: Date.now() + CACHE_TTL });
+      setAnalysis(result);
     } catch (e: any) {
       console.error('AI analysis error:', e);
       const ruleSignal = generateRuleBasedSignal(candles);
       const prediction = predictNextPrice(candles);
-      setAnalysis({
+      const fallbackResult: AIAnalysisResult = {
         ruleBasedSignal: ruleSignal,
         aiSignal: {
           signal: ruleSignal.signal,
@@ -121,7 +136,9 @@ export function useAIAnalysis() {
         negativeFactors: [],
         prediction,
         timestamp: Date.now(),
-      });
+      };
+      cache.set(cacheKey, { result: fallbackResult, expiry: Date.now() + CACHE_TTL });
+      setAnalysis(fallbackResult);
       setError('AI unavailable, showing rule-based analysis');
     } finally {
       setLoading(false);
