@@ -168,6 +168,9 @@ export function useStockAIAnalysis(symbol: string, timeframe: string) {
           sentiment: fallbackSentiment,
           positiveFactors: [],
           negativeFactors: [],
+          priceRange: null,
+          timeHorizon: null,
+          volatilityCategory: null,
           timestamp: Date.now(),
         };
 
