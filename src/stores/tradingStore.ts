@@ -74,7 +74,7 @@ const initialWatchlist: WatchlistItem[] = [
 const initialSignals: AISignal[] = [
   { id: '1', symbol: 'RELIANCE', signal: 'buy', confidence: 0.87, model: 'LSTM', reason: 'Bullish divergence on RSI with EMA crossover at ₹1,280 support', timestamp: Date.now() - 300000 },
   { id: '2', symbol: 'TCS', signal: 'hold', confidence: 0.65, model: 'XGBoost', reason: 'Consolidation phase near ₹4,100, wait for breakout above resistance', timestamp: Date.now() - 600000 },
-  { id: '3', symbol: 'TATAMOTORS', signal: 'sell', confidence: 0.78, model: 'RL Agent', reason: 'Overbought RSI > 75, strong resistance at ₹750 level', timestamp: Date.now() - 120000 },
+  { id: '3', symbol: 'LT', signal: 'sell', confidence: 0.78, model: 'RL Agent', reason: 'Overbought RSI > 75, strong resistance at ₹3,800 level', timestamp: Date.now() - 120000 },
   { id: '4', symbol: 'INFY', signal: 'buy', confidence: 0.92, model: 'LSTM', reason: 'Strong support bounce at ₹1,500 with volume confirmation', timestamp: Date.now() - 60000 },
   { id: '5', symbol: 'HDFCBANK', signal: 'buy', confidence: 0.81, model: 'XGBoost', reason: 'Positive banking sector momentum, breakout above 200 DMA', timestamp: Date.now() - 900000 },
 ];
