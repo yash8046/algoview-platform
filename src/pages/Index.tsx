@@ -8,13 +8,36 @@ import Positions from '@/components/Positions';
 import TradeHistory from '@/components/TradeHistory';
 import AISignals from '@/components/AISignals';
 import { useTradingStore } from '@/stores/tradingStore';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index = () => {
   const { loadFromDB } = useTradingStore();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     loadFromDB();
   }, []);
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col h-screen overflow-hidden">
+        <TopBar />
+        <div className="flex-1 overflow-y-auto scrollbar-thin">
+          <div className="p-2 space-y-2">
+            <PortfolioSummary />
+            <div className="h-64">
+              <TradingChart />
+            </div>
+            <TradePanel />
+            <AISignals />
+            <Watchlist />
+            <div className="h-48"><Positions /></div>
+            <div className="h-48"><TradeHistory /></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
