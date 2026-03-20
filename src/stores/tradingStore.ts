@@ -33,15 +33,7 @@ export interface WatchlistItem {
   yahooSymbol: string;
 }
 
-export interface AISignal {
-  id: string;
-  symbol: string;
-  signal: 'buy' | 'sell' | 'hold';
-  confidence: number;
-  model: string;
-  reason: string;
-  timestamp: number;
-}
+
 
 interface TradingState {
   balance: number;
