@@ -206,7 +206,8 @@ export const useTradingStore = create<TradingState>((set, get) => ({
   },
 
   updatePrice: (symbol, price, prevClose) => {
-    set((state) => ({
+    const state = get();
+    const updates: any = {
       watchlist: state.watchlist.map(item =>
         item.symbol === symbol
           ? {
@@ -220,7 +221,11 @@ export const useTradingStore = create<TradingState>((set, get) => ({
       positions: state.positions.map(pos =>
         pos.symbol === symbol ? { ...pos, currentPrice: price } : pos
       ),
-    }));
+    };
+    if (symbol === state.selectedSymbol) {
+      updates.currentChartPrice = price;
+    }
+    set(updates);
   },
 
   executeTrade: async (symbol, side, price, quantity) => {
