@@ -1,4 +1,4 @@
-import { Brain, TrendingUp, TrendingDown, Minus, RefreshCw, Shield, Target, AlertTriangle, Zap, Newspaper, Users, BarChart3, AlertOctagon } from 'lucide-react';
+import { Brain, TrendingUp, TrendingDown, Minus, RefreshCw, Shield, Target, AlertTriangle, Zap, Newspaper, Users, BarChart3, AlertOctagon, Clock, Activity } from 'lucide-react';
 import { useAIAnalysis, type AIAnalysisResult, type SentimentData } from '@/hooks/useAIAnalysis';
 import { useCryptoData } from '@/hooks/useCryptoData';
 import { useCryptoStore } from '@/stores/cryptoStore';
