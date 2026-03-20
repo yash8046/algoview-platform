@@ -43,6 +43,7 @@ const App = () => {
             <Route path="/terms" element={<ProtectedRoute><TermsOfService /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <MobileBottomNav />
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
