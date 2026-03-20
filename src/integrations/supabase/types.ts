@@ -14,7 +14,138 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      paper_positions: {
+        Row: {
+          created_at: string
+          currency: string
+          current_price: number
+          entry_price: number
+          id: string
+          market: string
+          quantity: number
+          side: string
+          symbol: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          current_price?: number
+          entry_price: number
+          id?: string
+          market?: string
+          quantity: number
+          side?: string
+          symbol: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          current_price?: number
+          entry_price?: number
+          id?: string
+          market?: string
+          quantity?: number
+          side?: string
+          symbol?: string
+        }
+        Relationships: []
+      }
+      paper_trades: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          market: string
+          pnl: number | null
+          price: number
+          quantity: number
+          side: string
+          symbol: string
+          total: number
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          market?: string
+          pnl?: number | null
+          price: number
+          quantity: number
+          side: string
+          symbol: string
+          total: number
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          market?: string
+          pnl?: number | null
+          price?: number
+          quantity?: number
+          side?: string
+          symbol?: string
+          total?: number
+        }
+        Relationships: []
+      }
+      portfolio_balance: {
+        Row: {
+          balance: number
+          currency: string
+          id: string
+          initial_balance: number
+          market: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          currency?: string
+          id?: string
+          initial_balance?: number
+          market: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          currency?: string
+          id?: string
+          initial_balance?: number
+          market?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      watchlist_stocks: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          stock_type: string
+          symbol: string
+          yahoo_symbol: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          stock_type?: string
+          symbol: string
+          yahoo_symbol: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          stock_type?: string
+          symbol?: string
+          yahoo_symbol?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

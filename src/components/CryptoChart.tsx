@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { createChart, CandlestickSeries, HistogramSeries, type IChartApi } from 'lightweight-charts';
 import { useCryptoData } from '@/hooks/useCryptoData';
 import { useCryptoStore, CRYPTO_PAIRS } from '@/stores/cryptoStore';
+import { formatINR } from '@/lib/exchangeRate';
 
 const INTERVALS = [
   { label: '1m', value: '1m' },
@@ -12,26 +13,20 @@ const INTERVALS = [
 ];
 
 export default function CryptoChart() {
-  const { selectedPair, selectedInterval, setSelectedPair, setSelectedInterval, updatePositionPrice } = useCryptoStore();
+  const { selectedPair, selectedInterval, setSelectedPair, setSelectedInterval, updatePositionPrice, usdToInr } = useCryptoStore();
   const { candles, livePrice, loading, error } = useCryptoData(selectedPair, selectedInterval);
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<any>(null);
   const volumeSeriesRef = useRef<any>(null);
 
-  const pairInfo = CRYPTO_PAIRS.find((p) => p.symbol === selectedPair);
-
-  // Update position prices live
   useEffect(() => {
     if (livePrice > 0) updatePositionPrice(selectedPair, livePrice);
   }, [livePrice, selectedPair]);
 
   useEffect(() => {
     if (!chartRef.current) return;
-
-    if (chartInstance.current) {
-      chartInstance.current.remove();
-    }
+    if (chartInstance.current) chartInstance.current.remove();
 
     const chart = createChart(chartRef.current, {
       layout: {
@@ -46,60 +41,43 @@ export default function CryptoChart() {
       },
       crosshair: { mode: 0 },
       rightPriceScale: { borderColor: 'hsl(222, 30%, 18%)' },
-      timeScale: {
-        borderColor: 'hsl(222, 30%, 18%)',
-        timeVisible: true,
-        secondsVisible: false,
-      },
+      timeScale: { borderColor: 'hsl(222, 30%, 18%)', timeVisible: true, secondsVisible: false },
     });
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: 'hsl(142, 71%, 45%)',
-      downColor: 'hsl(0, 72%, 51%)',
-      borderUpColor: 'hsl(142, 71%, 45%)',
-      borderDownColor: 'hsl(0, 72%, 51%)',
-      wickUpColor: 'hsl(142, 71%, 45%)',
-      wickDownColor: 'hsl(0, 72%, 51%)',
+      upColor: 'hsl(142, 71%, 45%)', downColor: 'hsl(0, 72%, 51%)',
+      borderUpColor: 'hsl(142, 71%, 45%)', borderDownColor: 'hsl(0, 72%, 51%)',
+      wickUpColor: 'hsl(142, 71%, 45%)', wickDownColor: 'hsl(0, 72%, 51%)',
     });
 
     const volumeSeries = chart.addSeries(HistogramSeries, {
-      priceFormat: { type: 'volume' },
-      priceScaleId: '',
+      priceFormat: { type: 'volume' }, priceScaleId: '',
     });
-    volumeSeries.priceScale().applyOptions({
-      scaleMargins: { top: 0.85, bottom: 0 },
-    });
+    volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
 
     chartInstance.current = chart;
     candleSeriesRef.current = candleSeries;
     volumeSeriesRef.current = volumeSeries;
 
-    const handleResize = () => {
-      if (chartRef.current) {
-        chart.applyOptions({ width: chartRef.current.clientWidth, height: chartRef.current.clientHeight });
-      }
-    };
-    const observer = new ResizeObserver(handleResize);
+    const observer = new ResizeObserver(() => {
+      if (chartRef.current) chart.applyOptions({ width: chartRef.current.clientWidth, height: chartRef.current.clientHeight });
+    });
     observer.observe(chartRef.current);
 
-    return () => {
-      observer.disconnect();
-      chart.remove();
-      chartInstance.current = null;
-    };
+    return () => { observer.disconnect(); chart.remove(); chartInstance.current = null; };
   }, [selectedPair, selectedInterval]);
 
   useEffect(() => {
     if (!candleSeriesRef.current || candles.length === 0) return;
 
+    // Convert candles to INR for display
     const formatted = candles.map((c) => ({
       time: c.time as any,
-      open: c.open,
-      high: c.high,
-      low: c.low,
-      close: c.close,
+      open: c.open * usdToInr,
+      high: c.high * usdToInr,
+      low: c.low * usdToInr,
+      close: c.close * usdToInr,
     }));
-
     const volumes = candles.map((c) => ({
       time: c.time as any,
       value: c.volume,
@@ -109,14 +87,14 @@ export default function CryptoChart() {
     candleSeriesRef.current.setData(formatted);
     volumeSeriesRef.current.setData(volumes);
     chartInstance.current?.timeScale().fitContent();
-  }, [candles]);
+  }, [candles, usdToInr]);
+
+  const livePriceINR = livePrice * usdToInr;
 
   return (
     <div className="flex flex-col h-full bg-card rounded-lg border border-border overflow-hidden">
-      {/* Header */}
       <div className="px-4 py-2 bg-panel-header border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {/* Pair selector */}
           <select
             value={selectedPair}
             onChange={(e) => setSelectedPair(e.target.value)}
@@ -129,7 +107,12 @@ export default function CryptoChart() {
 
           {livePrice > 0 && (
             <span className="font-mono text-sm font-bold text-foreground">
-              ${livePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatINR(livePriceINR)}
+            </span>
+          )}
+          {livePrice > 0 && (
+            <span className="font-mono text-[10px] text-muted-foreground">
+              (${livePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
             </span>
           )}
 
@@ -137,7 +120,6 @@ export default function CryptoChart() {
           {error && <span className="text-[10px] text-loss">{error}</span>}
         </div>
 
-        {/* Interval switcher */}
         <div className="flex gap-0.5">
           {INTERVALS.map((i) => (
             <button
@@ -154,8 +136,6 @@ export default function CryptoChart() {
           ))}
         </div>
       </div>
-
-      {/* Chart */}
       <div ref={chartRef} className="flex-1 bg-chart" />
     </div>
   );

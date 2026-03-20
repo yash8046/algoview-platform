@@ -1,5 +1,6 @@
 import { useCryptoStore, CRYPTO_PAIRS } from '@/stores/cryptoStore';
 import { X, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { formatINR } from '@/lib/exchangeRate';
 
 export default function CryptoPositions() {
   const { positions, trades, closePosition } = useCryptoStore();
@@ -33,13 +34,13 @@ export default function CryptoPositions() {
                 return (
                   <tr key={pos.id} className="border-b border-border hover:bg-accent/50 transition-colors">
                     <td className="px-3 py-2 font-mono font-semibold text-foreground">{pair?.label || pos.pair}</td>
-                    <td className="px-3 py-2 text-right font-mono text-muted-foreground">${pos.entryPrice.toFixed(2)}</td>
-                    <td className="px-3 py-2 text-right font-mono text-foreground">${pos.currentPrice.toFixed(2)}</td>
+                    <td className="px-3 py-2 text-right font-mono text-muted-foreground">{formatINR(pos.entryPrice)}</td>
+                    <td className="px-3 py-2 text-right font-mono text-foreground">{formatINR(pos.currentPrice)}</td>
                     <td className="px-3 py-2 text-right font-mono text-muted-foreground">{pos.quantity}</td>
                     <td className={`px-3 py-2 text-right font-mono font-medium ${pnl >= 0 ? 'text-gain' : 'text-loss'}`}>
                       <span className="flex items-center justify-end gap-0.5">
                         {pnl >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                        ${Math.abs(pnl).toFixed(2)} ({pnlPct.toFixed(1)}%)
+                        {formatINR(Math.abs(pnl))} ({pnlPct.toFixed(1)}%)
                       </span>
                     </td>
                     <td className="px-3 py-2 text-right">
@@ -55,7 +56,6 @@ export default function CryptoPositions() {
         )}
       </div>
 
-      {/* Recent Trades */}
       {trades.length > 0 && (
         <>
           <div className="px-4 py-1.5 bg-panel-header border-t border-b border-border">
@@ -68,10 +68,10 @@ export default function CryptoPositions() {
                   {t.side.toUpperCase()}
                 </span>
                 <span className="font-mono text-foreground">{t.pair}</span>
-                <span className="font-mono text-muted-foreground">{t.quantity} @ ${t.price.toFixed(2)}</span>
+                <span className="font-mono text-muted-foreground">{t.quantity} @ {formatINR(t.price)}</span>
                 {t.pnl !== undefined && (
                   <span className={`font-mono ${t.pnl >= 0 ? 'text-gain' : 'text-loss'}`}>
-                    {t.pnl >= 0 ? '+' : ''}${t.pnl.toFixed(2)}
+                    {t.pnl >= 0 ? '+' : ''}{formatINR(Math.abs(t.pnl))}
                   </span>
                 )}
               </div>
