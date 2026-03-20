@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTradingStore } from '@/stores/tradingStore';
 import { supabase } from '@/integrations/supabase/client';
-import { BookmarkPlus, BookmarkCheck } from 'lucide-react';
+import { BookmarkPlus, BookmarkCheck, FlaskConical } from 'lucide-react';
 
 export default function TradePanel() {
   const { selectedSymbol, watchlist, executeTrade, balance, loadUserWatchlist } = useTradingStore();
@@ -33,7 +33,10 @@ export default function TradePanel() {
   return (
     <div className="flex flex-col bg-card rounded-lg border border-border overflow-hidden">
       <div className="px-4 py-2 bg-panel-header border-b border-border flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-foreground">Trade</h2>
+        <div className="flex items-center gap-1.5">
+          <FlaskConical className="w-3.5 h-3.5 text-warning" />
+          <h2 className="text-sm font-semibold text-foreground">Simulate Trade</h2>
+        </div>
         {isInWatchlist ? (
           <span className="flex items-center gap-1 text-[10px] text-gain font-medium">
             <BookmarkCheck className="w-3.5 h-3.5" />
@@ -51,6 +54,12 @@ export default function TradePanel() {
         )}
       </div>
       <div className="p-4 space-y-3">
+        {/* Simulation badge */}
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-warning/10 border border-warning/20">
+          <FlaskConical className="w-3 h-3 text-warning" />
+          <span className="text-[10px] text-warning font-medium">Simulation Mode · No real money involved</span>
+        </div>
+
         <div className="flex gap-2">
           {(['market', 'limit'] as const).map(type => (
             <button
@@ -100,14 +109,14 @@ export default function TradePanel() {
             disabled={!canBuy}
             className="flex-1 py-2.5 rounded font-semibold text-xs bg-gain text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed glow-gain"
           >
-            BUY
+            SIM LONG ↑
           </button>
           <button
             onClick={() => handleTrade('sell')}
             disabled={price <= 0}
             className="flex-1 py-2.5 rounded font-semibold text-xs bg-loss text-destructive-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed glow-loss"
           >
-            SELL
+            SIM SHORT ↓
           </button>
         </div>
       </div>

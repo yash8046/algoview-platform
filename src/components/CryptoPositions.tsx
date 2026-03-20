@@ -1,5 +1,5 @@
 import { useCryptoStore, CRYPTO_PAIRS } from '@/stores/cryptoStore';
-import { X, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { X, ArrowUpRight, ArrowDownRight, FlaskConical } from 'lucide-react';
 import { formatINR } from '@/lib/exchangeRate';
 
 export default function CryptoPositions() {
@@ -8,12 +8,15 @@ export default function CryptoPositions() {
   return (
     <div className="flex flex-col bg-card rounded-lg border border-border overflow-hidden h-full">
       <div className="px-4 py-2 bg-panel-header border-b border-border flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-foreground">Crypto Positions</h2>
+        <div className="flex items-center gap-1.5">
+          <FlaskConical className="w-3 h-3 text-warning" />
+          <h2 className="text-sm font-semibold text-foreground">Simulated Positions</h2>
+        </div>
         <span className="text-[11px] text-muted-foreground">{positions.length} open</span>
       </div>
       <div className="flex-1 overflow-y-auto scrollbar-thin">
         {positions.length === 0 ? (
-          <div className="p-6 text-center text-xs text-muted-foreground">No open positions</div>
+          <div className="p-6 text-center text-xs text-muted-foreground">No simulated positions</div>
         ) : (
           <table className="w-full text-xs">
             <thead>
@@ -22,7 +25,7 @@ export default function CryptoPositions() {
                 <th className="px-3 py-2 text-right font-medium">Entry</th>
                 <th className="px-3 py-2 text-right font-medium">Current</th>
                 <th className="px-3 py-2 text-right font-medium">Qty</th>
-                <th className="px-3 py-2 text-right font-medium">P&L</th>
+                <th className="px-3 py-2 text-right font-medium">Sim P&L</th>
                 <th className="px-3 py-2 text-right font-medium"></th>
               </tr>
             </thead>
@@ -59,13 +62,13 @@ export default function CryptoPositions() {
       {trades.length > 0 && (
         <>
           <div className="px-4 py-1.5 bg-panel-header border-t border-b border-border">
-            <span className="text-[11px] text-muted-foreground font-medium">Recent Trades</span>
+            <span className="text-[11px] text-muted-foreground font-medium">Recent Simulated Trades</span>
           </div>
           <div className="max-h-28 overflow-y-auto scrollbar-thin">
             {trades.slice(0, 10).map((t) => (
               <div key={t.id} className="flex items-center justify-between px-3 py-1.5 border-b border-border text-[11px]">
                 <span className={`font-mono font-bold ${t.side === 'buy' ? 'text-gain' : 'text-loss'}`}>
-                  {t.side.toUpperCase()}
+                  {t.side === 'buy' ? 'LONG' : 'SHORT'}
                 </span>
                 <span className="font-mono text-foreground">{t.pair}</span>
                 <span className="font-mono text-muted-foreground">{t.quantity} @ {formatINR(t.price)}</span>

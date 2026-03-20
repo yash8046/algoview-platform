@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Activity, Zap, BarChart3, Bitcoin, LogOut, FlaskConical, Menu, X } from 'lucide-react';
+import { Activity, Zap, BarChart3, Bitcoin, LogOut, FlaskConical, Menu, X, Info } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -11,10 +11,11 @@ export default function TopBar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const navLinks = [
-    { to: '/', label: 'Trade', icon: null },
+    { to: '/', label: 'Analysis', icon: null },
     { to: '/crypto', label: 'Crypto', icon: Bitcoin },
     { to: '/portfolio', label: 'Portfolio', icon: BarChart3 },
     { to: '/backtest', label: 'Backtest', icon: FlaskConical },
+    { to: '/disclaimer', label: 'Disclaimer', icon: Info },
   ];
 
   return (
@@ -24,7 +25,7 @@ export default function TopBar() {
           <div className="p-1 sm:p-1.5 rounded-md bg-primary/20">
             <Zap className="w-4 sm:w-5 h-4 sm:h-5 text-primary" />
           </div>
-          <span className="text-base sm:text-lg font-bold text-foreground tracking-tight">AlgoTrade</span>
+          <span className="text-base sm:text-lg font-bold text-foreground tracking-tight">MarketLens</span>
         </div>
 
         {!isMobile && (
@@ -38,8 +39,8 @@ export default function TopBar() {
                 </Link>
               ))}
             </nav>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium border border-primary/20">
-              PAPER TRADING
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-warning/10 text-warning font-medium border border-warning/20">
+              SIMULATION MODE
             </span>
           </>
         )}

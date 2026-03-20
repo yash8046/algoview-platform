@@ -1,5 +1,5 @@
 import { useTradingStore } from '@/stores/tradingStore';
-import { X } from 'lucide-react';
+import { X, FlaskConical } from 'lucide-react';
 
 export default function Positions() {
   const { positions, closePosition } = useTradingStore();
@@ -7,12 +7,15 @@ export default function Positions() {
   return (
     <div className="flex flex-col bg-card rounded-lg border border-border overflow-hidden">
       <div className="px-4 py-2 bg-panel-header border-b border-border flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-foreground">Open Positions</h2>
+        <div className="flex items-center gap-1.5">
+          <FlaskConical className="w-3 h-3 text-warning" />
+          <h2 className="text-sm font-semibold text-foreground">Simulated Positions</h2>
+        </div>
         <span className="text-[11px] text-muted-foreground">{positions.length} active</span>
       </div>
       <div className="flex-1 overflow-y-auto scrollbar-thin">
         {positions.length === 0 ? (
-          <div className="p-6 text-center text-sm text-muted-foreground">No open positions</div>
+          <div className="p-6 text-center text-sm text-muted-foreground">No simulated positions</div>
         ) : (
           <table className="w-full text-xs">
             <thead>
@@ -21,7 +24,7 @@ export default function Positions() {
                 <th className="px-4 py-2 text-right font-medium">Entry</th>
                 <th className="px-4 py-2 text-right font-medium">Current</th>
                 <th className="px-4 py-2 text-right font-medium">Qty</th>
-                <th className="px-4 py-2 text-right font-medium">P&L</th>
+                <th className="px-4 py-2 text-right font-medium">Sim P&L</th>
                 <th className="px-4 py-2 text-right font-medium"></th>
               </tr>
             </thead>
