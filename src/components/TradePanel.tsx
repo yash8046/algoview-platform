@@ -1,12 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTradingStore } from '@/stores/tradingStore';
+import { supabase } from '@/integrations/supabase/client';
+import { BookmarkPlus, BookmarkCheck } from 'lucide-react';
 
 export default function TradePanel() {
-  const { selectedSymbol, watchlist, executeTrade, balance } = useTradingStore();
+  const { selectedSymbol, watchlist, executeTrade, balance, loadUserWatchlist } = useTradingStore();
   const [quantity, setQuantity] = useState('1');
   const [orderType, setOrderType] = useState<'market' | 'limit'>('market');
+  const [addingToWatchlist, setAddingToWatchlist] = useState(false);
 
   const currentAsset = watchlist.find(w => w.symbol === selectedSymbol);
+  const isInWatchlist = !!currentAsset;
   const price = currentAsset?.price || 0;
   const total = price * Number(quantity);
   const canBuy = total <= balance && Number(quantity) > 0 && price > 0;
@@ -17,10 +21,34 @@ export default function TradePanel() {
     setQuantity('1');
   };
 
+  const handleAddToWatchlist = async () => {
+    setAddingToWatchlist(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setAddingToWatchlist(false); return; }
+    await supabase.from('user_watchlist').insert({ user_id: user.id, symbol: selectedSymbol });
+    await loadUserWatchlist();
+    setAddingToWatchlist(false);
+  };
+
   return (
     <div className="flex flex-col bg-card rounded-lg border border-border overflow-hidden">
-      <div className="px-4 py-2 bg-panel-header border-b border-border">
+      <div className="px-4 py-2 bg-panel-header border-b border-border flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">Trade</h2>
+        {isInWatchlist ? (
+          <span className="flex items-center gap-1 text-[10px] text-gain font-medium">
+            <BookmarkCheck className="w-3.5 h-3.5" />
+            In Watchlist
+          </span>
+        ) : (
+          <button
+            onClick={handleAddToWatchlist}
+            disabled={addingToWatchlist}
+            className="flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 font-medium transition-colors disabled:opacity-50"
+          >
+            <BookmarkPlus className="w-3.5 h-3.5" />
+            {addingToWatchlist ? 'Adding...' : 'Add to Watchlist'}
+          </button>
+        )}
       </div>
       <div className="p-4 space-y-3">
         <div className="flex gap-2">
