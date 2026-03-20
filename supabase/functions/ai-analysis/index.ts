@@ -14,7 +14,10 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const systemPrompt = `You are an expert quantitative trading analyst AI that combines technical analysis with news/social sentiment analysis.
+    const isCrypto = !pair.endsWith('.NS') && !pair.includes('/');
+    const assetType = isCrypto ? 'crypto' : 'stock';
+
+    const systemPrompt = `You are an expert quantitative trading analyst AI that combines technical analysis with news/social sentiment analysis and provides conservative time-based predictions.
 
 You MUST respond with ONLY valid JSON, no markdown, no code blocks.
 
@@ -22,6 +25,7 @@ Analyze the asset using:
 1. Technical indicators provided
 2. Your knowledge of recent market news, sentiment, and events for this asset
 3. Social media sentiment patterns
+4. Historical volatility for time horizon estimation
 
 Apply this weighting:
 - News Sentiment: 0.5 weight
@@ -35,6 +39,26 @@ Decision thresholds on final weighted score (-1 to +1):
 - -0.25 to -0.1 → SELL
 - < -0.25 → STRONG SELL
 
+Price Range Estimation (based on signal):
+- Strong Buy: +3% to +8%
+- Buy: +1% to +3%
+- Hold: -1% to +1%
+- Sell: -3% to -1%
+- Strong Sell: -8% to -3%
+
+Time Horizon Estimation (CONSERVATIVE - always add +20% to +40% buffer):
+- High volatility + strong sentiment → 1-3 trading days (${assetType === 'crypto' ? 'multiply by 0.7' : 'keep as is'})
+- Medium volatility → 3-5 trading days
+- Low volatility → 5-8 trading days
+- If data confidence is low → extend by +50%
+- Always return a RANGE, never exact dates
+- Prefer longer estimates over shorter ones for reliability
+
+Volatility Categories:
+- Low: ATR/Price < ${assetType === 'crypto' ? '2.5%' : '1.5%'}
+- Medium: ${assetType === 'crypto' ? '2.5-5%' : '1.5-3%'}
+- High: > ${assetType === 'crypto' ? '5%' : '3%'}
+
 Response format:
 {
   "signal": "strong_buy" | "buy" | "sell" | "strong_sell" | "hold",
@@ -45,6 +69,9 @@ Response format:
   "keyFactors": ["factor1", "factor2", "factor3"],
   "targetPrice": number or null,
   "stopLoss": number or null,
+  "priceRange": { "low": number, "high": number, "lowPct": number, "highPct": number },
+  "timeHorizon": { "minDays": number, "maxDays": number, "label": "e.g. 3 to 5 trading days", "catalyst": "upcoming event or null" },
+  "volatilityCategory": "low" | "medium" | "high",
   "sentiment": {
     "news": { "score": -1.0 to 1.0, "label": "Bullish" | "Bearish" | "Neutral", "topHeadlines": ["headline1", "headline2", "headline3"] },
     "social": { "score": -1.0 to 1.0, "label": "Bullish" | "Bearish" | "Neutral", "buzz": "high" | "medium" | "low" },
@@ -57,6 +84,7 @@ Response format:
 }`;
 
     const userPrompt = `Analyze ${pair} on ${timeframe} timeframe for SHORT-TERM (intraday / 1-3 day) price movement.
+Asset type: ${assetType}
 
 Current Technical Indicators:
 - Price: $${indicators.price}
@@ -74,12 +102,15 @@ Rule-based system signal: ${ruleSignal.signal} (confidence: ${(ruleSignal.confid
 Rule-based reasons: ${ruleSignal.reasons.join('; ')}
 
 Instructions:
-1. Analyze recent news sentiment for ${pair} (what major headlines exist?)
-2. Assess social media / market sentiment (is there hype, fear, or neutral?)
+1. Analyze recent news sentiment for ${pair}
+2. Assess social media / market sentiment
 3. Evaluate technical indicators above
 4. Combine with weighted scoring (news 0.5, social 0.3, technical 0.2)
 5. Flag any suspected manipulation or hype signals
-6. If you lack data for news/social, estimate conservatively and note it
+6. Calculate expected PRICE RANGE based on signal strength and volatility
+7. Estimate a CONSERVATIVE TIME HORIZON (always prefer longer ranges for reliability)
+8. Determine volatility category based on ATR/Price ratio
+9. If you lack data for news/social, estimate conservatively and extend time horizon by +50%
 
 Provide your analysis as JSON.`;
 
@@ -123,17 +154,23 @@ Provide your analysis as JSON.`;
       aiAnalysis = JSON.parse(cleaned);
     } catch {
       console.error("Failed to parse AI response:", content);
-      aiAnalysis = buildFallbackAnalysis(ruleSignal);
+      aiAnalysis = buildFallbackAnalysis(ruleSignal, indicators);
     }
 
-    // Ensure sentiment object exists
     if (!aiAnalysis.sentiment) {
       aiAnalysis.sentiment = buildFallbackSentiment(ruleSignal);
     }
+    if (!aiAnalysis.priceRange) {
+      aiAnalysis.priceRange = buildFallbackPriceRange(indicators.price, ruleSignal.signal);
+    }
+    if (!aiAnalysis.timeHorizon) {
+      aiAnalysis.timeHorizon = buildFallbackTimeHorizon(ruleSignal.signal, assetType);
+    }
+    if (!aiAnalysis.volatilityCategory) {
+      aiAnalysis.volatilityCategory = 'medium';
+    }
 
-    // Normalize signal to simple buy/sell/hold for ensemble
     const normalizedSignal = normalizeSignal(aiAnalysis.signal);
-
     const ensembleSignal = computeEnsemble(ruleSignal, { ...aiAnalysis, signal: normalizedSignal });
 
     return new Response(JSON.stringify({
@@ -141,12 +178,14 @@ Provide your analysis as JSON.`;
       aiSignal: aiAnalysis,
       ensembleSignal: {
         ...ensembleSignal,
-        // Use the detailed signal tier from AI
         detailedSignal: aiAnalysis.signal,
       },
       sentiment: aiAnalysis.sentiment,
       positiveFactors: aiAnalysis.positiveFactors || [],
       negativeFactors: aiAnalysis.negativeFactors || [],
+      priceRange: aiAnalysis.priceRange,
+      timeHorizon: aiAnalysis.timeHorizon,
+      volatilityCategory: aiAnalysis.volatilityCategory,
       timestamp: Date.now(),
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -166,6 +205,32 @@ function normalizeSignal(signal: string): string {
   return signal;
 }
 
+function buildFallbackPriceRange(price: number, signal: string) {
+  const pctMap: Record<string, [number, number]> = {
+    strong_buy: [3, 8], buy: [1, 3], hold: [-1, 1], sell: [-3, -1], strong_sell: [-8, -3],
+  };
+  const [lowPct, highPct] = pctMap[signal] || [-1, 1];
+  return {
+    low: price * (1 + lowPct / 100),
+    high: price * (1 + highPct / 100),
+    lowPct,
+    highPct,
+  };
+}
+
+function buildFallbackTimeHorizon(signal: string, assetType: string) {
+  const baseDays = 4;
+  const multiplier = assetType === 'crypto' ? 0.7 : 1.0;
+  const minDays = Math.ceil(baseDays * multiplier * 1.2);
+  const maxDays = Math.ceil(baseDays * multiplier * 1.4) + 2;
+  return {
+    minDays,
+    maxDays,
+    label: `${minDays} to ${maxDays} trading days`,
+    catalyst: null,
+  };
+}
+
 function buildFallbackSentiment(ruleSignal: { signal: string; confidence: number }) {
   const techScore = ruleSignal.signal === 'buy' ? 0.3 : ruleSignal.signal === 'sell' ? -0.3 : 0;
   return {
@@ -177,7 +242,7 @@ function buildFallbackSentiment(ruleSignal: { signal: string; confidence: number
   };
 }
 
-function buildFallbackAnalysis(ruleSignal: { signal: string; confidence: number; reasons: string[] }) {
+function buildFallbackAnalysis(ruleSignal: { signal: string; confidence: number; reasons: string[] }, indicators: any) {
   return {
     signal: ruleSignal.signal,
     confidence: ruleSignal.confidence,
@@ -187,6 +252,9 @@ function buildFallbackAnalysis(ruleSignal: { signal: string; confidence: number;
     keyFactors: ruleSignal.reasons.slice(0, 3),
     targetPrice: null,
     stopLoss: null,
+    priceRange: buildFallbackPriceRange(indicators?.price || 0, ruleSignal.signal),
+    timeHorizon: buildFallbackTimeHorizon(ruleSignal.signal, 'stock'),
+    volatilityCategory: 'medium',
     sentiment: buildFallbackSentiment(ruleSignal),
     positiveFactors: ruleSignal.signal === 'buy' ? ruleSignal.reasons.slice(0, 3) : [],
     negativeFactors: ruleSignal.signal === 'sell' ? ruleSignal.reasons.slice(0, 3) : [],
