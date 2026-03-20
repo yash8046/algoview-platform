@@ -66,7 +66,7 @@ export default function TradingChart() {
     sma20Series.setData(sma20 as any);
 
     const sma50 = calculateSMA(candleData, 50);
-    const sma50Series = chart.addLineSeries({ color: '#f59e0b', lineWidth: 1, title: 'SMA 50' });
+    const sma50Series = chart.addSeries(LineSeries, { color: '#f59e0b', lineWidth: 1, title: 'SMA 50' });
     sma50Series.setData(sma50 as any);
 
     chart.timeScale().fitContent();
