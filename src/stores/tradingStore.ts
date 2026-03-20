@@ -65,7 +65,7 @@ const initialWatchlist: WatchlistItem[] = [
   { symbol: 'HDFCBANK', name: 'HDFC Bank', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'HDFCBANK.NS' },
   { symbol: 'ICICIBANK', name: 'ICICI Bank', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'ICICIBANK.NS' },
   { symbol: 'SBIN', name: 'State Bank of India', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'SBIN.NS' },
-  { symbol: 'TATAMOTORS', name: 'Tata Motors', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'TATAMOTORS.NS' },
+  { symbol: 'LT', name: 'Larsen & Toubro', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'LT.NS' },
   { symbol: 'WIPRO', name: 'Wipro Ltd.', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'WIPRO.NS' },
   { symbol: 'ITC', name: 'ITC Ltd.', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'ITC.NS' },
   { symbol: 'BAJFINANCE', name: 'Bajaj Finance', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'BAJFINANCE.NS' },
@@ -74,7 +74,7 @@ const initialWatchlist: WatchlistItem[] = [
 const initialSignals: AISignal[] = [
   { id: '1', symbol: 'RELIANCE', signal: 'buy', confidence: 0.87, model: 'LSTM', reason: 'Bullish divergence on RSI with EMA crossover at ₹1,280 support', timestamp: Date.now() - 300000 },
   { id: '2', symbol: 'TCS', signal: 'hold', confidence: 0.65, model: 'XGBoost', reason: 'Consolidation phase near ₹4,100, wait for breakout above resistance', timestamp: Date.now() - 600000 },
-  { id: '3', symbol: 'TATAMOTORS', signal: 'sell', confidence: 0.78, model: 'RL Agent', reason: 'Overbought RSI > 75, strong resistance at ₹750 level', timestamp: Date.now() - 120000 },
+  { id: '3', symbol: 'LT', signal: 'sell', confidence: 0.78, model: 'RL Agent', reason: 'Overbought RSI > 75, strong resistance at ₹3,800 level', timestamp: Date.now() - 120000 },
   { id: '4', symbol: 'INFY', signal: 'buy', confidence: 0.92, model: 'LSTM', reason: 'Strong support bounce at ₹1,500 with volume confirmation', timestamp: Date.now() - 60000 },
   { id: '5', symbol: 'HDFCBANK', signal: 'buy', confidence: 0.81, model: 'XGBoost', reason: 'Positive banking sector momentum, breakout above 200 DMA', timestamp: Date.now() - 900000 },
 ];
