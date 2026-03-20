@@ -41,6 +41,11 @@ export const CRYPTO_PAIRS: CryptoPair[] = [
   { symbol: 'AVAXUSDT', label: 'AVAX/USDT', baseAsset: 'AVAX', quoteAsset: 'USDT' },
 ];
 
+async function getUserId(): Promise<string | null> {
+  const { data } = await supabase.auth.getUser();
+  return data.user?.id ?? null;
+}
+
 interface CryptoState {
   balance: number;
   initialBalance: number;
@@ -77,10 +82,14 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
 
   loadFromDB: async () => {
     try {
+      const userId = await getUserId();
+      if (!userId) return;
+
       const { data: balData } = await supabase
         .from('portfolio_balance')
         .select('*')
         .eq('market', 'crypto')
+        .eq('user_id', userId)
         .single();
       if (balData) {
         set({ balance: Number(balData.balance), initialBalance: Number(balData.initial_balance) });
@@ -89,7 +98,8 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
       const { data: posData } = await supabase
         .from('paper_positions')
         .select('*')
-        .eq('market', 'crypto');
+        .eq('market', 'crypto')
+        .eq('user_id', userId);
       if (posData) {
         set({
           positions: posData.map((p: any) => ({
@@ -108,6 +118,7 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
         .from('paper_trades')
         .select('*')
         .eq('market', 'crypto')
+        .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(50);
       if (tradeData) {
@@ -140,6 +151,9 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
   },
 
   executeTrade: async (pair, side, price, quantity) => {
+    const userId = await getUserId();
+    if (!userId) return;
+
     const state = get();
     const inrPrice = price * state.usdToInr;
     const total = inrPrice * quantity;
@@ -165,9 +179,9 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
       });
 
       await Promise.all([
-        supabase.from('paper_trades').insert({ id: trade.id, symbol: pair, side, price: inrPrice, quantity, total, market: 'crypto', currency: 'INR' }),
-        supabase.from('paper_positions').insert({ id: pos.id, symbol: pair, side: 'long', entry_price: inrPrice, quantity, current_price: inrPrice, market: 'crypto', currency: 'INR' }),
-        supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'crypto'),
+        supabase.from('paper_trades').insert({ id: trade.id, symbol: pair, side, price: inrPrice, quantity, total, market: 'crypto', currency: 'INR', user_id: userId }),
+        supabase.from('paper_positions').insert({ id: pos.id, symbol: pair, side: 'long', entry_price: inrPrice, quantity, current_price: inrPrice, market: 'crypto', currency: 'INR', user_id: userId }),
+        supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'crypto').eq('user_id', userId),
       ]);
     } else {
       const pos = state.positions.find((p) => p.pair === pair);
@@ -182,15 +196,18 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
         });
 
         await Promise.all([
-          supabase.from('paper_trades').insert({ id: trade.id, symbol: pair, side, price: inrPrice, quantity, total, pnl, market: 'crypto', currency: 'INR' }),
+          supabase.from('paper_trades').insert({ id: trade.id, symbol: pair, side, price: inrPrice, quantity, total, pnl, market: 'crypto', currency: 'INR', user_id: userId }),
           supabase.from('paper_positions').delete().eq('id', pos.id),
-          supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'crypto'),
+          supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'crypto').eq('user_id', userId),
         ]);
       }
     }
   },
 
   closePosition: async (id) => {
+    const userId = await getUserId();
+    if (!userId) return;
+
     const state = get();
     const pos = state.positions.find((p) => p.id === id);
     if (!pos) return;
@@ -210,9 +227,9 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
     });
 
     await Promise.all([
-      supabase.from('paper_trades').insert({ id: trade.id, symbol: pos.pair, side: 'sell', price: pos.currentPrice, quantity: pos.quantity, total: trade.total, pnl, market: 'crypto', currency: 'INR' }),
+      supabase.from('paper_trades').insert({ id: trade.id, symbol: pos.pair, side: 'sell', price: pos.currentPrice, quantity: pos.quantity, total: trade.total, pnl, market: 'crypto', currency: 'INR', user_id: userId }),
       supabase.from('paper_positions').delete().eq('id', id),
-      supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'crypto'),
+      supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'crypto').eq('user_id', userId),
     ]);
   },
 }));

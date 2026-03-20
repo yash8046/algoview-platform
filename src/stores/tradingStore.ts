@@ -70,6 +70,11 @@ const initialSignals: AISignal[] = [
   { id: '5', symbol: 'HDFCBANK', signal: 'buy', confidence: 0.81, model: 'XGBoost', reason: 'Positive banking sector momentum, breakout above 200 DMA', timestamp: Date.now() - 900000 },
 ];
 
+async function getUserId(): Promise<string | null> {
+  const { data } = await supabase.auth.getUser();
+  return data.user?.id ?? null;
+}
+
 export const useTradingStore = create<TradingState>((set, get) => ({
   balance: 1000000,
   initialBalance: 1000000,
@@ -112,21 +117,24 @@ export const useTradingStore = create<TradingState>((set, get) => ({
 
   loadFromDB: async () => {
     try {
-      // Load balance
+      const userId = await getUserId();
+      if (!userId) return;
+
       const { data: balData } = await supabase
         .from('portfolio_balance')
         .select('*')
         .eq('market', 'stock')
+        .eq('user_id', userId)
         .single();
       if (balData) {
         set({ balance: Number(balData.balance), initialBalance: Number(balData.initial_balance) });
       }
 
-      // Load positions
       const { data: posData } = await supabase
         .from('paper_positions')
         .select('*')
-        .eq('market', 'stock');
+        .eq('market', 'stock')
+        .eq('user_id', userId);
       if (posData) {
         set({
           positions: posData.map((p: any) => ({
@@ -141,11 +149,11 @@ export const useTradingStore = create<TradingState>((set, get) => ({
         });
       }
 
-      // Load recent trades
       const { data: tradeData } = await supabase
         .from('paper_trades')
         .select('*')
         .eq('market', 'stock')
+        .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(50);
       if (tradeData) {
@@ -186,6 +194,9 @@ export const useTradingStore = create<TradingState>((set, get) => ({
   },
 
   executeTrade: async (symbol, side, price, quantity) => {
+    const userId = await getUserId();
+    if (!userId) return;
+
     const total = price * quantity;
     const state = get();
 
@@ -210,11 +221,10 @@ export const useTradingStore = create<TradingState>((set, get) => ({
         trades: [trade, ...state.trades],
       });
 
-      // Persist to Supabase
       await Promise.all([
-        supabase.from('paper_trades').insert({ id: trade.id, symbol, side, price, quantity, total, market: 'stock', currency: 'INR' }),
-        supabase.from('paper_positions').insert({ id: position.id, symbol, side: 'long', entry_price: price, quantity, current_price: price, market: 'stock', currency: 'INR' }),
-        supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'stock'),
+        supabase.from('paper_trades').insert({ id: trade.id, symbol, side, price, quantity, total, market: 'stock', currency: 'INR', user_id: userId }),
+        supabase.from('paper_positions').insert({ id: position.id, symbol, side: 'long', entry_price: price, quantity, current_price: price, market: 'stock', currency: 'INR', user_id: userId }),
+        supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'stock').eq('user_id', userId),
       ]);
     } else {
       const pos = state.positions.find(p => p.symbol === symbol);
@@ -229,15 +239,18 @@ export const useTradingStore = create<TradingState>((set, get) => ({
         });
 
         await Promise.all([
-          supabase.from('paper_trades').insert({ id: trade.id, symbol, side, price, quantity, total, pnl, market: 'stock', currency: 'INR' }),
+          supabase.from('paper_trades').insert({ id: trade.id, symbol, side, price, quantity, total, pnl, market: 'stock', currency: 'INR', user_id: userId }),
           supabase.from('paper_positions').delete().eq('id', pos.id),
-          supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'stock'),
+          supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'stock').eq('user_id', userId),
         ]);
       }
     }
   },
 
   closePosition: async (positionId) => {
+    const userId = await getUserId();
+    if (!userId) return;
+
     const state = get();
     const pos = state.positions.find(p => p.id === positionId);
     if (!pos) return;
@@ -257,9 +270,9 @@ export const useTradingStore = create<TradingState>((set, get) => ({
     });
 
     await Promise.all([
-      supabase.from('paper_trades').insert({ id: trade.id, symbol: pos.symbol, side: 'sell', price: pos.currentPrice, quantity: pos.quantity, total: trade.total, pnl, market: 'stock', currency: 'INR' }),
+      supabase.from('paper_trades').insert({ id: trade.id, symbol: pos.symbol, side: 'sell', price: pos.currentPrice, quantity: pos.quantity, total: trade.total, pnl, market: 'stock', currency: 'INR', user_id: userId }),
       supabase.from('paper_positions').delete().eq('id', positionId),
-      supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'stock'),
+      supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'stock').eq('user_id', userId),
     ]);
   },
 }));

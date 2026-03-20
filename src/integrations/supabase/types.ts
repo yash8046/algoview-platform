@@ -25,6 +25,7 @@ export type Database = {
           quantity: number
           side: string
           symbol: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -36,6 +37,7 @@ export type Database = {
           quantity: number
           side?: string
           symbol: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -47,6 +49,7 @@ export type Database = {
           quantity?: number
           side?: string
           symbol?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -62,6 +65,7 @@ export type Database = {
           side: string
           symbol: string
           total: number
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -74,6 +78,7 @@ export type Database = {
           side: string
           symbol: string
           total: number
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -86,6 +91,7 @@ export type Database = {
           side?: string
           symbol?: string
           total?: number
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -97,6 +103,7 @@ export type Database = {
           initial_balance: number
           market: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           balance?: number
@@ -105,6 +112,7 @@ export type Database = {
           initial_balance?: number
           market: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           balance?: number
@@ -113,6 +121,28 @@ export type Database = {
           initial_balance?: number
           market?: string
           updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
         }
         Relationships: []
       }
