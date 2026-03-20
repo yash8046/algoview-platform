@@ -1,4 +1,4 @@
-import { Activity, Zap, BarChart3 } from 'lucide-react';
+import { Activity, Zap, BarChart3, Bitcoin } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 export default function TopBar() {
