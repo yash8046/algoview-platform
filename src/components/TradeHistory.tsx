@@ -35,12 +35,12 @@ export default function TradeHistory() {
                       {trade.side}
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-right font-mono text-foreground">${trade.price.toFixed(2)}</td>
+                  <td className="px-4 py-2 text-right font-mono text-foreground">₹{trade.price.toFixed(2)}</td>
                   <td className="px-4 py-2 text-right font-mono text-muted-foreground">{trade.quantity}</td>
                   <td className={`px-4 py-2 text-right font-mono font-medium ${
                     trade.pnl !== undefined ? (trade.pnl >= 0 ? 'text-gain' : 'text-loss') : 'text-muted-foreground'
                   }`}>
-                    {trade.pnl !== undefined ? `${trade.pnl >= 0 ? '+' : ''}$${trade.pnl.toFixed(2)}` : '—'}
+                    {trade.pnl !== undefined ? `${trade.pnl >= 0 ? '+' : ''}₹${Math.abs(trade.pnl).toFixed(2)}` : '—'}
                   </td>
                 </tr>
               ))}

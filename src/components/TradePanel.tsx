@@ -9,10 +9,10 @@ export default function TradePanel() {
   const currentAsset = watchlist.find(w => w.symbol === selectedSymbol);
   const price = currentAsset?.price || 0;
   const total = price * Number(quantity);
-  const canBuy = total <= balance && Number(quantity) > 0;
+  const canBuy = total <= balance && Number(quantity) > 0 && price > 0;
 
   const handleTrade = (side: 'buy' | 'sell') => {
-    if (Number(quantity) <= 0) return;
+    if (Number(quantity) <= 0 || price <= 0) return;
     executeTrade(selectedSymbol, side, price, Number(quantity));
     setQuantity('1');
   };
@@ -45,7 +45,7 @@ export default function TradePanel() {
         <div>
           <label className="text-[11px] text-muted-foreground mb-1 block">Price</label>
           <div className="bg-secondary rounded px-3 py-2 font-mono text-sm text-foreground">
-            ${price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            {price > 0 ? `₹${price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : 'Loading...'}
           </div>
         </div>
 
@@ -53,7 +53,7 @@ export default function TradePanel() {
           <label className="text-[11px] text-muted-foreground mb-1 block">Quantity</label>
           <input
             type="number"
-            min="0.01"
+            min="1"
             step="1"
             value={quantity}
             onChange={e => setQuantity(e.target.value)}
@@ -63,7 +63,7 @@ export default function TradePanel() {
 
         <div className="flex justify-between text-[11px] text-muted-foreground">
           <span>Total</span>
-          <span className="font-mono text-foreground">${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+          <span className="font-mono text-foreground">₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
         </div>
 
         <div className="flex gap-2">
@@ -76,7 +76,8 @@ export default function TradePanel() {
           </button>
           <button
             onClick={() => handleTrade('sell')}
-            className="flex-1 py-2.5 rounded font-semibold text-xs bg-loss text-destructive-foreground hover:opacity-90 transition-opacity glow-loss"
+            disabled={price <= 0}
+            className="flex-1 py-2.5 rounded font-semibold text-xs bg-loss text-destructive-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed glow-loss"
           >
             SELL
           </button>

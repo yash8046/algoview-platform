@@ -1,14 +1,17 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createChart, ColorType, IChartApi, CandlestickSeries, HistogramSeries, LineSeries } from 'lightweight-charts';
-import { generateCandlestickData, generateVolumeData, calculateSMA } from '@/lib/mockData';
 import { useTradingStore } from '@/stores/tradingStore';
+import { fetchYahooFinanceData } from '@/lib/yahooFinance';
+import { calculateSMA } from '@/lib/mockData';
 
 const TIMEFRAMES = ['1m', '5m', '15m', '1H', '4H', '1D', '1W'];
 
 export default function TradingChart() {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<IChartApi | null>(null);
-  const { selectedSymbol, selectedTimeframe, setSelectedTimeframe } = useTradingStore();
+  const { selectedSymbol, selectedTimeframe, setSelectedTimeframe, updatePrice } = useTradingStore();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -29,18 +32,13 @@ export default function TradingChart() {
         vertLine: { color: 'rgba(38, 198, 218, 0.4)', labelBackgroundColor: '#1a2332' },
         horzLine: { color: 'rgba(38, 198, 218, 0.4)', labelBackgroundColor: '#1a2332' },
       },
-      rightPriceScale: {
-        borderColor: 'rgba(42, 56, 89, 0.5)',
-      },
-      timeScale: {
-        borderColor: 'rgba(42, 56, 89, 0.5)',
-        timeVisible: true,
-      },
+      rightPriceScale: { borderColor: 'rgba(42, 56, 89, 0.5)' },
+      timeScale: { borderColor: 'rgba(42, 56, 89, 0.5)', timeVisible: true },
+      localization: { priceFormatter: (p: number) => '₹' + p.toFixed(2) },
     });
 
     chartInstance.current = chart;
 
-    const candleData = generateCandlestickData(120);
     const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor: '#22c55e',
       downColor: '#ef4444',
@@ -49,27 +47,68 @@ export default function TradingChart() {
       wickDownColor: '#ef4444',
       wickUpColor: '#22c55e',
     });
-    candleSeries.setData(candleData as any);
 
-    const volumeData = generateVolumeData(candleData);
     const volumeSeries = chart.addSeries(HistogramSeries, {
       priceFormat: { type: 'volume' },
       priceScaleId: '',
     });
-    volumeSeries.priceScale().applyOptions({
-      scaleMargins: { top: 0.8, bottom: 0 },
-    });
-    volumeSeries.setData(volumeData as any);
+    volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
-    const sma20 = calculateSMA(candleData, 20);
     const sma20Series = chart.addSeries(LineSeries, { color: '#26c6da', lineWidth: 1, title: 'SMA 20' });
-    sma20Series.setData(sma20 as any);
-
-    const sma50 = calculateSMA(candleData, 50);
     const sma50Series = chart.addSeries(LineSeries, { color: '#f59e0b', lineWidth: 1, title: 'SMA 50' });
-    sma50Series.setData(sma50 as any);
 
-    chart.timeScale().fitContent();
+    // Fetch real data
+    setLoading(true);
+    setError(null);
+
+    fetchYahooFinanceData(selectedSymbol, selectedTimeframe)
+      .then((resp) => {
+        const isIntraday = ['1m', '5m', '15m', '1H', '4H'].includes(selectedTimeframe);
+
+        const candleData = resp.candles.map(c => ({
+          time: (isIntraday ? c.time : c.time) as any,
+          open: +c.open.toFixed(2),
+          high: +c.high.toFixed(2),
+          low: +c.low.toFixed(2),
+          close: +c.close.toFixed(2),
+        }));
+
+        const volData = resp.candles.map(c => ({
+          time: c.time as any,
+          value: c.volume,
+          color: c.close >= c.open ? 'rgba(38, 166, 91, 0.3)' : 'rgba(239, 83, 80, 0.3)',
+        }));
+
+        candleSeries.setData(candleData);
+        volumeSeries.setData(volData);
+
+        // SMA
+        if (candleData.length >= 20) {
+          const sma20 = calculateSMA(candleData, 20);
+          sma20Series.setData(sma20 as any);
+        }
+        if (candleData.length >= 50) {
+          const sma50 = calculateSMA(candleData, 50);
+          sma50Series.setData(sma50 as any);
+        }
+
+        chart.timeScale().fitContent();
+
+        // Update store with latest price
+        if (resp.regularMarketPrice) {
+          updatePrice(selectedSymbol, resp.regularMarketPrice, resp.previousClose || resp.regularMarketPrice);
+        } else if (candleData.length > 0) {
+          const last = candleData[candleData.length - 1];
+          updatePrice(selectedSymbol, last.close, resp.previousClose || last.open);
+        }
+
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Chart data error:', err);
+        setError(err.message);
+        setLoading(false);
+      });
 
     const handleResize = () => {
       if (chartRef.current) {
@@ -93,8 +132,10 @@ export default function TradingChart() {
     <div className="flex flex-col h-full bg-card rounded-lg border border-border overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 bg-panel-header border-b border-border">
         <div className="flex items-center gap-3">
-          <h2 className="font-mono text-sm font-semibold text-foreground">{selectedSymbol}</h2>
-          <span className="text-xs text-muted-foreground">OHLC Chart</span>
+          <h2 className="font-mono text-sm font-semibold text-foreground">{selectedSymbol}.NS</h2>
+          <span className="text-xs text-muted-foreground">NSE</span>
+          {loading && <span className="text-[10px] text-primary animate-pulse">Loading...</span>}
+          {error && <span className="text-[10px] text-loss">Error: {error}</span>}
         </div>
         <div className="flex items-center gap-1">
           {TIMEFRAMES.map(tf => (
