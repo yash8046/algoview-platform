@@ -202,7 +202,7 @@ export default function CryptoAISignals() {
         {analysis && (
           <div className="mt-3 pt-2 border-t border-border">
             <span className="text-[9px] text-muted-foreground/50 font-mono">
-              Last updated: {new Date(analysis.timestamp).toLocaleTimeString()} • Not financial advice
+              Updated: {new Date(analysis.timestamp).toLocaleTimeString()} • Auto-refresh 5s • Not financial advice
             </span>
           </div>
         )}
