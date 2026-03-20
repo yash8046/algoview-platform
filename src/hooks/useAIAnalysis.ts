@@ -119,6 +119,9 @@ export function useAIAnalysis() {
         positiveFactors: data.positiveFactors || [],
         negativeFactors: data.negativeFactors || [],
         prediction,
+        priceRange: data.priceRange || null,
+        timeHorizon: data.timeHorizon || null,
+        volatilityCategory: data.volatilityCategory || null,
         timestamp: Date.now(),
       };
 
