@@ -30,6 +30,9 @@ export interface StockAIResult {
   sentiment: SentimentData;
   positiveFactors: string[];
   negativeFactors: string[];
+  priceRange: PriceRange | null;
+  timeHorizon: TimeHorizon | null;
+  volatilityCategory: 'low' | 'medium' | 'high' | null;
   timestamp: number;
 }
 
