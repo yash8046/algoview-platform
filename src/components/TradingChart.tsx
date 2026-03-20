@@ -52,7 +52,7 @@ export default function TradingChart() {
     candleSeries.setData(candleData as any);
 
     const volumeData = generateVolumeData(candleData);
-    const volumeSeries = chart.addHistogramSeries({
+    const volumeSeries = chart.addSeries(HistogramSeries, {
       priceFormat: { type: 'volume' },
       priceScaleId: '',
     });
