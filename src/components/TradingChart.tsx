@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { createChart, ColorType, IChartApi } from 'lightweight-charts';
+import { createChart, ColorType, IChartApi, CandlestickSeries, HistogramSeries, LineSeries } from 'lightweight-charts';
 import { generateCandlestickData, generateVolumeData, calculateSMA } from '@/lib/mockData';
 import { useTradingStore } from '@/stores/tradingStore';
 
