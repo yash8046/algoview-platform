@@ -59,6 +59,7 @@ interface TradingState {
   closePosition: (positionId: string) => void;
   updatePrice: (symbol: string, price: number, prevClose: number) => void;
   loadWatchlistFromDB: () => Promise<void>;
+  loadUserWatchlist: () => Promise<void>;
   loadFromDB: () => Promise<void>;
 }
 
@@ -112,6 +113,49 @@ export const useTradingStore = create<TradingState>((set, get) => ({
       }
     } catch (e) {
       console.error('Failed to load watchlist from DB:', e);
+    }
+  },
+
+  loadUserWatchlist: async () => {
+    try {
+      const userId = await getUserId();
+      if (!userId) return;
+
+      // Get user's personal watchlist symbols
+      const { data: userItems, error: uwError } = await supabase
+        .from('user_watchlist')
+        .select('symbol')
+        .eq('user_id', userId);
+      if (uwError) throw uwError;
+
+      if (!userItems || userItems.length === 0) {
+        set({ watchlist: [], watchlistLoaded: true });
+        return;
+      }
+
+      const symbols = userItems.map(u => u.symbol);
+
+      // Get stock details from master list
+      const { data: stocks, error: sError } = await supabase
+        .from('watchlist_stocks')
+        .select('*')
+        .in('symbol', symbols)
+        .eq('is_active', true);
+      if (sError) throw sError;
+
+      const watchlist: WatchlistItem[] = (stocks || []).map((d: any) => ({
+        symbol: d.symbol,
+        name: d.name,
+        price: 0,
+        change: 0,
+        changePercent: 0,
+        volume: '—',
+        type: d.stock_type as 'stock' | 'crypto',
+        yahooSymbol: d.yahoo_symbol,
+      }));
+      set({ watchlist, watchlistLoaded: true });
+    } catch (e) {
+      console.error('Failed to load user watchlist:', e);
     }
   },
 
