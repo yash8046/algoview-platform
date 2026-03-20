@@ -21,9 +21,9 @@ function CryptoSummary() {
   const returnPct = ((portfolioValue - initialBalance) / initialBalance) * 100;
 
   const stats = [
-    { label: 'Portfolio', value: formatINR(portfolioValue), icon: DollarSign, positive: portfolioValue >= initialBalance },
-    { label: 'Cash', value: formatINR(balance), icon: BarChart3, positive: true },
-    { label: 'Unrealized P&L', value: `${unrealizedPnl >= 0 ? '+' : '-'}${formatINR(Math.abs(unrealizedPnl))}`, icon: unrealizedPnl >= 0 ? TrendingUp : TrendingDown, positive: unrealizedPnl >= 0 },
+    { label: 'Sim Portfolio', value: formatINR(portfolioValue), icon: DollarSign, positive: portfolioValue >= initialBalance },
+    { label: 'Virtual Cash', value: formatINR(balance), icon: BarChart3, positive: true },
+    { label: 'Sim P&L', value: `${unrealizedPnl >= 0 ? '+' : '-'}${formatINR(Math.abs(unrealizedPnl))}`, icon: unrealizedPnl >= 0 ? TrendingUp : TrendingDown, positive: unrealizedPnl >= 0 },
     { label: 'Return', value: `${returnPct >= 0 ? '+' : ''}${returnPct.toFixed(2)}%`, icon: totalPnl >= 0 ? TrendingUp : TrendingDown, positive: returnPct >= 0 },
   ];
 
