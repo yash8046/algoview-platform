@@ -12,6 +12,8 @@ import Portfolio from "./pages/Portfolio.tsx";
 import CryptoPage from "./pages/CryptoPage.tsx";
 import BacktestPage from "./pages/BacktestPage.tsx";
 import DisclaimerPage from "./pages/DisclaimerPage.tsx";
+import PrivacyPolicy from "./pages/PrivacyPolicy.tsx";
+import TermsOfService from "./pages/TermsOfService.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
