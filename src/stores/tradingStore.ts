@@ -29,6 +29,7 @@ export interface WatchlistItem {
   changePercent: number;
   volume: string;
   type: 'stock' | 'crypto';
+  yahooSymbol: string;
 }
 
 export interface AISignal {
@@ -54,40 +55,60 @@ interface TradingState {
   setSelectedTimeframe: (tf: string) => void;
   executeTrade: (symbol: string, side: 'buy' | 'sell', price: number, quantity: number) => void;
   closePosition: (positionId: string) => void;
-  updateWatchlistPrices: () => void;
+  updatePrice: (symbol: string, price: number, prevClose: number) => void;
 }
 
 const initialWatchlist: WatchlistItem[] = [
-  { symbol: 'AAPL', name: 'Apple Inc.', price: 189.84, change: 2.34, changePercent: 1.25, volume: '54.2M', type: 'stock' },
-  { symbol: 'MSFT', name: 'Microsoft', price: 378.91, change: -1.23, changePercent: -0.32, volume: '22.1M', type: 'stock' },
-  { symbol: 'GOOGL', name: 'Alphabet', price: 141.80, change: 0.95, changePercent: 0.67, volume: '18.7M', type: 'stock' },
-  { symbol: 'TSLA', name: 'Tesla Inc.', price: 248.42, change: 5.67, changePercent: 2.34, volume: '98.3M', type: 'stock' },
-  { symbol: 'NVDA', name: 'NVIDIA', price: 495.22, change: 12.44, changePercent: 2.58, volume: '45.8M', type: 'stock' },
-  { symbol: 'BTC/USD', name: 'Bitcoin', price: 67432.50, change: 1234.00, changePercent: 1.87, volume: '32.1B', type: 'crypto' },
-  { symbol: 'ETH/USD', name: 'Ethereum', price: 3521.80, change: -45.20, changePercent: -1.27, volume: '14.8B', type: 'crypto' },
-  { symbol: 'SOL/USD', name: 'Solana', price: 148.63, change: 8.92, changePercent: 6.38, volume: '4.2B', type: 'crypto' },
+  { symbol: 'RELIANCE', name: 'Reliance Industries', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'RELIANCE.NS' },
+  { symbol: 'TCS', name: 'Tata Consultancy', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'TCS.NS' },
+  { symbol: 'INFY', name: 'Infosys Ltd.', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'INFY.NS' },
+  { symbol: 'HDFCBANK', name: 'HDFC Bank', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'HDFCBANK.NS' },
+  { symbol: 'ICICIBANK', name: 'ICICI Bank', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'ICICIBANK.NS' },
+  { symbol: 'SBIN', name: 'State Bank of India', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'SBIN.NS' },
+  { symbol: 'TATAMOTORS', name: 'Tata Motors', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'TATAMOTORS.NS' },
+  { symbol: 'WIPRO', name: 'Wipro Ltd.', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'WIPRO.NS' },
+  { symbol: 'ITC', name: 'ITC Ltd.', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'ITC.NS' },
+  { symbol: 'BAJFINANCE', name: 'Bajaj Finance', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'BAJFINANCE.NS' },
 ];
 
 const initialSignals: AISignal[] = [
-  { id: '1', symbol: 'AAPL', signal: 'buy', confidence: 0.87, model: 'LSTM', reason: 'Bullish divergence on RSI with EMA crossover', timestamp: Date.now() - 300000 },
-  { id: '2', symbol: 'BTC/USD', signal: 'hold', confidence: 0.65, model: 'XGBoost', reason: 'Consolidation phase, wait for breakout', timestamp: Date.now() - 600000 },
-  { id: '3', symbol: 'TSLA', signal: 'sell', confidence: 0.78, model: 'RL Agent', reason: 'Overbought RSI > 75, resistance at $255', timestamp: Date.now() - 120000 },
-  { id: '4', symbol: 'ETH/USD', signal: 'buy', confidence: 0.92, model: 'LSTM', reason: 'Strong support bounce at $3,450 level', timestamp: Date.now() - 60000 },
-  { id: '5', symbol: 'NVDA', signal: 'buy', confidence: 0.81, model: 'XGBoost', reason: 'Positive earnings momentum, sector rotation', timestamp: Date.now() - 900000 },
+  { id: '1', symbol: 'RELIANCE', signal: 'buy', confidence: 0.87, model: 'LSTM', reason: 'Bullish divergence on RSI with EMA crossover at ₹1,280 support', timestamp: Date.now() - 300000 },
+  { id: '2', symbol: 'TCS', signal: 'hold', confidence: 0.65, model: 'XGBoost', reason: 'Consolidation phase near ₹4,100, wait for breakout above resistance', timestamp: Date.now() - 600000 },
+  { id: '3', symbol: 'TATAMOTORS', signal: 'sell', confidence: 0.78, model: 'RL Agent', reason: 'Overbought RSI > 75, strong resistance at ₹750 level', timestamp: Date.now() - 120000 },
+  { id: '4', symbol: 'INFY', signal: 'buy', confidence: 0.92, model: 'LSTM', reason: 'Strong support bounce at ₹1,500 with volume confirmation', timestamp: Date.now() - 60000 },
+  { id: '5', symbol: 'HDFCBANK', signal: 'buy', confidence: 0.81, model: 'XGBoost', reason: 'Positive banking sector momentum, breakout above 200 DMA', timestamp: Date.now() - 900000 },
 ];
 
 export const useTradingStore = create<TradingState>((set, get) => ({
-  balance: 10000,
-  initialBalance: 10000,
+  balance: 1000000,
+  initialBalance: 1000000,
   positions: [],
   trades: [],
-  selectedSymbol: 'AAPL',
+  selectedSymbol: 'RELIANCE',
   selectedTimeframe: '1D',
   watchlist: initialWatchlist,
   aiSignals: initialSignals,
 
   setSelectedSymbol: (symbol) => set({ selectedSymbol: symbol }),
   setSelectedTimeframe: (tf) => set({ selectedTimeframe: tf }),
+
+  updatePrice: (symbol, price, prevClose) => {
+    set((state) => ({
+      watchlist: state.watchlist.map(item =>
+        item.symbol === symbol
+          ? {
+              ...item,
+              price,
+              change: price - prevClose,
+              changePercent: prevClose ? ((price - prevClose) / prevClose) * 100 : 0,
+            }
+          : item
+      ),
+      positions: state.positions.map(pos =>
+        pos.symbol === symbol ? { ...pos, currentPrice: price } : pos
+      ),
+    }));
+  },
 
   executeTrade: (symbol, side, price, quantity) => {
     const total = price * quantity;
@@ -154,22 +175,5 @@ export const useTradingStore = create<TradingState>((set, get) => ({
       positions: state.positions.filter(p => p.id !== positionId),
       trades: [trade, ...state.trades],
     });
-  },
-
-  updateWatchlistPrices: () => {
-    set((state) => ({
-      watchlist: state.watchlist.map(item => {
-        const variance = item.price * 0.002;
-        const delta = (Math.random() - 0.5) * variance;
-        const newPrice = Math.max(0.01, item.price + delta);
-        const newChange = item.change + delta;
-        const newChangePercent = (newChange / (newPrice - newChange)) * 100;
-        return { ...item, price: newPrice, change: newChange, changePercent: newChangePercent };
-      }),
-      positions: state.positions.map(pos => {
-        const wItem = state.watchlist.find(w => w.symbol === pos.symbol);
-        return wItem ? { ...pos, currentPrice: wItem.price } : pos;
-      }),
-    }));
   },
 }));

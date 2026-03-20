@@ -32,11 +32,11 @@ export default function Positions() {
                 return (
                   <tr key={pos.id} className="border-b border-border hover:bg-accent/50 transition-colors">
                     <td className="px-4 py-2 font-mono font-semibold text-foreground">{pos.symbol}</td>
-                    <td className="px-4 py-2 text-right font-mono text-muted-foreground">${pos.entryPrice.toFixed(2)}</td>
-                    <td className="px-4 py-2 text-right font-mono text-foreground">${pos.currentPrice.toFixed(2)}</td>
+                    <td className="px-4 py-2 text-right font-mono text-muted-foreground">₹{pos.entryPrice.toFixed(2)}</td>
+                    <td className="px-4 py-2 text-right font-mono text-foreground">₹{pos.currentPrice.toFixed(2)}</td>
                     <td className="px-4 py-2 text-right font-mono text-muted-foreground">{pos.quantity}</td>
                     <td className={`px-4 py-2 text-right font-mono font-medium ${pnl >= 0 ? 'text-gain' : 'text-loss'}`}>
-                      {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)} ({pnlPercent.toFixed(1)}%)
+                      {pnl >= 0 ? '+' : ''}₹{Math.abs(pnl).toFixed(2)} ({pnlPercent.toFixed(1)}%)
                     </td>
                     <td className="px-4 py-2 text-right">
                       <button onClick={() => closePosition(pos.id)} className="p-1 rounded hover:bg-loss/20 transition-colors">

@@ -1,6 +1,10 @@
 import { useTradingStore } from '@/stores/tradingStore';
 import { TrendingUp, TrendingDown, DollarSign, BarChart3 } from 'lucide-react';
 
+function formatINR(val: number) {
+  return '₹' + val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export default function PortfolioSummary() {
   const { balance, initialBalance, positions, trades } = useTradingStore();
 
@@ -11,9 +15,9 @@ export default function PortfolioSummary() {
   const returnPercent = ((totalValue - initialBalance) / initialBalance) * 100;
 
   const stats = [
-    { label: 'Portfolio Value', value: `$${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, icon: DollarSign, positive: totalValue >= initialBalance },
-    { label: 'Cash Available', value: `$${balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, icon: BarChart3, positive: true },
-    { label: 'Total P&L', value: `${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(2)}`, icon: totalPnl >= 0 ? TrendingUp : TrendingDown, positive: totalPnl >= 0 },
+    { label: 'Portfolio Value', value: formatINR(totalValue), icon: DollarSign, positive: totalValue >= initialBalance },
+    { label: 'Cash Available', value: formatINR(balance), icon: BarChart3, positive: true },
+    { label: 'Total P&L', value: `${totalPnl >= 0 ? '+' : ''}${formatINR(Math.abs(totalPnl))}`, icon: totalPnl >= 0 ? TrendingUp : TrendingDown, positive: totalPnl >= 0 },
     { label: 'Return', value: `${returnPercent >= 0 ? '+' : ''}${returnPercent.toFixed(2)}%`, icon: totalPnl >= 0 ? TrendingUp : TrendingDown, positive: returnPercent >= 0 },
   ];
 
