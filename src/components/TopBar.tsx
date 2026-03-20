@@ -1,4 +1,4 @@
-import { Activity, Zap, BarChart3 } from 'lucide-react';
+import { Activity, Zap, BarChart3, Bitcoin } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 export default function TopBar() {
@@ -19,6 +19,13 @@ export default function TopBar() {
             className={`text-xs px-3 py-1.5 rounded-md transition-colors ${location.pathname === '/' ? 'bg-primary/15 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}
           >
             Trade
+          </Link>
+          <Link
+            to="/crypto"
+            className={`text-xs px-3 py-1.5 rounded-md transition-colors flex items-center gap-1 ${location.pathname === '/crypto' ? 'bg-primary/15 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}
+          >
+            <Bitcoin className="w-3 h-3" />
+            Crypto
           </Link>
           <Link
             to="/portfolio"
