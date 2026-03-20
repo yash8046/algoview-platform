@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useCryptoStore, CRYPTO_PAIRS } from '@/stores/cryptoStore';
 import { useCryptoData } from '@/hooks/useCryptoData';
 import { formatINR } from '@/lib/exchangeRate';
+import { FlaskConical } from 'lucide-react';
 
 export default function CryptoTradePanel() {
   const { selectedPair, balance, positions, executeTrade, usdToInr } = useCryptoStore();
@@ -23,23 +24,30 @@ export default function CryptoTradePanel() {
 
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
-      <div className="px-4 py-2 bg-panel-header border-b border-border">
-        <h2 className="text-sm font-semibold text-foreground">Paper Trade</h2>
+      <div className="px-4 py-2 bg-panel-header border-b border-border flex items-center gap-1.5">
+        <FlaskConical className="w-3.5 h-3.5 text-warning" />
+        <h2 className="text-sm font-semibold text-foreground">Simulate Trade</h2>
       </div>
       <div className="p-4 space-y-3">
+        {/* Simulation badge */}
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-warning/10 border border-warning/20">
+          <FlaskConical className="w-3 h-3 text-warning" />
+          <span className="text-[10px] text-warning font-medium">Simulation Mode · No real money involved</span>
+        </div>
+
         <div className="flex gap-1 bg-secondary rounded-md p-0.5">
           <button
             onClick={() => setSide('buy')}
             className={`flex-1 text-xs font-semibold py-1.5 rounded transition-colors ${
               side === 'buy' ? 'bg-gain/20 text-gain' : 'text-muted-foreground hover:text-foreground'
             }`}
-          >BUY</button>
+          >SIM LONG ↑</button>
           <button
             onClick={() => setSide('sell')}
             className={`flex-1 text-xs font-semibold py-1.5 rounded transition-colors ${
               side === 'sell' ? 'bg-loss/20 text-loss' : 'text-muted-foreground hover:text-foreground'
             }`}
-          >SELL</button>
+          >SIM SHORT ↓</button>
         </div>
 
         <div>
@@ -68,7 +76,7 @@ export default function CryptoTradePanel() {
           <span className="font-mono text-foreground">{formatINR(total)}</span>
         </div>
         <div className="flex justify-between text-xs">
-          <span className="text-muted-foreground">Balance</span>
+          <span className="text-muted-foreground">Virtual Balance</span>
           <span className="font-mono text-foreground">{formatINR(balance)}</span>
         </div>
 
@@ -81,7 +89,7 @@ export default function CryptoTradePanel() {
               : 'bg-loss hover:bg-loss/80 text-destructive-foreground disabled:bg-loss/30 disabled:text-muted-foreground'
           }`}
         >
-          {side === 'buy' ? 'BUY' : 'SELL'} {pairInfo?.baseAsset}
+          {side === 'buy' ? 'SIM LONG ↑' : 'SIM SHORT ↓'} {pairInfo?.baseAsset}
         </button>
       </div>
     </div>

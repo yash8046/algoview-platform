@@ -1,15 +1,15 @@
-import { Brain, TrendingUp, TrendingDown, Minus, RefreshCw, Shield, Target, AlertTriangle, Zap, Newspaper, Users, BarChart3, AlertOctagon, Clock, Activity } from 'lucide-react';
+import { Brain, TrendingUp, TrendingDown, Minus, RefreshCw, Shield, Target, AlertTriangle, Zap, Newspaper, Users, BarChart3, AlertOctagon, Clock, Activity, Info } from 'lucide-react';
 import { useAIAnalysis, type AIAnalysisResult, type SentimentData } from '@/hooks/useAIAnalysis';
 import { useCryptoData } from '@/hooks/useCryptoData';
 import { useCryptoStore } from '@/stores/cryptoStore';
 import { useState } from 'react';
 
 const signalConfig = {
-  strong_buy: { icon: TrendingUp, color: 'text-gain', bg: 'bg-gain/15', border: 'border-gain/30', label: 'STRONG BUY' },
-  buy: { icon: TrendingUp, color: 'text-gain', bg: 'bg-gain/10', border: 'border-gain/20', label: 'BUY' },
-  sell: { icon: TrendingDown, color: 'text-loss', bg: 'bg-loss/10', border: 'border-loss/20', label: 'SELL' },
-  strong_sell: { icon: TrendingDown, color: 'text-loss', bg: 'bg-loss/15', border: 'border-loss/30', label: 'STRONG SELL' },
-  hold: { icon: Minus, color: 'text-warning', bg: 'bg-warning/10', border: 'border-warning/20', label: 'HOLD' },
+  strong_buy: { icon: TrendingUp, color: 'text-gain', bg: 'bg-gain/15', border: 'border-gain/30', label: 'STRONG BULLISH' },
+  buy: { icon: TrendingUp, color: 'text-gain', bg: 'bg-gain/10', border: 'border-gain/20', label: 'BULLISH BIAS' },
+  sell: { icon: TrendingDown, color: 'text-loss', bg: 'bg-loss/10', border: 'border-loss/20', label: 'BEARISH BIAS' },
+  strong_sell: { icon: TrendingDown, color: 'text-loss', bg: 'bg-loss/15', border: 'border-loss/30', label: 'STRONG BEARISH' },
+  hold: { icon: Minus, color: 'text-warning', bg: 'bg-warning/10', border: 'border-warning/20', label: 'NEUTRAL TREND' },
 };
 
 const riskConfig = {
@@ -114,8 +114,17 @@ function SignalCard({ result }: { result: AIAnalysisResult }) {
   const Icon = cfg.icon;
   const risk = riskConfig[ai.riskLevel as keyof typeof riskConfig] || riskConfig.medium;
 
+  const upProb = Math.round((ensemble.signal === 'buy' || ensemble.signal === 'hold' ? ensemble.confidence : 1 - ensemble.confidence) * 100);
+  const downProb = 100 - upProb;
+
   return (
     <div className="space-y-3">
+      {/* AI Insight label */}
+      <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground">
+        <Info className="w-3 h-3" />
+        <span>AI Insight · Experimental Model Output</span>
+      </div>
+
       <div className={`p-3 rounded-lg border ${cfg.border} ${cfg.bg}`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
@@ -126,6 +135,14 @@ function SignalCard({ result }: { result: AIAnalysisResult }) {
             <span className={`text-[10px] ${risk.color} font-medium`}>{risk.label}</span>
             <span className={`text-xs font-mono font-bold ${cfg.color}`}>{Math.round(ensemble.confidence * 100)}%</span>
           </div>
+        </div>
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">
+            Upward Prob: {upProb}%
+          </span>
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">
+            Downward Prob: {downProb}%
+          </span>
         </div>
         <p className="text-[11px] text-muted-foreground leading-relaxed">{ensemble.reasoning}</p>
         <div className="flex items-center gap-1 mt-1.5">
@@ -140,7 +157,7 @@ function SignalCard({ result }: { result: AIAnalysisResult }) {
         <div className="space-y-1.5">
           {result.positiveFactors?.length > 0 && (
             <div>
-              <span className="text-[10px] text-gain block mb-0.5">⬆ Positive Factors</span>
+              <span className="text-[10px] text-gain block mb-0.5">⬆ Upward Factors</span>
               {result.positiveFactors.slice(0, 3).map((f, i) => (
                 <div key={i} className="flex items-start gap-1.5 text-[10px] text-foreground/80">
                   <span className="text-gain mt-0.5">+</span><span>{f}</span>
@@ -150,7 +167,7 @@ function SignalCard({ result }: { result: AIAnalysisResult }) {
           )}
           {result.negativeFactors?.length > 0 && (
             <div>
-              <span className="text-[10px] text-loss block mb-0.5">⬇ Negative Factors</span>
+              <span className="text-[10px] text-loss block mb-0.5">⬇ Downward Factors</span>
               {result.negativeFactors.slice(0, 3).map((f, i) => (
                 <div key={i} className="flex items-start gap-1.5 text-[10px] text-foreground/80">
                   <span className="text-loss mt-0.5">−</span><span>{f}</span>
@@ -218,23 +235,23 @@ function SignalCard({ result }: { result: AIAnalysisResult }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <Target className="w-3 h-3 text-primary" />
-            <span className="text-[10px] text-muted-foreground">Predicted Move</span>
+            <span className="text-[10px] text-muted-foreground">Market Outlook</span>
           </div>
           <span className={`text-[11px] font-mono font-semibold ${
             prediction.direction === 'up' ? 'text-gain' : prediction.direction === 'down' ? 'text-loss' : 'text-muted-foreground'
           }`}>
-            {prediction.direction === 'up' ? '↑' : prediction.direction === 'down' ? '↓' : '→'} ${prediction.predicted.toFixed(2)}
+            {prediction.direction === 'up' ? '↑ Positive' : prediction.direction === 'down' ? '↓ Negative' : '→ Neutral'} · ${prediction.predicted.toFixed(2)}
           </span>
         </div>
         {ai.targetPrice && (
           <div className="flex justify-between mt-1.5 text-[10px]">
-            <span className="text-muted-foreground">Target</span>
+            <span className="text-muted-foreground">Projected Level</span>
             <span className="font-mono text-gain">${ai.targetPrice.toFixed(2)}</span>
           </div>
         )}
         {ai.stopLoss && (
           <div className="flex justify-between mt-0.5 text-[10px]">
-            <span className="text-muted-foreground">Stop Loss</span>
+            <span className="text-muted-foreground">Support Level</span>
             <span className="font-mono text-loss">${ai.stopLoss.toFixed(2)}</span>
           </div>
         )}
@@ -293,7 +310,7 @@ export default function CryptoAISignals() {
       <div className="px-4 py-2 bg-panel-header border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Brain className="w-3.5 h-3.5 text-primary" />
-          <h2 className="text-sm font-semibold text-foreground">AI Analysis</h2>
+          <h2 className="text-sm font-semibold text-foreground">AI Insights</h2>
           {analysis && <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-mono">READY</span>}
         </div>
         {analysis && (
@@ -308,7 +325,7 @@ export default function CryptoAISignals() {
           <div className="flex flex-col items-center justify-center py-8 gap-2">
             <RefreshCw className="w-6 h-6 text-primary animate-spin" />
             <span className="text-xs text-muted-foreground">Analyzing {selectedPair}...</span>
-            <span className="text-[10px] text-muted-foreground/60">Computing indicators, sentiment & AI prediction</span>
+            <span className="text-[10px] text-muted-foreground/60">Computing indicators, sentiment & AI model</span>
           </div>
         )}
         {error && (
@@ -328,7 +345,7 @@ export default function CryptoAISignals() {
               className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition-all disabled:opacity-50"
             >
               <Brain className="w-4 h-4" />
-              Start Prediction
+              Generate Insight
             </button>
             <span className="text-[9px] text-muted-foreground/40">
               {candles.length < 50 ? `Loading data... (${candles.length}/50 candles)` : 'Uses AI + technical indicators + sentiment analysis'}
@@ -338,7 +355,7 @@ export default function CryptoAISignals() {
         {analysis && (
           <div className="mt-3 pt-2 border-t border-border">
             <span className="text-[9px] text-muted-foreground/50 font-mono">
-              Updated: {new Date(analysis.timestamp).toLocaleTimeString()} • Cached 5min • Not financial advice
+              Updated: {new Date(analysis.timestamp).toLocaleTimeString()} • Cached 5min • For informational purposes only
             </span>
           </div>
         )}
