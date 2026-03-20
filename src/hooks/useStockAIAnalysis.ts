@@ -16,7 +16,14 @@ export interface StockAIResult {
   indicators: {
     rsi: number; macd: number; sma20: number; sma50: number;
     ema12: number; ema26: number; bbUpper: number; bbLower: number;
-    atr: number; price: number;
+    atr: number; price: number; adx: number; vwap: number;
+  };
+  regime: { regime: string; adx: number; trendStrength: number; volatilityLevel: string };
+  riskMetrics: {
+    suggestedStopLoss: number;
+    suggestedTakeProfit: number;
+    positionSizePct: number;
+    riskRewardRatio: number;
   };
   timestamp: number;
 }
