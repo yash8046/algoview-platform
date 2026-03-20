@@ -40,9 +40,11 @@ const BACKTEST_INTERVAL_MAP: Record<string, { interval: string; range: string }>
 
 export async function fetchYahooFinanceData(
   symbol: string,
-  timeframe: string = '1D'
+  timeframe: string = '1D',
+  backtest: boolean = false
 ): Promise<YahooResponse> {
-  const params = INTERVAL_MAP[timeframe] || INTERVAL_MAP['1D'];
+  const map = backtest ? BACKTEST_INTERVAL_MAP : INTERVAL_MAP;
+  const params = map[timeframe] || map['1D'];
 
   const { data, error } = await supabase.functions.invoke('yahoo-finance', {
     body: { symbol, interval: params.interval, range: params.range },
