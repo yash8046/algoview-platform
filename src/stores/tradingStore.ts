@@ -43,7 +43,6 @@ interface TradingState {
   selectedSymbol: string;
   selectedTimeframe: string;
   watchlist: WatchlistItem[];
-  aiSignals: AISignal[];
   watchlistLoaded: boolean;
   setSelectedSymbol: (symbol: string) => void;
   setSelectedTimeframe: (tf: string) => void;
