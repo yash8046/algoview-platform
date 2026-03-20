@@ -29,15 +29,16 @@ function ConfidenceBar({ value, label }: { value: number; label: string }) {
   );
 }
 
-function SentimentScore({ score, label }: { score: number; label: string }) {
-  const color = score > 0.1 ? 'text-gain' : score < -0.1 ? 'text-loss' : 'text-warning';
-  const bg = score > 0.1 ? 'bg-gain' : score < -0.1 ? 'bg-loss' : 'bg-warning';
-  const pct = Math.round(((score + 1) / 2) * 100);
+function SentimentScore({ score, label }: { score: number | undefined | null; label: string }) {
+  const s = typeof score === 'number' ? score : 0;
+  const color = s > 0.1 ? 'text-gain' : s < -0.1 ? 'text-loss' : 'text-warning';
+  const bg = s > 0.1 ? 'bg-gain' : s < -0.1 ? 'bg-loss' : 'bg-warning';
+  const pct = Math.round(((s + 1) / 2) * 100);
   return (
     <div className="space-y-0.5">
       <div className="flex justify-between text-[10px]">
         <span className="text-muted-foreground">{label}</span>
-        <span className={`font-mono font-semibold ${color}`}>{score > 0 ? '+' : ''}{score.toFixed(2)}</span>
+        <span className={`font-mono font-semibold ${color}`}>{s > 0 ? '+' : ''}{s.toFixed(2)}</span>
       </div>
       <div className="h-1 bg-secondary rounded-full overflow-hidden">
         <div className={`h-full ${bg} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
