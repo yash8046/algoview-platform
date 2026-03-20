@@ -65,7 +65,7 @@ const initialWatchlist: WatchlistItem[] = [
   { symbol: 'HDFCBANK', name: 'HDFC Bank', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'HDFCBANK.NS' },
   { symbol: 'ICICIBANK', name: 'ICICI Bank', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'ICICIBANK.NS' },
   { symbol: 'SBIN', name: 'State Bank of India', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'SBIN.NS' },
-  { symbol: 'TATAMOTORS', name: 'Tata Motors', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'TATAMOTORS.NS' },
+  { symbol: 'LT', name: 'Larsen & Toubro', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'LT.NS' },
   { symbol: 'WIPRO', name: 'Wipro Ltd.', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'WIPRO.NS' },
   { symbol: 'ITC', name: 'ITC Ltd.', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'ITC.NS' },
   { symbol: 'BAJFINANCE', name: 'Bajaj Finance', price: 0, change: 0, changePercent: 0, volume: '—', type: 'stock', yahooSymbol: 'BAJFINANCE.NS' },
