@@ -16,6 +16,8 @@ export default function TopBar() {
     { to: '/portfolio', label: 'Portfolio', icon: BarChart3 },
     { to: '/backtest', label: 'Backtest', icon: FlaskConical },
     { to: '/disclaimer', label: 'Disclaimer', icon: Info },
+    { to: '/privacy', label: 'Privacy', icon: Shield },
+    { to: '/terms', label: 'Terms', icon: FileText },
   ];
 
   return (
