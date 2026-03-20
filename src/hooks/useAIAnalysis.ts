@@ -44,11 +44,9 @@ export function useAIAnalysis() {
     setError(null);
 
     try {
-      // Step 1: Compute indicators & rule-based signal locally
       const ruleSignal = generateRuleBasedSignal(candles);
       const prediction = predictNextPrice(candles);
 
-      // Step 2: Send to AI for enhanced analysis
       const { data, error: fnError } = await supabase.functions.invoke('ai-analysis', {
         body: {
           indicators: ruleSignal.indicators,

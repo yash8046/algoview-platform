@@ -144,6 +144,16 @@ export default function CryptoAISignals() {
     }
   }, [candles.length, selectedPair, selectedInterval]);
 
+  // Auto-refresh every 5 seconds for crypto
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (candles.length >= 50) {
+        analyze(candles, selectedPair, selectedInterval);
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [candles, selectedPair, selectedInterval, analyze]);
+
   const handleRefresh = () => {
     if (candles.length >= 50) {
       lastAnalyzed.current = '';
@@ -192,7 +202,7 @@ export default function CryptoAISignals() {
         {analysis && (
           <div className="mt-3 pt-2 border-t border-border">
             <span className="text-[9px] text-muted-foreground/50 font-mono">
-              Last updated: {new Date(analysis.timestamp).toLocaleTimeString()} • Not financial advice
+              Updated: {new Date(analysis.timestamp).toLocaleTimeString()} • Auto-refresh 5s • Not financial advice
             </span>
           </div>
         )}
