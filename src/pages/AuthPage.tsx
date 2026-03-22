@@ -69,8 +69,34 @@ export default function AuthPage() {
         {/* Card */}
         <div className="bg-card border border-border rounded-xl p-8">
           <h2 className="text-xl font-bold text-foreground text-center mb-1">
-            {isLogin ? 'Welcome Back' : 'Create Account'}
+            {isForgotPassword ? 'Forgot Password' : isLogin ? 'Welcome Back' : 'Create Account'}
           </h2>
+          <p className="text-sm text-muted-foreground text-center mb-6">
+            {isForgotPassword ? 'Enter your email to receive a reset link' : isLogin ? 'Sign in to access your portfolio' : 'Start paper trading with ₹10,00,000'}
+          </p>
+
+          {isForgotPassword ? (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-secondary border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+              >
+                {loading ? 'Sending...' : (<>Send Reset Link <ArrowRight className="w-4 h-4" /></>)}
+              </button>
+            </form>
+          ) : (
           <p className="text-sm text-muted-foreground text-center mb-6">
             {isLogin ? 'Sign in to access your portfolio' : 'Start paper trading with ₹10,00,000'}
           </p>
