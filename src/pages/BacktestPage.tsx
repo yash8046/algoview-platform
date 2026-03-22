@@ -51,6 +51,8 @@ function MetricCard({ label, value, sub, positive }: { label: string; value: str
 function EquityChart({ result }: { result: BacktestResult }) {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<IChartApi | null>(null);
+  const seriesInstance = useRef<any>(null);
+  const vMargins = useRef({ top: 0.1, bottom: 0.1 });
 
   useEffect(() => {
     if (!chartRef.current || result.equityCurve.length === 0) return;
