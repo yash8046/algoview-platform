@@ -303,7 +303,7 @@ export default function StrategyBuilderPage() {
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
         <div className={`${sidebarOpen ? 'w-80 lg:w-96' : 'w-0'} transition-all duration-300 overflow-hidden border-r border-border bg-card flex-shrink-0`}>
-          <div className="h-full overflow-y-auto p-3 space-y-3 pb-20 md:pb-3 scrollbar-thin">
+          <div className="h-full overflow-y-auto overscroll-contain p-3 space-y-3 pb-20 md:pb-3 scrollbar-thin" style={{ WebkitOverflowScrolling: 'touch' }}>
             {/* Strategy Name */}
             <div>
               <label className="text-[10px] text-muted-foreground block mb-1">Strategy Name</label>
@@ -314,10 +314,10 @@ export default function StrategyBuilderPage() {
             {/* Templates */}
             <div>
               <label className="text-[10px] text-muted-foreground block mb-1.5">Templates</label>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1 max-h-28 overflow-y-auto overscroll-contain scrollbar-thin" style={{ WebkitOverflowScrolling: 'touch' }}>
                 {STRATEGY_TEMPLATES.map(t => (
                   <button key={t.name} onClick={() => loadTemplate(t)}
-                    className={`px-2 py-1 text-[10px] rounded transition-colors ${strategy.name === t.name ? 'bg-primary text-primary-foreground font-semibold' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}>
+                    className={`px-2 py-1 text-[10px] rounded transition-colors min-h-[28px] active:scale-95 ${strategy.name === t.name ? 'bg-primary text-primary-foreground font-semibold' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}>
                     {t.name}
                   </button>
                 ))}
@@ -539,7 +539,7 @@ export default function StrategyBuilderPage() {
             {/* Actions */}
             <div className="flex gap-2 pt-2 border-t border-border">
               <button onClick={runTest} disabled={running || strategy.entryConditions.length === 0}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 active:scale-[0.97]">
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-semibold rounded bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 active:scale-[0.97] min-h-[44px]">
                 <Play className="w-3.5 h-3.5" />{running ? 'Running...' : 'Run Backtest'}
               </button>
               <button onClick={saveStrategy} className="px-3 py-2 text-xs rounded bg-secondary text-foreground hover:bg-accent border border-border" title="Save Strategy">
