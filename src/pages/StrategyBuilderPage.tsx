@@ -593,7 +593,7 @@ export default function StrategyBuilderPage() {
               {/* Drawdown */}
               <div className="relative">
                 <LWChart
-                  data={result.drawdownCurve}
+                  data={result.drawdownCurve.map(d => ({ time: d.time, value: d.drawdown }))}
                   color="hsl(0, 72%, 51%)"
                   label="Drawdown %"
                   height="200px"
