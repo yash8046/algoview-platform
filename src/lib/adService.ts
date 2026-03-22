@@ -88,10 +88,19 @@ export async function initAdMob(): Promise<void> {
   if (!isNative() || isInitialized) return;
 
   try {
+    adLog('Importing AdMob module...');
     const AdMob = await getAdMob();
-    await AdMob.initialize({
+    adLog('AdMob module imported, calling initialize...');
+    
+    // Add timeout to detect hanging init
+    const initPromise = AdMob.initialize({
       initializeForTesting: true,
     });
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('AdMob.initialize() timed out after 10s')), 10000)
+    );
+    
+    await Promise.race([initPromise, timeoutPromise]);
     isInitialized = true;
     adLog('AdMob initialized successfully');
 
@@ -99,7 +108,11 @@ export async function initAdMob(): Promise<void> {
     loadRewardedAd();
     loadInterstitialAd();
   } catch (err: any) {
-    adLog(`AdMob init FAILED: ${err?.message || err}`, 'error');
+    adLog(`AdMob init FAILED: ${err?.message || JSON.stringify(err)}`, 'error');
+    // Still try to load ads even if init "fails" — some devices work anyway
+    isInitialized = true;
+    loadRewardedAd();
+    loadInterstitialAd();
   }
 }
 
