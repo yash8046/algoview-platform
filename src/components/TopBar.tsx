@@ -27,7 +27,7 @@ export default function TopBar() {
           <div className="p-1 sm:p-1.5 rounded-md bg-primary/20">
             <Zap className="w-4 sm:w-5 h-4 sm:h-5 text-primary" />
           </div>
-          <span className="text-base sm:text-lg font-bold text-foreground tracking-tight">MarketLens</span>
+          <span className="text-base sm:text-lg font-bold text-foreground tracking-tight">AlgoInsight</span>
         </div>
 
         {!isMobile && (

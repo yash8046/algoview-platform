@@ -63,7 +63,7 @@ export default function AuthPage() {
           <div className="p-2 rounded-lg bg-primary/20">
             <Zap className="w-7 h-7 text-primary" />
           </div>
-          <span className="text-2xl font-bold text-foreground tracking-tight">AlgoTrade</span>
+          <span className="text-2xl font-bold text-foreground tracking-tight">AlgoInsight</span>
         </div>
 
         {/* Card */}
