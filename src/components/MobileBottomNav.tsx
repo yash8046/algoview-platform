@@ -14,11 +14,12 @@ const tabs = [
 export default function MobileBottomNav() {
   const isMobile = useIsMobile();
   const location = useLocation();
+  const { user } = useAuth();
 
   const hiddenRoutes = ['/reset-password'];
-  const isAuthPage = location.pathname === '/auth' || hiddenRoutes.includes(location.pathname);
+  const isHidden = !user || hiddenRoutes.includes(location.pathname);
 
-  if (!isMobile || isAuthPage) return null;
+  if (!isMobile || isHidden) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-area-bottom">

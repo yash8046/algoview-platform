@@ -1,6 +1,5 @@
 import { useCallback, useRef } from 'react';
 import { showRewardedAd, showInterstitialAd } from '@/lib/adService';
-import { toast } from 'sonner';
 
 /**
  * Hook to gate a feature behind a rewarded ad.
