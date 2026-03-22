@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createChart, LineSeries, type IChartApi } from 'lightweight-charts';
 import TopBar from '@/components/TopBar';
+import { useRewardedAd } from '@/hooks/useRewardedAd';
 import { fetchKlines } from '@/lib/binanceApi';
 import { fetchYahooFinanceData } from '@/lib/yahooFinance';
 import { type OHLCV } from '@/lib/technicalIndicators';
