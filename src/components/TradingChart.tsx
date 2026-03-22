@@ -178,6 +178,7 @@ export default function TradingChart() {
         <ChartOverlay
           chart={chartApi}
           series={seriesApi}
+          drawingMode={drawingMode}
           drawingModeRef={drawingModeRef}
           drawings={drawings}
           onAddDrawing={addDrawing}
