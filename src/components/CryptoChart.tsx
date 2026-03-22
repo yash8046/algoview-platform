@@ -141,11 +141,15 @@ export default function CryptoChart() {
     }
 
     // Apply patterns if enabled
+    if (markersRef.current) {
+      markersRef.current.detach();
+      markersRef.current = null;
+    }
     if (showPatterns && formatted.length > 2) {
       const markers = detectCandlestickPatterns(formatted);
-      candleSeriesRef.current.setMarkers(markers);
-    } else {
-      candleSeriesRef.current.setMarkers([]);
+      if (markers.length > 0) {
+        markersRef.current = createSeriesMarkers(candleSeriesRef.current, markers);
+      }
     }
 
     chartApi?.timeScale().fitContent();

@@ -123,11 +123,16 @@ export default function TradingChart() {
   // Apply candlestick pattern markers
   useEffect(() => {
     if (!seriesApi || candleDataRef.current.length === 0) return;
+    // Clean up previous markers
+    if (markersRef.current) {
+      markersRef.current.detach();
+      markersRef.current = null;
+    }
     if (showPatterns) {
       const markers = detectCandlestickPatterns(candleDataRef.current);
-      seriesApi.setMarkers(markers);
-    } else {
-      seriesApi.setMarkers([]);
+      if (markers.length > 0) {
+        markersRef.current = createSeriesMarkers(seriesApi, markers);
+      }
     }
   }, [showPatterns, seriesApi]);
 
