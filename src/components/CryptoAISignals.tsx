@@ -2,6 +2,7 @@ import { Brain, TrendingUp, TrendingDown, Minus, RefreshCw, Shield, Target, Aler
 import { useAIAnalysis, type AIAnalysisResult, type SentimentData } from '@/hooks/useAIAnalysis';
 import { useCryptoData } from '@/hooks/useCryptoData';
 import { useCryptoStore } from '@/stores/cryptoStore';
+import { useRewardedAd } from '@/hooks/useRewardedAd';
 import { useState } from 'react';
 
 const signalConfig = {
