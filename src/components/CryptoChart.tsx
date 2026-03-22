@@ -208,17 +208,19 @@ export default function CryptoChart() {
           </div>
         </div>
       </div>
-      <div className="relative flex-1 min-h-0">
-        <div ref={chartRef} className="w-full h-full bg-chart" />
-        <ChartOverlay
-          chart={chartApi}
-          series={seriesApi}
-          drawingMode={drawingMode}
-          drawingModeRef={drawingModeRef}
-          drawings={drawings}
-          onAddDrawing={addDrawing}
-          onFinishDrawing={finishDrawing}
-        />
+      <div className="relative flex-1 min-h-0 overflow-hidden">
+        <div ref={chartRef} className="absolute inset-0 bg-chart" style={{ zIndex: 1 }} />
+        <div className="absolute inset-0" style={{ zIndex: isDrawingActive ? 100 : 0, pointerEvents: isDrawingActive ? 'auto' : 'none' }}>
+          <ChartOverlay
+            chart={chartApi}
+            series={seriesApi}
+            drawingMode={drawingMode}
+            drawingModeRef={drawingModeRef}
+            drawings={drawings}
+            onAddDrawing={addDrawing}
+            onFinishDrawing={finishDrawing}
+          />
+        </div>
       </div>
     </div>
   );
