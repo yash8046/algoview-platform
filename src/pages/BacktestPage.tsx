@@ -410,6 +410,7 @@ export default function BacktestPage() {
         <div className="bg-card rounded-lg border border-border p-2.5 sm:p-3">
           <div className="flex items-center justify-between mb-1.5">
             <label className="text-[10px] text-muted-foreground">Strategy Pattern</label>
+          </div>
           <div className="flex flex-wrap gap-1.5">
             {allPresets.map(preset => (
               <div key={preset.id} className="flex items-center gap-0.5">
