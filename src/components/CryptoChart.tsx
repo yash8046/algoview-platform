@@ -156,6 +156,7 @@ export default function CryptoChart() {
   }, [candles, usdToInr, indicators, showPatterns, chartApi]);
 
   const livePriceINR = livePrice * usdToInr;
+  const isDrawingActive = drawingMode !== 'none';
 
   return (
     <div className="flex flex-col h-full bg-card rounded-lg border border-border overflow-hidden">
