@@ -54,6 +54,16 @@ function EquityChart({ result }: { result: BacktestResult }) {
   const seriesInstance = useRef<any>(null);
   const vMargins = useRef({ top: 0.1, bottom: 0.1 });
 
+  const zoomRange = (factor: number) => {
+    const chart = chartInstance.current;
+    if (!chart) return;
+    const range = chart.timeScale().getVisibleLogicalRange();
+    if (!range) return;
+    const center = (range.from + range.to) / 2;
+    const halfSpan = Math.max(10, (range.to - range.from) * factor);
+    chart.timeScale().setVisibleLogicalRange({ from: center - halfSpan, to: center + halfSpan });
+  };
+
   useEffect(() => {
     if (!chartRef.current || result.equityCurve.length === 0) return;
     if (chartInstance.current) { chartInstance.current.remove(); chartInstance.current = null; }
@@ -82,8 +92,8 @@ function EquityChart({ result }: { result: BacktestResult }) {
         rightOffset: 5,
       },
       crosshair: { mode: 0 },
-      handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
-      handleScale: { mouseWheel: true, pinch: true, axisPressedMouseMove: true, axisDoubleClickReset: true },
+      handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: true },
+      handleScale: { mouseWheel: true, pinch: true, axisPressedMouseMove: { time: true, price: true }, axisDoubleClickReset: true },
     });
 
     const series = chart.addSeries(LineSeries, {
@@ -98,9 +108,14 @@ function EquityChart({ result }: { result: BacktestResult }) {
       .filter((_, i) => i % step === 0)
       .map(e => ({ time: e.time as any, value: e.equity }));
     series.setData(data);
+    series.priceScale().applyOptions({ scaleMargins: vMargins.current });
     chart.timeScale().fitContent();
+    chart.priceScale('right').applyOptions({ autoScale: false });
     chartInstance.current = chart;
     seriesInstance.current = series;
+    if (data.length > 40) {
+      zoomRange(0.42);
+    }
 
     const observer = new ResizeObserver(() => {
       if (container) chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
@@ -111,23 +126,11 @@ function EquityChart({ result }: { result: BacktestResult }) {
   }, [result]);
 
   const zoomIn = () => {
-    const chart = chartInstance.current;
-    if (!chart) return;
-    const range = chart.timeScale().getVisibleLogicalRange();
-    if (!range) return;
-    const center = (range.from + range.to) / 2;
-    const halfSpan = (range.to - range.from) / 4;
-    chart.timeScale().setVisibleLogicalRange({ from: center - halfSpan, to: center + halfSpan });
+    zoomRange(0.25);
   };
 
   const zoomOut = () => {
-    const chart = chartInstance.current;
-    if (!chart) return;
-    const range = chart.timeScale().getVisibleLogicalRange();
-    if (!range) return;
-    const center = (range.from + range.to) / 2;
-    const halfSpan = (range.to - range.from);
-    chart.timeScale().setVisibleLogicalRange({ from: center - halfSpan, to: center + halfSpan });
+    zoomRange(1);
   };
 
   const zoomInVertical = () => {
@@ -170,7 +173,7 @@ function EquityChart({ result }: { result: BacktestResult }) {
 
   return (
     <div className="relative w-full h-full" style={{ minHeight: '200px' }}>
-      <div ref={chartRef} className="w-full h-full" />
+      <div ref={chartRef} className="w-full h-full touch-none" />
       {/* Horizontal zoom controls */}
       <div className="absolute top-2 right-2 flex gap-1 z-10">
         <button onClick={zoomIn} className="px-2 py-1 text-xs font-mono bg-card/80 border border-border rounded hover:bg-accent transition-colors text-foreground" title="Zoom In (Horizontal)">+</button>
@@ -605,7 +608,7 @@ export default function BacktestPage() {
                 <h3 className="text-xs sm:text-sm font-semibold text-foreground">Equity Curve</h3>
                 <span className="text-[10px] text-muted-foreground font-mono">{result.totalTrades} trades</span>
               </div>
-              <div style={{ height: '420px' }}>
+              <div className="h-[480px] sm:h-[560px] lg:h-[620px]">
                 <EquityChart result={result} />
               </div>
             </div>

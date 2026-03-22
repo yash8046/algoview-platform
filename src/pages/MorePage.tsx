@@ -34,36 +34,38 @@ const cards = [
 
 export default function MorePage() {
   return (
-    <div className="flex flex-col h-[100dvh] overflow-hidden">
+    <div className="flex h-[100svh] max-h-[100svh] flex-col overflow-hidden overscroll-none">
       <TopBar />
-      <div className="flex-1 overflow-hidden pb-20 p-3 sm:p-4 flex flex-col">
+      <div className="flex min-h-0 flex-1 flex-col justify-between overflow-hidden px-3 pt-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] sm:p-4">
         <div className="flex items-center gap-2 mb-4">
           <Info className="w-5 h-5 text-primary" />
           <h1 className="text-base font-bold text-foreground">More</h1>
         </div>
 
-        <div className="flex flex-col gap-2.5">
-          {cards.map(card => (
-            <Link
-              key={card.to}
-              to={card.to}
-              className={`flex items-center gap-3 p-3.5 rounded-lg border ${card.borderColor} ${card.bgColor} hover:opacity-90 active:scale-[0.99] transition-all`}
-            >
-              <div className={`p-2 rounded-lg bg-card border border-border`}>
-                <card.icon className={`w-5 h-5 ${card.color}`} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold text-foreground">{card.title}</h3>
-                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{card.description}</p>
-              </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            </Link>
-          ))}
-        </div>
+        <div className="flex min-h-0 flex-1 flex-col justify-between gap-6">
+          <div className="flex flex-col gap-2.5">
+            {cards.map(card => (
+              <Link
+                key={card.to}
+                to={card.to}
+                className={`flex items-center gap-3 p-3.5 rounded-lg border ${card.borderColor} ${card.bgColor} hover:opacity-90 active:scale-[0.99] transition-all`}
+              >
+                <div className={`p-2 rounded-lg bg-card border border-border`}>
+                  <card.icon className={`w-5 h-5 ${card.color}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-semibold text-foreground">{card.title}</h3>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{card.description}</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              </Link>
+            ))}
+          </div>
 
-        <div className="mt-6 text-center">
-          <p className="text-[10px] text-muted-foreground/50 font-mono">MarketLens v1.0 • AI Market Analysis Tool</p>
-          <p className="text-[10px] text-muted-foreground/40 mt-1">For educational & research purposes only</p>
+          <div className="text-center">
+            <p className="text-[10px] text-muted-foreground/50 font-mono">MarketLens v1.0 • AI Market Analysis Tool</p>
+            <p className="text-[10px] text-muted-foreground/40 mt-1">For educational & research purposes only</p>
+          </div>
         </div>
       </div>
     </div>
