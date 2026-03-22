@@ -34,7 +34,7 @@ const cards = [
 
 export default function MorePage() {
   return (
-    <div className="flex h-[100svh] max-h-[100svh] flex-col overflow-hidden overscroll-none">
+    <div className="flex h-[calc(100dvh-1.75rem)] max-h-[calc(100dvh-1.75rem)] min-h-0 flex-col overflow-hidden overscroll-none">
       <TopBar />
       <div className="flex min-h-0 flex-1 flex-col justify-between overflow-hidden px-3 pt-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] sm:p-4">
         <div className="flex items-center gap-2 mb-4">

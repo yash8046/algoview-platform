@@ -52,7 +52,13 @@ function EquityChart({ result }: { result: BacktestResult }) {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<IChartApi | null>(null);
   const seriesInstance = useRef<any>(null);
-  const vMargins = useRef({ top: 0.1, bottom: 0.1 });
+  const vMargins = useRef({ top: 0.2, bottom: 0.2 });
+
+  const freezePriceScale = () => {
+    requestAnimationFrame(() => {
+      chartInstance.current?.priceScale('right').applyOptions({ autoScale: false });
+    });
+  };
 
   const zoomRange = (factor: number) => {
     const chart = chartInstance.current;
@@ -110,12 +116,12 @@ function EquityChart({ result }: { result: BacktestResult }) {
     series.setData(data);
     series.priceScale().applyOptions({ scaleMargins: vMargins.current });
     chart.timeScale().fitContent();
-    chart.priceScale('right').applyOptions({ autoScale: false });
     chartInstance.current = chart;
     seriesInstance.current = series;
     if (data.length > 40) {
-      zoomRange(0.42);
+      zoomRange(0.32);
     }
+    freezePriceScale();
 
     const observer = new ResizeObserver(() => {
       if (container) chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
@@ -166,9 +172,11 @@ function EquityChart({ result }: { result: BacktestResult }) {
     const chart = chartInstance.current;
     if (!chart) return;
     chart.priceScale('right').applyOptions({ autoScale: true });
-    vMargins.current = { top: 0.1, bottom: 0.1 };
+    vMargins.current = { top: 0.2, bottom: 0.2 };
     seriesInstance.current?.priceScale().applyOptions({ scaleMargins: vMargins.current });
+    chart.timeScale().resetTimeScale();
     chart.timeScale().fitContent();
+    freezePriceScale();
   };
 
   return (
@@ -608,7 +616,7 @@ export default function BacktestPage() {
                 <h3 className="text-xs sm:text-sm font-semibold text-foreground">Equity Curve</h3>
                 <span className="text-[10px] text-muted-foreground font-mono">{result.totalTrades} trades</span>
               </div>
-              <div className="h-[480px] sm:h-[560px] lg:h-[620px]">
+              <div className="h-[600px] sm:h-[720px] lg:h-[820px]">
                 <EquityChart result={result} />
               </div>
             </div>
