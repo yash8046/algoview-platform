@@ -151,7 +151,7 @@ export default function AISignals() {
           {result && <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-mono">READY</span>}
         </div>
         {result && (
-          <button onClick={refresh} disabled={loading}
+          <button onClick={() => gateWithAd(refresh)} disabled={loading}
             className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40">
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           </button>
