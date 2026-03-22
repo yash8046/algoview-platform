@@ -21,6 +21,7 @@ export default function TopBar() {
     { to: '/crypto', label: 'Crypto', icon: Bitcoin },
     { to: '/portfolio', label: 'Portfolio', icon: BarChart3 },
     { to: '/backtest', label: 'Backtest', icon: FlaskConical },
+    { to: '/strategy-builder', label: 'Strategy', icon: Blocks },
   ];
 
   const moreLinks = [
