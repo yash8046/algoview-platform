@@ -51,6 +51,7 @@ const App = () => {
             <Route path="*" element={<NotFound />} />
           </Routes>
           <MobileBottomNav />
+          <AdDebugOverlay />
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
