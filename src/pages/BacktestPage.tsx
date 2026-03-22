@@ -375,7 +375,10 @@ export default function BacktestPage() {
         setRunning(false);
         return;
       }
-      setResult(runBacktest(candles, config));
+      const backtestResult = runBacktest(candles, config);
+      setResult(backtestResult);
+      // Show interstitial ad after backtest completes
+      showInterstitial();
     } catch (e: any) {
       setError(e.message || 'Backtest failed');
     } finally {
