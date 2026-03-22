@@ -42,7 +42,9 @@ export function useChartDrawings(symbol: string) {
   }, []);
 
   const finishDrawing = useCallback(() => {
-    setDrawingMode('none');
+    // Keep the current drawing mode active so the user can draw multiple
+    // shapes without reselecting. Only laser resets automatically.
+    setDrawingMode((prev) => (prev === 'laser' ? 'none' : prev));
   }, []);
 
   return {
