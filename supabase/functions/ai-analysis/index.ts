@@ -1,15 +1,40 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function getSupabaseClient() {
+  return createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const { indicators, pair, timeframe, ruleSignal } = await req.json();
+    const supabase = getSupabaseClient();
+
+    // Check cache first
+    const cacheKey = `${pair}-${timeframe}`;
+    const { data: cached } = await supabase
+      .from('ai_insights_cache')
+      .select('result')
+      .eq('cache_key', cacheKey)
+      .gt('expires_at', new Date().toISOString())
+      .single();
+
+    if (cached) {
+      console.log(`Cache hit for ${cacheKey}`);
+      return new Response(JSON.stringify(cached.result), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -173,7 +198,7 @@ Provide your analysis as JSON.`;
     const normalizedSignal = normalizeSignal(aiAnalysis.signal);
     const ensembleSignal = computeEnsemble(ruleSignal, { ...aiAnalysis, signal: normalizedSignal });
 
-    return new Response(JSON.stringify({
+    const resultPayload = {
       ruleBasedSignal: ruleSignal,
       aiSignal: aiAnalysis,
       ensembleSignal: {
@@ -187,7 +212,25 @@ Provide your analysis as JSON.`;
       timeHorizon: aiAnalysis.timeHorizon,
       volatilityCategory: aiAnalysis.volatilityCategory,
       timestamp: Date.now(),
-    }), {
+    };
+
+    // Store in cache (upsert — replace if exists)
+    await supabase
+      .from('ai_insights_cache')
+      .upsert({
+        cache_key: cacheKey,
+        pair,
+        timeframe,
+        result: resultPayload,
+        created_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      }, { onConflict: 'cache_key' })
+      .then(({ error }) => {
+        if (error) console.error('Cache write error:', error);
+        else console.log(`Cached result for ${cacheKey}`);
+      });
+
+    return new Response(JSON.stringify(resultPayload), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
-import { getUsdToInrRate } from '@/lib/exchangeRate';
+import { getUsdToInrRate, subscribeToRate } from '@/lib/exchangeRate';
 
 export interface CryptoPosition {
   id: string;
@@ -78,6 +78,8 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
   loadExchangeRate: async () => {
     const rate = await getUsdToInrRate();
     set({ usdToInr: rate });
+    // Subscribe to live rate updates
+    subscribeToRate((newRate) => set({ usdToInr: newRate }));
   },
 
   loadFromDB: async () => {

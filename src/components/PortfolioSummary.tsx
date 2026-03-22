@@ -1,5 +1,6 @@
 import { useTradingStore } from '@/stores/tradingStore';
 import { TrendingUp, TrendingDown, DollarSign, BarChart3, FlaskConical } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 function formatINR(val: number) {
   return '₹' + val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -7,6 +8,7 @@ function formatINR(val: number) {
 
 export default function PortfolioSummary() {
   const { balance, initialBalance, positions, trades } = useTradingStore();
+  const isMobile = useIsMobile();
 
   const unrealizedPnl = positions.reduce((sum, p) => sum + (p.currentPrice - p.entryPrice) * p.quantity, 0);
   const realizedPnl = trades.reduce((sum, t) => sum + (t.pnl || 0), 0);
@@ -15,11 +17,37 @@ export default function PortfolioSummary() {
   const returnPercent = ((totalValue - initialBalance) / initialBalance) * 100;
 
   const stats = [
-    { label: 'Sim Portfolio', value: formatINR(totalValue), icon: DollarSign, positive: totalValue >= initialBalance },
-    { label: 'Virtual Cash', value: formatINR(balance), icon: BarChart3, positive: true },
-    { label: 'Sim P&L', value: `${totalPnl >= 0 ? '+' : ''}${formatINR(Math.abs(totalPnl))}`, icon: totalPnl >= 0 ? TrendingUp : TrendingDown, positive: totalPnl >= 0 },
+    { label: 'Portfolio', value: formatINR(totalValue), icon: DollarSign, positive: totalValue >= initialBalance },
+    { label: 'Cash', value: formatINR(balance), icon: BarChart3, positive: true },
+    { label: 'P&L', value: `${totalPnl >= 0 ? '+' : ''}${formatINR(Math.abs(totalPnl))}`, icon: totalPnl >= 0 ? TrendingUp : TrendingDown, positive: totalPnl >= 0 },
     { label: 'Return', value: `${returnPercent >= 0 ? '+' : ''}${returnPercent.toFixed(2)}%`, icon: totalPnl >= 0 ? TrendingUp : TrendingDown, positive: returnPercent >= 0 },
   ];
+
+  if (isMobile) {
+    return (
+      <div className="space-y-1">
+        <div className="flex items-center gap-1.5 px-1">
+          <FlaskConical className="w-3 h-3 text-warning" />
+          <span className="text-[9px] text-warning font-medium">Simulation · Virtual Money</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {stats.map(stat => (
+            <div key={stat.label} className="bg-card rounded-lg border border-border p-2.5 flex items-center gap-2">
+              <div className={`p-1.5 rounded-md ${stat.positive ? 'bg-gain/10' : 'bg-loss/10'}`}>
+                <stat.icon className={`w-3.5 h-3.5 ${stat.positive ? 'text-gain' : 'text-loss'}`} />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[10px] text-muted-foreground">{stat.label}</div>
+                <div className={`font-mono text-xs font-semibold truncate ${stat.positive ? 'text-gain' : 'text-loss'}`}>
+                  {stat.value}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-1">
