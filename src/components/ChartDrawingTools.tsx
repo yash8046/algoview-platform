@@ -66,7 +66,7 @@ export default function ChartDrawingTools({
           }`}
           title="Candlestick Patterns"
         >
-          <CandlestickChart className="w-3.5 h-3.5" />
+          <BarChart3 className="w-3.5 h-3.5" />
           <span className="hidden lg:inline">Patterns</span>
         </button>
       )}
