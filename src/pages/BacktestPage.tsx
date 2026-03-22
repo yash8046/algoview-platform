@@ -6,28 +6,43 @@ import { fetchYahooFinanceData } from '@/lib/yahooFinance';
 import { type OHLCV, type BacktestResult, type BacktestConfig, runBacktest } from '@/lib/technicalIndicators';
 import { CRYPTO_PAIRS } from '@/stores/cryptoStore';
 import { supabase } from '@/integrations/supabase/client';
-import { BarChart3, TrendingUp, AlertTriangle, Play, Settings, ChevronDown, Info, Search, X } from 'lucide-react';
+import { BarChart3, TrendingUp, AlertTriangle, Play, Settings, ChevronDown, Info, Search, X, Plus, Save, Trash2 } from 'lucide-react';
 
-interface StockOption {
-  symbol: string;
+interface StockOption { symbol: string; name: string; }
+
+interface StrategyPreset {
+  id: string;
   name: string;
+  description: string;
+  config: Partial<BacktestConfig>;
+  isCustom?: boolean;
 }
 
-const STRATEGY_PRESETS = [
-  { id: 'default', name: 'AI Ensemble', description: 'RSI + MACD + Bollinger + ADX combined signals' },
-  { id: 'trend_follow', name: 'Trend Following', description: 'SMA crossover with ADX filter for strong trends' },
-  { id: 'mean_revert', name: 'Mean Reversion', description: 'RSI oversold/overbought + Bollinger Band bounce' },
-  { id: 'momentum', name: 'Momentum', description: 'MACD histogram + volume surge breakout' },
-  { id: 'conservative', name: 'Conservative', description: 'High confidence only, tight stops, 1% risk per trade' },
+const BUILTIN_PRESETS: StrategyPreset[] = [
+  { id: 'default', name: 'AI Ensemble', description: 'RSI + MACD + Bollinger + ADX combined signals', config: {} },
+  { id: 'trend_follow', name: 'Trend Following', description: 'SMA crossover with ADX filter for strong trends', config: { minConfidence: 0.6, stopLossATRMultiplier: 2.5, takeProfitATRMultiplier: 5, maxRiskPerTrade: 0.02 } },
+  { id: 'mean_revert', name: 'Mean Reversion', description: 'RSI oversold/overbought + Bollinger Band bounce', config: { minConfidence: 0.5, stopLossATRMultiplier: 1.5, takeProfitATRMultiplier: 3, maxRiskPerTrade: 0.015 } },
+  { id: 'momentum', name: 'Momentum', description: 'MACD histogram + volume surge breakout', config: { minConfidence: 0.55, stopLossATRMultiplier: 2, takeProfitATRMultiplier: 4.5, maxRiskPerTrade: 0.025 } },
+  { id: 'conservative', name: 'Conservative', description: 'High confidence only, tight stops, 1% risk/trade', config: { minConfidence: 0.7, stopLossATRMultiplier: 1.5, takeProfitATRMultiplier: 3, maxRiskPerTrade: 0.01 } },
+  { id: 'aggressive', name: 'Aggressive', description: 'Lower confidence threshold, wider targets, 3% risk', config: { minConfidence: 0.45, stopLossATRMultiplier: 1.5, takeProfitATRMultiplier: 6, maxRiskPerTrade: 0.03 } },
+  { id: 'scalper', name: 'Scalper', description: 'Tight stops & targets for quick trades, low commission', config: { minConfidence: 0.5, stopLossATRMultiplier: 1, takeProfitATRMultiplier: 2, maxRiskPerTrade: 0.01, commissionPct: 0.0005 } },
 ];
+
+function loadCustomPresets(): StrategyPreset[] {
+  try {
+    const stored = localStorage.getItem('custom_backtest_presets');
+    return stored ? JSON.parse(stored) : [];
+  } catch { return []; }
+}
+function saveCustomPresets(presets: StrategyPreset[]) {
+  localStorage.setItem('custom_backtest_presets', JSON.stringify(presets));
+}
 
 function MetricCard({ label, value, sub, positive }: { label: string; value: string; sub?: string; positive?: boolean }) {
   return (
     <div className="bg-card rounded-lg border border-border p-2.5 sm:p-3">
       <div className="text-[10px] text-muted-foreground mb-0.5">{label}</div>
-      <div className={`font-mono text-xs sm:text-sm font-bold ${positive === undefined ? 'text-foreground' : positive ? 'text-gain' : 'text-loss'}`}>
-        {value}
-      </div>
+      <div className={`font-mono text-xs sm:text-sm font-bold ${positive === undefined ? 'text-foreground' : positive ? 'text-gain' : 'text-loss'}`}>{value}</div>
       {sub && <div className="text-[9px] text-muted-foreground mt-0.5">{sub}</div>}
     </div>
   );
@@ -39,9 +54,12 @@ function EquityChart({ result }: { result: BacktestResult }) {
 
   useEffect(() => {
     if (!chartRef.current || result.equityCurve.length === 0) return;
-    if (chartInstance.current) chartInstance.current.remove();
+    if (chartInstance.current) { chartInstance.current.remove(); chartInstance.current = null; }
 
-    const chart = createChart(chartRef.current, {
+    const container = chartRef.current;
+    const chart = createChart(container, {
+      width: container.clientWidth,
+      height: container.clientHeight,
       layout: {
         background: { color: 'hsl(222, 47%, 5%)' },
         textColor: 'hsl(215, 15%, 50%)',
@@ -73,14 +91,14 @@ function EquityChart({ result }: { result: BacktestResult }) {
     chartInstance.current = chart;
 
     const observer = new ResizeObserver(() => {
-      if (chartRef.current) chart.applyOptions({ width: chartRef.current.clientWidth, height: chartRef.current.clientHeight });
+      if (container) chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
     });
-    observer.observe(chartRef.current);
+    observer.observe(container);
 
     return () => { observer.disconnect(); chart.remove(); chartInstance.current = null; };
   }, [result]);
 
-  return <div ref={chartRef} className="w-full h-full" />;
+  return <div ref={chartRef} style={{ width: '100%', height: '100%', minHeight: '200px' }} />;
 }
 
 function TradesTable({ trades }: { trades: BacktestResult['trades'] }) {
@@ -131,40 +149,21 @@ function BacktestExplainer({ onClose }: { onClose: () => void }) {
         <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
       </div>
       <div className="space-y-2 text-xs text-muted-foreground leading-relaxed">
-        <p>
-          <strong className="text-foreground">Backtesting</strong> simulates a trading strategy on <em>historical data</em> to see how it would have performed — before risking real money.
-        </p>
+        <p><strong className="text-foreground">Backtesting</strong> simulates a trading strategy on <em>historical data</em> to see how it would have performed.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div className="p-2 rounded bg-secondary/50 border border-border">
             <span className="text-[10px] font-semibold text-foreground block mb-1">📊 How it works</span>
-            <span className="text-[10px]">Replays past candles, generates buy/sell signals using AI + indicators, and tracks simulated P&L.</span>
+            <span className="text-[10px]">Replays past candles, generates buy/sell signals, and tracks simulated P&L.</span>
           </div>
           <div className="p-2 rounded bg-secondary/50 border border-border">
             <span className="text-[10px] font-semibold text-foreground block mb-1">📈 Key Metrics</span>
             <span className="text-[10px]"><b>Sharpe</b> (risk-adj return), <b>Win Rate</b>, <b>Max Drawdown</b>, <b>Profit Factor</b>.</span>
           </div>
         </div>
-        <p className="text-[10px] text-warning border-l-2 border-warning/40 pl-2">
-          ⚠️ Past performance ≠ future results. Always paper trade first.
-        </p>
+        <p className="text-[10px] text-warning border-l-2 border-warning/40 pl-2">⚠️ Past performance ≠ future results. Always paper trade first.</p>
       </div>
     </div>
   );
-}
-
-function getPresetConfig(presetId: string): Partial<BacktestConfig> {
-  switch (presetId) {
-    case 'trend_follow':
-      return { minConfidence: 0.6, stopLossATRMultiplier: 2.5, takeProfitATRMultiplier: 5, maxRiskPerTrade: 0.02 };
-    case 'mean_revert':
-      return { minConfidence: 0.5, stopLossATRMultiplier: 1.5, takeProfitATRMultiplier: 3, maxRiskPerTrade: 0.015 };
-    case 'momentum':
-      return { minConfidence: 0.55, stopLossATRMultiplier: 2, takeProfitATRMultiplier: 4.5, maxRiskPerTrade: 0.025 };
-    case 'conservative':
-      return { minConfidence: 0.7, stopLossATRMultiplier: 1.5, takeProfitATRMultiplier: 3, maxRiskPerTrade: 0.01 };
-    default:
-      return {};
-  }
 }
 
 export default function BacktestPage() {
@@ -180,6 +179,10 @@ export default function BacktestPage() {
   const [stockSearch, setStockSearch] = useState('');
   const [customSymbol, setCustomSymbol] = useState('');
   const [selectedPreset, setSelectedPreset] = useState('default');
+  const [customPresets, setCustomPresets] = useState<StrategyPreset[]>(() => loadCustomPresets());
+  const [showCreateStrategy, setShowCreateStrategy] = useState(false);
+  const [newStrategyName, setNewStrategyName] = useState('');
+  const [newStrategyDesc, setNewStrategyDesc] = useState('');
   const [config, setConfig] = useState<BacktestConfig>({
     initialCapital: 100000,
     maxRiskPerTrade: 0.02,
@@ -188,6 +191,8 @@ export default function BacktestPage() {
     takeProfitATRMultiplier: 4,
     commissionPct: 0.001,
   });
+
+  const allPresets = [...BUILTIN_PRESETS, ...customPresets];
 
   useEffect(() => {
     if (assetType !== 'stock') return;
@@ -202,16 +207,38 @@ export default function BacktestPage() {
   }, [assetType]);
 
   const filteredStocks = stockSearch
-    ? stockOptions.filter(s => s.symbol.toLowerCase().includes(stockSearch.toLowerCase()) || s.name.toLowerCase().includes(stockSearch.toLowerCase())).slice(0, 50)
-    : stockOptions.slice(0, 50);
+    ? stockOptions.filter(s => s.symbol.toLowerCase().includes(stockSearch.toLowerCase()) || s.name.toLowerCase().includes(stockSearch.toLowerCase())).slice(0, 100)
+    : stockOptions.slice(0, 100);
 
   const applyPreset = (presetId: string) => {
     setSelectedPreset(presetId);
-    const presetConfig = getPresetConfig(presetId);
-    setConfig(prev => ({
-      ...prev,
-      ...presetConfig,
-    }));
+    const preset = allPresets.find(p => p.id === presetId);
+    if (preset) setConfig(prev => ({ ...prev, ...preset.config }));
+  };
+
+  const saveCurrentAsPreset = () => {
+    if (!newStrategyName.trim()) return;
+    const newPreset: StrategyPreset = {
+      id: `custom_${Date.now()}`,
+      name: newStrategyName.trim(),
+      description: newStrategyDesc.trim() || 'Custom strategy',
+      config: { ...config },
+      isCustom: true,
+    };
+    const updated = [...customPresets, newPreset];
+    setCustomPresets(updated);
+    saveCustomPresets(updated);
+    setSelectedPreset(newPreset.id);
+    setNewStrategyName('');
+    setNewStrategyDesc('');
+    setShowCreateStrategy(false);
+  };
+
+  const deleteCustomPreset = (id: string) => {
+    const updated = customPresets.filter(p => p.id !== id);
+    setCustomPresets(updated);
+    saveCustomPresets(updated);
+    if (selectedPreset === id) setSelectedPreset('default');
   };
 
   const handleAddCustomStock = () => {
@@ -225,33 +252,37 @@ export default function BacktestPage() {
     setRunning(true);
     setError(null);
     setResult(null);
-
     try {
       let candles: OHLCV[];
-
       if (assetType === 'crypto') {
         const raw = await fetchKlines(symbol, interval, 1000);
         candles = raw.map(c => ({ time: c.time, open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume }));
       } else {
-        const tf = interval === '1h' ? '1H' : interval === '1d' ? '1D' : '1D';
+        const tf = interval === '1h' ? '1H' : interval === '4h' ? '4H' : interval === '1d' ? '1D' : interval === '1w' ? '1W' : '1D';
         const data = await fetchYahooFinanceData(symbol, tf, true);
         candles = data.candles.map(c => ({ time: c.time, open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume }));
       }
-
       if (candles.length < 80) {
-        setError(`Only ${candles.length} candles available. Need at least 80 for backtest. Try a longer interval (1D).`);
+        setError(`Only ${candles.length} candles available. Need ≥80. Try a longer interval.`);
         setRunning(false);
         return;
       }
-
-      const backtestResult = runBacktest(candles, config);
-      setResult(backtestResult);
+      setResult(runBacktest(candles, config));
     } catch (e: any) {
       setError(e.message || 'Backtest failed');
     } finally {
       setRunning(false);
     }
   };
+
+  const configFields = [
+    { key: 'initialCapital', label: 'Capital (₹)', step: 10000 },
+    { key: 'maxRiskPerTrade', label: 'Max Risk/Trade', step: 0.005, mult: 100, suffix: '%' },
+    { key: 'minConfidence', label: 'Min Confidence', step: 0.05, mult: 100, suffix: '%' },
+    { key: 'stopLossATRMultiplier', label: 'SL ATR×', step: 0.5 },
+    { key: 'takeProfitATRMultiplier', label: 'TP ATR×', step: 0.5 },
+    { key: 'commissionPct', label: 'Commission', step: 0.0005, mult: 100, suffix: '%' },
+  ];
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
@@ -262,16 +293,10 @@ export default function BacktestPage() {
           <div className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-primary" />
             <h1 className="text-sm sm:text-lg font-bold text-foreground">Strategy Backtester</h1>
-            <span className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full bg-warning/10 text-warning border border-warning/20 font-medium">
-              Simulation
-            </span>
+            <span className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full bg-warning/10 text-warning border border-warning/20 font-medium">Simulation</span>
           </div>
-          <button
-            onClick={() => setShowExplainer(!showExplainer)}
-            className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors"
-          >
-            <Info className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">What is this?</span>
+          <button onClick={() => setShowExplainer(!showExplainer)} className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors">
+            <Info className="w-3.5 h-3.5" /><span className="hidden sm:inline">What is this?</span>
           </button>
         </div>
 
@@ -279,33 +304,88 @@ export default function BacktestPage() {
 
         {/* Strategy Presets */}
         <div className="bg-card rounded-lg border border-border p-2.5 sm:p-3">
-          <label className="text-[10px] text-muted-foreground block mb-1.5">Strategy Pattern</label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-[10px] text-muted-foreground">Strategy Pattern</label>
+            <button
+              onClick={() => setShowCreateStrategy(!showCreateStrategy)}
+              className="flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 transition-colors"
+            >
+              <Plus className="w-3 h-3" />
+              <span>Custom</span>
+            </button>
+          </div>
           <div className="flex flex-wrap gap-1.5">
-            {STRATEGY_PRESETS.map(preset => (
-              <button
-                key={preset.id}
-                onClick={() => applyPreset(preset.id)}
-                className={`px-2.5 py-1.5 text-[10px] sm:text-xs rounded-md transition-colors active:scale-[0.97] ${
-                  selectedPreset === preset.id
-                    ? 'bg-primary text-primary-foreground font-semibold'
-                    : 'bg-secondary text-muted-foreground hover:text-foreground'
-                }`}
-                title={preset.description}
-              >
-                {preset.name}
-              </button>
+            {allPresets.map(preset => (
+              <div key={preset.id} className="flex items-center gap-0.5">
+                <button
+                  onClick={() => applyPreset(preset.id)}
+                  className={`px-2.5 py-1.5 text-[10px] sm:text-xs rounded-md transition-colors active:scale-[0.97] ${
+                    selectedPreset === preset.id
+                      ? 'bg-primary text-primary-foreground font-semibold'
+                      : 'bg-secondary text-muted-foreground hover:text-foreground'
+                  }`}
+                  title={preset.description}
+                >
+                  {preset.name}
+                </button>
+                {preset.isCustom && (
+                  <button
+                    onClick={() => deleteCustomPreset(preset.id)}
+                    className="p-1 text-loss/60 hover:text-loss transition-colors"
+                    title="Delete custom strategy"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
             ))}
           </div>
           <p className="text-[9px] text-muted-foreground/60 mt-1.5">
-            {STRATEGY_PRESETS.find(p => p.id === selectedPreset)?.description}
+            {allPresets.find(p => p.id === selectedPreset)?.description}
           </p>
+
+          {/* Create custom strategy form */}
+          {showCreateStrategy && (
+            <div className="mt-2 pt-2 border-t border-border space-y-2">
+              <p className="text-[10px] text-foreground font-semibold">Save Current Config as Strategy</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  value={newStrategyName}
+                  onChange={e => setNewStrategyName(e.target.value)}
+                  placeholder="Strategy name"
+                  className="bg-secondary text-foreground text-xs font-mono px-2 py-1.5 rounded border border-border"
+                />
+                <input
+                  type="text"
+                  value={newStrategyDesc}
+                  onChange={e => setNewStrategyDesc(e.target.value)}
+                  placeholder="Short description (optional)"
+                  className="bg-secondary text-foreground text-xs font-mono px-2 py-1.5 rounded border border-border"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={saveCurrentAsPreset}
+                  disabled={!newStrategyName.trim()}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded disabled:opacity-50 active:scale-95"
+                >
+                  <Save className="w-3 h-3" />Save Strategy
+                </button>
+                <button
+                  onClick={() => setShowCreateStrategy(false)}
+                  className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+                >Cancel</button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Controls */}
         <div className="bg-card rounded-lg border border-border p-2.5 sm:p-4">
-          <div className="flex flex-wrap items-end gap-2 sm:gap-4">
+          <div className="flex flex-wrap items-end gap-2 sm:gap-3">
             <div>
-              <label className="text-[10px] text-muted-foreground block mb-1">Asset Type</label>
+              <label className="text-[10px] text-muted-foreground block mb-1">Asset</label>
               <div className="flex gap-1">
                 {(['crypto', 'stock'] as const).map(t => (
                   <button key={t} onClick={() => { setAssetType(t); setSymbol(t === 'crypto' ? 'BTCUSDT' : 'RELIANCE'); setStockSearch(''); }}
@@ -315,7 +395,7 @@ export default function BacktestPage() {
               </div>
             </div>
 
-            <div className="min-w-[120px] sm:min-w-[140px]">
+            <div className="min-w-[120px] sm:min-w-[160px]">
               <label className="text-[10px] text-muted-foreground block mb-1">Symbol</label>
               {assetType === 'crypto' ? (
                 <select value={symbol} onChange={e => setSymbol(e.target.value)}
@@ -329,49 +409,38 @@ export default function BacktestPage() {
                     <input
                       type="text"
                       value={stockSearch || symbol}
-                      onChange={e => { setStockSearch(e.target.value); }}
+                      onChange={e => setStockSearch(e.target.value)}
                       onFocus={() => setStockSearch(symbol)}
-                      placeholder="Search stocks..."
+                      placeholder="Search 500+ stocks..."
                       className="bg-transparent text-[10px] sm:text-xs font-mono text-foreground outline-none w-full"
                     />
                   </div>
                   {stockSearch && (
-                    <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-card border border-border rounded-md shadow-lg max-h-48 overflow-y-auto scrollbar-thin">
+                    <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-card border border-border rounded-md shadow-lg max-h-56 overflow-y-auto scrollbar-thin">
                       {filteredStocks.map(s => (
                         <button key={s.symbol} onClick={() => { setSymbol(s.symbol); setStockSearch(''); }}
-                          className={`w-full text-left px-3 py-2 text-xs hover:bg-accent transition-colors ${symbol === s.symbol ? 'bg-accent' : ''}`}>
+                          className={`w-full text-left px-3 py-1.5 text-[10px] sm:text-xs hover:bg-accent transition-colors ${symbol === s.symbol ? 'bg-accent' : ''}`}>
                           <span className="font-mono font-semibold text-foreground">{s.symbol}</span>
-                          <span className="text-muted-foreground ml-2 truncate">{s.name}</span>
+                          <span className="text-muted-foreground ml-2">{s.name}</span>
                         </button>
                       ))}
-                      {filteredStocks.length === 0 && (
-                        <div className="px-3 py-2 text-xs text-muted-foreground">No stocks found</div>
-                      )}
+                      {filteredStocks.length === 0 && <div className="px-3 py-2 text-xs text-muted-foreground">No stocks found</div>}
+                      <div className="px-3 py-1 text-[9px] text-muted-foreground/40 border-t border-border">{stockOptions.length} stocks available</div>
                     </div>
                   )}
                 </div>
               )}
             </div>
 
-            {/* Custom stock input */}
+            {/* Custom stock symbol input */}
             {assetType === 'stock' && (
-              <div className="min-w-[100px]">
-                <label className="text-[10px] text-muted-foreground block mb-1">Custom Symbol</label>
+              <div className="min-w-[90px]">
+                <label className="text-[10px] text-muted-foreground block mb-1">Custom</label>
                 <div className="flex gap-1">
-                  <input
-                    type="text"
-                    value={customSymbol}
-                    onChange={e => setCustomSymbol(e.target.value.toUpperCase())}
+                  <input type="text" value={customSymbol} onChange={e => setCustomSymbol(e.target.value.toUpperCase())}
                     onKeyDown={e => e.key === 'Enter' && handleAddCustomStock()}
-                    placeholder="e.g. TCS"
-                    className="bg-secondary text-foreground text-[10px] sm:text-xs font-mono px-2 py-1.5 rounded border border-border w-full"
-                  />
-                  <button
-                    onClick={handleAddCustomStock}
-                    className="px-2 py-1.5 text-[10px] bg-primary text-primary-foreground rounded active:scale-95"
-                  >
-                    Go
-                  </button>
+                    placeholder="TCS" className="bg-secondary text-foreground text-[10px] sm:text-xs font-mono px-2 py-1.5 rounded border border-border w-16 sm:w-20" />
+                  <button onClick={handleAddCustomStock} className="px-2 py-1.5 text-[10px] bg-primary text-primary-foreground rounded active:scale-95">Go</button>
                 </div>
               </div>
             )}
@@ -381,45 +450,35 @@ export default function BacktestPage() {
               <select value={interval} onChange={e => setInterval_(e.target.value)}
                 className="bg-secondary text-foreground text-[10px] sm:text-xs font-mono px-2 py-1.5 rounded border border-border">
                 {assetType === 'crypto'
-                  ? [{ v: '1m', l: '1m' }, { v: '5m', l: '5m' }, { v: '15m', l: '15m' }, { v: '1h', l: '1h' }, { v: '1d', l: '1D' }].map(i =>
+                  ? [{ v: '1m', l: '1m' }, { v: '5m', l: '5m' }, { v: '15m', l: '15m' }, { v: '1h', l: '1H' }, { v: '4h', l: '4H' }, { v: '1d', l: '1D' }].map(i =>
                     <option key={i.v} value={i.v}>{i.l}</option>)
-                  : [{ v: '1h', l: '1H' }, { v: '1d', l: '1D' }].map(i =>
+                  : [{ v: '1h', l: '1H' }, { v: '4h', l: '4H' }, { v: '1d', l: '1D' }, { v: '1w', l: '1W' }].map(i =>
                     <option key={i.v} value={i.v}>{i.l}</option>)
                 }
               </select>
             </div>
 
             <button onClick={() => setShowConfig(!showConfig)}
-              className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] sm:text-xs bg-secondary rounded border border-border text-muted-foreground hover:text-foreground transition-colors">
-              <Settings className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Config</span>
+              className="flex items-center gap-1 px-2 py-1.5 text-[10px] sm:text-xs bg-secondary rounded border border-border text-muted-foreground hover:text-foreground transition-colors">
+              <Settings className="w-3.5 h-3.5" /><span className="hidden sm:inline">Config</span>
               <ChevronDown className={`w-3 h-3 transition-transform ${showConfig ? 'rotate-180' : ''}`} />
             </button>
 
             <button onClick={runTest} disabled={running}
               className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[10px] sm:text-xs font-semibold rounded bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] disabled:opacity-50 transition-all">
-              <Play className="w-3.5 h-3.5" />
-              {running ? 'Running...' : 'Run Backtest'}
+              <Play className="w-3.5 h-3.5" />{running ? 'Running...' : 'Run Backtest'}
             </button>
           </div>
 
           {showConfig && (
-            <div className="mt-3 pt-3 border-t border-border grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 sm:gap-3">
-              {[
-                { key: 'initialCapital', label: 'Capital', step: 10000 },
-                { key: 'maxRiskPerTrade', label: 'Max Risk/Trade', step: 0.005, suffix: '%', mult: 100 },
-                { key: 'minConfidence', label: 'Min Confidence', step: 0.05, suffix: '%', mult: 100 },
-                { key: 'stopLossATRMultiplier', label: 'SL ATR×', step: 0.5 },
-                { key: 'takeProfitATRMultiplier', label: 'TP ATR×', step: 0.5 },
-                { key: 'commissionPct', label: 'Commission', step: 0.0005, suffix: '%', mult: 100 },
-              ].map(({ key, label, step, suffix, mult }) => (
+            <div className="mt-3 pt-3 border-t border-border grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+              {configFields.map(({ key, label, step, mult }) => (
                 <div key={key}>
                   <label className="text-[10px] text-muted-foreground block mb-1">{label}</label>
                   <input type="number" step={step}
                     value={mult ? (config as any)[key] * mult : (config as any)[key]}
                     onChange={e => setConfig({ ...config, [key]: mult ? Number(e.target.value) / mult : Number(e.target.value) })}
-                    className="w-full bg-secondary text-foreground text-[10px] sm:text-xs font-mono px-2 py-1.5 rounded border border-border"
-                  />
+                    className="w-full bg-secondary text-foreground text-[10px] sm:text-xs font-mono px-2 py-1.5 rounded border border-border" />
                 </div>
               ))}
             </div>
@@ -427,7 +486,7 @@ export default function BacktestPage() {
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-lg bg-loss/10 border border-loss/20">
+          <div className="flex items-center gap-2 p-2.5 rounded-lg bg-loss/10 border border-loss/20">
             <AlertTriangle className="w-4 h-4 text-loss flex-shrink-0" />
             <span className="text-[10px] sm:text-xs text-loss">{error}</span>
           </div>
@@ -445,17 +504,18 @@ export default function BacktestPage() {
                 sub={`${result.winningTrades}W / ${result.losingTrades}L`} positive={result.winRate > 0.5} />
               <MetricCard label="Profit Factor" value={result.profitFactor === Infinity ? '∞' : result.profitFactor.toFixed(2)} positive={result.profitFactor > 1.5} />
               <MetricCard label="Calmar Ratio" value={result.calmarRatio.toFixed(2)} positive={result.calmarRatio > 1} />
-              <MetricCard label="Avg Win" value={`₹${result.avgWin.toFixed(0)}`} positive={true} />
+              <MetricCard label="Avg Win" value={`₹${result.avgWin.toFixed(0)}`} positive />
               <MetricCard label="Avg Loss" value={`₹${result.avgLoss.toFixed(0)}`} positive={false} />
             </div>
 
+            {/* Equity Curve — explicit height container */}
             <div className="bg-card rounded-lg border border-border overflow-hidden">
               <div className="px-3 sm:px-4 py-2 bg-panel-header border-b border-border flex items-center gap-2">
                 <TrendingUp className="w-3.5 h-3.5 text-primary" />
                 <h3 className="text-xs sm:text-sm font-semibold text-foreground">Equity Curve</h3>
                 <span className="text-[10px] text-muted-foreground font-mono">{result.totalTrades} trades</span>
               </div>
-              <div className="h-44 sm:h-64 md:h-72">
+              <div style={{ height: '280px' }}>
                 <EquityChart result={result} />
               </div>
             </div>
