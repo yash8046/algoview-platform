@@ -605,7 +605,7 @@ export default function BacktestPage() {
                 <h3 className="text-xs sm:text-sm font-semibold text-foreground">Equity Curve</h3>
                 <span className="text-[10px] text-muted-foreground font-mono">{result.totalTrades} trades</span>
               </div>
-              <div style={{ height: '280px' }}>
+              <div style={{ height: '420px' }}>
                 <EquityChart result={result} />
               </div>
             </div>
