@@ -18,6 +18,7 @@ export default function TradingChart() {
   const [chartApi, setChartApi] = useState<IChartApi | null>(null);
   const [seriesApi, setSeriesApi] = useState<any>(null);
   const [showPatterns, setShowPatterns] = useState(false);
+  const markersRef = useRef<any>(null);
   const candleDataRef = useRef<any[]>([]);
 
   const {
