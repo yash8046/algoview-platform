@@ -14,7 +14,10 @@ export default function MobileBottomNav() {
   const isMobile = useIsMobile();
   const location = useLocation();
 
-  if (!isMobile) return null;
+  const hiddenRoutes = ['/reset-password'];
+  const isAuthPage = location.pathname === '/auth' || hiddenRoutes.includes(location.pathname);
+
+  if (!isMobile || isAuthPage) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-area-bottom">

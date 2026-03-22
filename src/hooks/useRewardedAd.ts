@@ -15,9 +15,6 @@ export function useRewardedAd(featureName: string = 'AI Insight') {
     try {
       const result = await showRewardedAd(featureName);
       if (result.granted) callback();
-      if (result.message && !result.adShown) {
-        toast.info(result.message, { duration: 2500 });
-      }
     } catch {
       callback();
     } finally {
