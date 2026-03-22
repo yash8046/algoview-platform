@@ -70,7 +70,10 @@ function EquityChart({ result }: { result: BacktestResult }) {
         vertLines: { color: 'hsl(222, 30%, 12%)' },
         horzLines: { color: 'hsl(222, 30%, 12%)' },
       },
-      rightPriceScale: { borderColor: 'hsl(222, 30%, 18%)' },
+      rightPriceScale: {
+        borderColor: 'hsl(222, 30%, 18%)',
+        autoScale: true,
+      },
       timeScale: {
         borderColor: 'hsl(222, 30%, 18%)',
         timeVisible: true,
@@ -85,6 +88,9 @@ function EquityChart({ result }: { result: BacktestResult }) {
       color: result.totalReturn >= 0 ? 'hsl(142, 71%, 45%)' : 'hsl(0, 72%, 51%)',
       lineWidth: 2,
       priceLineVisible: false,
+      autoscaleInfoProvider: () => ({
+        priceRange: null,
+      }),
     });
 
     const maxPoints = 500;
@@ -95,13 +101,14 @@ function EquityChart({ result }: { result: BacktestResult }) {
     series.setData(data);
     chart.timeScale().fitContent();
     chartInstance.current = chart;
+    seriesInstance.current = series;
 
     const observer = new ResizeObserver(() => {
       if (container) chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
     });
     observer.observe(container);
 
-    return () => { observer.disconnect(); chart.remove(); chartInstance.current = null; };
+    return () => { observer.disconnect(); chart.remove(); chartInstance.current = null; seriesInstance.current = null; };
   }, [result]);
 
   const zoomIn = () => {
@@ -124,17 +131,57 @@ function EquityChart({ result }: { result: BacktestResult }) {
     chart.timeScale().setVisibleLogicalRange({ from: center - halfSpan, to: center + halfSpan });
   };
 
+  const zoomInVertical = () => {
+    const chart = chartInstance.current;
+    if (!chart) return;
+    const scale = chart.priceScale('right');
+    scale.applyOptions({ autoScale: false });
+    // Shrink margins to zoom in vertically
+    const curr = vMargins.current;
+    const newTop = Math.min(0.45, curr.top + 0.05);
+    const newBottom = Math.min(0.45, curr.bottom + 0.05);
+    vMargins.current = { top: newTop, bottom: newBottom };
+    seriesInstance.current?.priceScale().applyOptions({
+      scaleMargins: vMargins.current,
+    });
+  };
+
+  const zoomOutVertical = () => {
+    const chart = chartInstance.current;
+    if (!chart) return;
+    const scale = chart.priceScale('right');
+    scale.applyOptions({ autoScale: false });
+    const curr = vMargins.current;
+    const newTop = Math.max(0, curr.top - 0.05);
+    const newBottom = Math.max(0, curr.bottom - 0.05);
+    vMargins.current = { top: newTop, bottom: newBottom };
+    seriesInstance.current?.priceScale().applyOptions({
+      scaleMargins: vMargins.current,
+    });
+  };
+
   const fitAll = () => {
-    chartInstance.current?.timeScale().fitContent();
+    const chart = chartInstance.current;
+    if (!chart) return;
+    chart.priceScale('right').applyOptions({ autoScale: true });
+    vMargins.current = { top: 0.1, bottom: 0.1 };
+    seriesInstance.current?.priceScale().applyOptions({ scaleMargins: vMargins.current });
+    chart.timeScale().fitContent();
   };
 
   return (
     <div className="relative w-full h-full" style={{ minHeight: '200px' }}>
       <div ref={chartRef} className="w-full h-full" />
+      {/* Horizontal zoom controls */}
       <div className="absolute top-2 right-2 flex gap-1 z-10">
-        <button onClick={zoomIn} className="px-2 py-1 text-xs font-mono bg-card/80 border border-border rounded hover:bg-accent transition-colors text-foreground" title="Zoom In">+</button>
-        <button onClick={zoomOut} className="px-2 py-1 text-xs font-mono bg-card/80 border border-border rounded hover:bg-accent transition-colors text-foreground" title="Zoom Out">−</button>
+        <button onClick={zoomIn} className="px-2 py-1 text-xs font-mono bg-card/80 border border-border rounded hover:bg-accent transition-colors text-foreground" title="Zoom In (Horizontal)">+</button>
+        <button onClick={zoomOut} className="px-2 py-1 text-xs font-mono bg-card/80 border border-border rounded hover:bg-accent transition-colors text-foreground" title="Zoom Out (Horizontal)">−</button>
         <button onClick={fitAll} className="px-2 py-1 text-[10px] font-mono bg-card/80 border border-border rounded hover:bg-accent transition-colors text-foreground" title="Fit All">Fit</button>
+      </div>
+      {/* Vertical zoom controls */}
+      <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+        <button onClick={zoomInVertical} className="px-1.5 py-1 text-[10px] font-mono bg-card/80 border border-border rounded hover:bg-accent transition-colors text-foreground" title="Zoom In (Vertical)">↕+</button>
+        <button onClick={zoomOutVertical} className="px-1.5 py-1 text-[10px] font-mono bg-card/80 border border-border rounded hover:bg-accent transition-colors text-foreground" title="Zoom Out (Vertical)">↕−</button>
       </div>
     </div>
   );
