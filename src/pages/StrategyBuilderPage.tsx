@@ -260,8 +260,6 @@ export default function StrategyBuilderPage() {
       }
       const stratResult = runCustomStrategy(candles, strategy);
       setResult(stratResult);
-      // Show interstitial ad after strategy backtest completes
-      showInterstitial();
     } catch (e: any) {
       setError(e.message || 'Backtest failed');
     } finally {
