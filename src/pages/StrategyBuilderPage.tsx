@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createChart, LineSeries, type IChartApi } from 'lightweight-charts';
 import TopBar from '@/components/TopBar';
+import { useRewardedAd } from '@/hooks/useRewardedAd';
 import { fetchKlines } from '@/lib/binanceApi';
 import { fetchYahooFinanceData } from '@/lib/yahooFinance';
 import { type OHLCV } from '@/lib/technicalIndicators';
@@ -153,6 +154,7 @@ function IndicatorBadge({ config, onRemove }: { config: IndicatorConfig; onRemov
 // ============ Main Page ============
 
 export default function StrategyBuilderPage() {
+  const { gateWithAd: gateStrategy } = useRewardedAd('Strategy Backtest');
   // Strategy state
   const [strategy, setStrategy] = useState<StrategyDefinition>({ ...STRATEGY_TEMPLATES[0] });
   const [result, setResult] = useState<StrategyResult | null>(null);
@@ -538,7 +540,7 @@ export default function StrategyBuilderPage() {
 
             {/* Actions */}
             <div className="flex gap-2 pt-2 border-t border-border">
-              <button onClick={runTest} disabled={running || strategy.entryConditions.length === 0}
+              <button onClick={() => gateStrategy(runTest)} disabled={running || strategy.entryConditions.length === 0}
                 className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-semibold rounded bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 active:scale-[0.97] min-h-[44px]">
                 <Play className="w-3.5 h-3.5" />{running ? 'Running...' : 'Run Backtest'}
               </button>

@@ -2,6 +2,7 @@ import { Brain, TrendingUp, TrendingDown, Minus, RefreshCw, Shield, Target, Aler
 import { useAIAnalysis, type AIAnalysisResult, type SentimentData } from '@/hooks/useAIAnalysis';
 import { useCryptoData } from '@/hooks/useCryptoData';
 import { useCryptoStore } from '@/stores/cryptoStore';
+import { useRewardedAd } from '@/hooks/useRewardedAd';
 import { useState } from 'react';
 
 const signalConfig = {
@@ -298,10 +299,11 @@ export default function CryptoAISignals() {
   const { selectedPair, selectedInterval } = useCryptoStore();
   const { candles } = useCryptoData(selectedPair, selectedInterval);
   const { analysis, loading, error, analyze } = useAIAnalysis();
+  const { gateWithAd } = useRewardedAd('AI Insight');
 
   const handlePredict = () => {
     if (candles.length >= 50) {
-      analyze(candles, selectedPair, selectedInterval);
+      gateWithAd(() => analyze(candles, selectedPair, selectedInterval));
     }
   };
 

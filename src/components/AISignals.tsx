@@ -1,6 +1,7 @@
 import { Brain, TrendingUp, TrendingDown, Minus, RefreshCw, Target, AlertTriangle, Zap, Shield, Newspaper, Users, BarChart3, AlertOctagon, Clock, Activity, Info } from 'lucide-react';
 import { useTradingStore } from '@/stores/tradingStore';
 import { useStockAIAnalysis } from '@/hooks/useStockAIAnalysis';
+import { useRewardedAd } from '@/hooks/useRewardedAd';
 import type { SentimentData } from '@/hooks/useAIAnalysis';
 
 const signalConfig = {
@@ -135,6 +136,7 @@ function FactorsList({ positive, negative }: { positive: string[]; negative: str
 export default function AISignals() {
   const { selectedSymbol, selectedTimeframe } = useTradingStore();
   const { result, loading, error, refresh } = useStockAIAnalysis(selectedSymbol, selectedTimeframe);
+  const { gateWithAd } = useRewardedAd('AI Insight');
 
   const detailedKey = result?.detailedSignal || result?.signal || 'hold';
   const cfg = signalConfig[detailedKey as keyof typeof signalConfig] || signalConfig[result?.signal as keyof typeof signalConfig] || signalConfig.hold;
@@ -149,7 +151,7 @@ export default function AISignals() {
           {result && <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-mono">READY</span>}
         </div>
         {result && (
-          <button onClick={refresh} disabled={loading}
+          <button onClick={() => gateWithAd(refresh)} disabled={loading}
             className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40">
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -353,7 +355,7 @@ export default function AISignals() {
             <Shield className="w-10 h-10 text-muted-foreground/20" />
             <span className="text-xs text-muted-foreground">{selectedSymbol} ready for analysis</span>
             <button
-              onClick={refresh}
+              onClick={() => gateWithAd(refresh)}
               disabled={loading}
               className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition-all disabled:opacity-50"
             >
