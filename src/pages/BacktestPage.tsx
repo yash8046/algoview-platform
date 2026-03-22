@@ -1,23 +1,31 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createChart, LineSeries, type IChartApi } from 'lightweight-charts';
 import TopBar from '@/components/TopBar';
-import { fetchKlines, type BinanceCandle } from '@/lib/binanceApi';
+import { fetchKlines } from '@/lib/binanceApi';
 import { fetchYahooFinanceData } from '@/lib/yahooFinance';
 import { type OHLCV, type BacktestResult, type BacktestConfig, runBacktest } from '@/lib/technicalIndicators';
 import { CRYPTO_PAIRS } from '@/stores/cryptoStore';
 import { supabase } from '@/integrations/supabase/client';
-import { BarChart3, TrendingUp, TrendingDown, AlertTriangle, Play, Settings, ChevronDown, Info, Search, X } from 'lucide-react';
+import { BarChart3, TrendingUp, AlertTriangle, Play, Settings, ChevronDown, Info, Search, X } from 'lucide-react';
 
 interface StockOption {
   symbol: string;
   name: string;
 }
 
+const STRATEGY_PRESETS = [
+  { id: 'default', name: 'AI Ensemble', description: 'RSI + MACD + Bollinger + ADX combined signals' },
+  { id: 'trend_follow', name: 'Trend Following', description: 'SMA crossover with ADX filter for strong trends' },
+  { id: 'mean_revert', name: 'Mean Reversion', description: 'RSI oversold/overbought + Bollinger Band bounce' },
+  { id: 'momentum', name: 'Momentum', description: 'MACD histogram + volume surge breakout' },
+  { id: 'conservative', name: 'Conservative', description: 'High confidence only, tight stops, 1% risk per trade' },
+];
+
 function MetricCard({ label, value, sub, positive }: { label: string; value: string; sub?: string; positive?: boolean }) {
   return (
-    <div className="bg-card rounded-lg border border-border p-3">
+    <div className="bg-card rounded-lg border border-border p-2.5 sm:p-3">
       <div className="text-[10px] text-muted-foreground mb-0.5">{label}</div>
-      <div className={`font-mono text-sm font-bold ${positive === undefined ? 'text-foreground' : positive ? 'text-gain' : 'text-loss'}`}>
+      <div className={`font-mono text-xs sm:text-sm font-bold ${positive === undefined ? 'text-foreground' : positive ? 'text-gain' : 'text-loss'}`}>
         {value}
       </div>
       {sub && <div className="text-[9px] text-muted-foreground mt-0.5">{sub}</div>}
@@ -114,7 +122,7 @@ function TradesTable({ trades }: { trades: BacktestResult['trades'] }) {
 
 function BacktestExplainer({ onClose }: { onClose: () => void }) {
   return (
-    <div className="bg-card rounded-lg border border-border p-4 space-y-3">
+    <div className="bg-card rounded-lg border border-border p-3 sm:p-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Info className="w-4 h-4 text-primary" />
@@ -124,24 +132,39 @@ function BacktestExplainer({ onClose }: { onClose: () => void }) {
       </div>
       <div className="space-y-2 text-xs text-muted-foreground leading-relaxed">
         <p>
-          <strong className="text-foreground">Backtesting</strong> simulates a trading strategy on <em>historical data</em> to see how it would have performed in the past — before you risk real money.
+          <strong className="text-foreground">Backtesting</strong> simulates a trading strategy on <em>historical data</em> to see how it would have performed — before risking real money.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div className="p-2 rounded bg-secondary/50 border border-border">
             <span className="text-[10px] font-semibold text-foreground block mb-1">📊 How it works</span>
-            <span className="text-[10px]">The system replays past candles one-by-one, generates buy/sell signals using AI + technical indicators, and tracks simulated P&L as if you were trading live.</span>
+            <span className="text-[10px]">Replays past candles, generates buy/sell signals using AI + indicators, and tracks simulated P&L.</span>
           </div>
           <div className="p-2 rounded bg-secondary/50 border border-border">
             <span className="text-[10px] font-semibold text-foreground block mb-1">📈 Key Metrics</span>
-            <span className="text-[10px]"><b>Sharpe Ratio</b> (risk-adjusted return), <b>Win Rate</b>, <b>Max Drawdown</b> (worst dip), <b>Profit Factor</b> (gross wins / gross losses).</span>
+            <span className="text-[10px]"><b>Sharpe</b> (risk-adj return), <b>Win Rate</b>, <b>Max Drawdown</b>, <b>Profit Factor</b>.</span>
           </div>
         </div>
         <p className="text-[10px] text-warning border-l-2 border-warning/40 pl-2">
-          ⚠️ Past performance ≠ future results. Backtests can overfit to historical patterns. Always paper trade first.
+          ⚠️ Past performance ≠ future results. Always paper trade first.
         </p>
       </div>
     </div>
   );
+}
+
+function getPresetConfig(presetId: string): Partial<BacktestConfig> {
+  switch (presetId) {
+    case 'trend_follow':
+      return { minConfidence: 0.6, stopLossATRMultiplier: 2.5, takeProfitATRMultiplier: 5, maxRiskPerTrade: 0.02 };
+    case 'mean_revert':
+      return { minConfidence: 0.5, stopLossATRMultiplier: 1.5, takeProfitATRMultiplier: 3, maxRiskPerTrade: 0.015 };
+    case 'momentum':
+      return { minConfidence: 0.55, stopLossATRMultiplier: 2, takeProfitATRMultiplier: 4.5, maxRiskPerTrade: 0.025 };
+    case 'conservative':
+      return { minConfidence: 0.7, stopLossATRMultiplier: 1.5, takeProfitATRMultiplier: 3, maxRiskPerTrade: 0.01 };
+    default:
+      return {};
+  }
 }
 
 export default function BacktestPage() {
@@ -155,6 +178,8 @@ export default function BacktestPage() {
   const [showExplainer, setShowExplainer] = useState(false);
   const [stockOptions, setStockOptions] = useState<StockOption[]>([]);
   const [stockSearch, setStockSearch] = useState('');
+  const [customSymbol, setCustomSymbol] = useState('');
+  const [selectedPreset, setSelectedPreset] = useState('default');
   const [config, setConfig] = useState<BacktestConfig>({
     initialCapital: 100000,
     maxRiskPerTrade: 0.02,
@@ -164,7 +189,6 @@ export default function BacktestPage() {
     commissionPct: 0.001,
   });
 
-  // Load all stocks from DB for stock mode
   useEffect(() => {
     if (assetType !== 'stock') return;
     (async () => {
@@ -180,6 +204,22 @@ export default function BacktestPage() {
   const filteredStocks = stockSearch
     ? stockOptions.filter(s => s.symbol.toLowerCase().includes(stockSearch.toLowerCase()) || s.name.toLowerCase().includes(stockSearch.toLowerCase())).slice(0, 50)
     : stockOptions.slice(0, 50);
+
+  const applyPreset = (presetId: string) => {
+    setSelectedPreset(presetId);
+    const presetConfig = getPresetConfig(presetId);
+    setConfig(prev => ({
+      ...prev,
+      ...presetConfig,
+    }));
+  };
+
+  const handleAddCustomStock = () => {
+    const trimmed = customSymbol.trim().toUpperCase();
+    if (!trimmed) return;
+    setSymbol(trimmed);
+    setCustomSymbol('');
+  };
 
   const runTest = async () => {
     setRunning(true);
@@ -216,14 +256,14 @@ export default function BacktestPage() {
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <TopBar />
-      <div className="flex-1 flex flex-col gap-3 p-2 sm:p-3 overflow-auto pb-20 md:pb-3">
+      <div className="flex-1 flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 overflow-auto pb-20 md:pb-3">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-primary" />
-            <h1 className="text-base sm:text-lg font-bold text-foreground">Strategy Backtester</h1>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-warning/10 text-warning border border-warning/20 font-medium hidden sm:inline">
-              Historical Simulation
+            <h1 className="text-sm sm:text-lg font-bold text-foreground">Strategy Backtester</h1>
+            <span className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full bg-warning/10 text-warning border border-warning/20 font-medium">
+              Simulation
             </span>
           </div>
           <button
@@ -231,31 +271,55 @@ export default function BacktestPage() {
             className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors"
           >
             <Info className="w-3.5 h-3.5" />
-            What is this?
+            <span className="hidden sm:inline">What is this?</span>
           </button>
         </div>
 
         {showExplainer && <BacktestExplainer onClose={() => setShowExplainer(false)} />}
 
+        {/* Strategy Presets */}
+        <div className="bg-card rounded-lg border border-border p-2.5 sm:p-3">
+          <label className="text-[10px] text-muted-foreground block mb-1.5">Strategy Pattern</label>
+          <div className="flex flex-wrap gap-1.5">
+            {STRATEGY_PRESETS.map(preset => (
+              <button
+                key={preset.id}
+                onClick={() => applyPreset(preset.id)}
+                className={`px-2.5 py-1.5 text-[10px] sm:text-xs rounded-md transition-colors active:scale-[0.97] ${
+                  selectedPreset === preset.id
+                    ? 'bg-primary text-primary-foreground font-semibold'
+                    : 'bg-secondary text-muted-foreground hover:text-foreground'
+                }`}
+                title={preset.description}
+              >
+                {preset.name}
+              </button>
+            ))}
+          </div>
+          <p className="text-[9px] text-muted-foreground/60 mt-1.5">
+            {STRATEGY_PRESETS.find(p => p.id === selectedPreset)?.description}
+          </p>
+        </div>
+
         {/* Controls */}
-        <div className="bg-card rounded-lg border border-border p-3 sm:p-4">
-          <div className="flex flex-wrap items-end gap-3 sm:gap-4">
+        <div className="bg-card rounded-lg border border-border p-2.5 sm:p-4">
+          <div className="flex flex-wrap items-end gap-2 sm:gap-4">
             <div>
               <label className="text-[10px] text-muted-foreground block mb-1">Asset Type</label>
               <div className="flex gap-1">
                 {(['crypto', 'stock'] as const).map(t => (
                   <button key={t} onClick={() => { setAssetType(t); setSymbol(t === 'crypto' ? 'BTCUSDT' : 'RELIANCE'); setStockSearch(''); }}
-                    className={`px-3 py-1.5 text-xs rounded capitalize transition-colors ${assetType === t ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
+                    className={`px-2.5 py-1.5 text-[10px] sm:text-xs rounded capitalize transition-colors ${assetType === t ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
                   >{t}</button>
                 ))}
               </div>
             </div>
 
-            <div className="min-w-[140px]">
+            <div className="min-w-[120px] sm:min-w-[140px]">
               <label className="text-[10px] text-muted-foreground block mb-1">Symbol</label>
               {assetType === 'crypto' ? (
                 <select value={symbol} onChange={e => setSymbol(e.target.value)}
-                  className="bg-secondary text-foreground text-xs font-mono px-2 py-1.5 rounded border border-border w-full">
+                  className="bg-secondary text-foreground text-[10px] sm:text-xs font-mono px-2 py-1.5 rounded border border-border w-full">
                   {CRYPTO_PAIRS.map(p => <option key={p.symbol} value={p.symbol}>{p.label}</option>)}
                 </select>
               ) : (
@@ -268,7 +332,7 @@ export default function BacktestPage() {
                       onChange={e => { setStockSearch(e.target.value); }}
                       onFocus={() => setStockSearch(symbol)}
                       placeholder="Search stocks..."
-                      className="bg-transparent text-xs font-mono text-foreground outline-none w-full"
+                      className="bg-transparent text-[10px] sm:text-xs font-mono text-foreground outline-none w-full"
                     />
                   </div>
                   {stockSearch && (
@@ -280,20 +344,42 @@ export default function BacktestPage() {
                           <span className="text-muted-foreground ml-2 truncate">{s.name}</span>
                         </button>
                       ))}
-                      {filteredStocks.length === 0 && <div className="px-3 py-2 text-xs text-muted-foreground">No stocks found</div>}
-                      <div className="px-3 py-1 text-[9px] text-muted-foreground/50 border-t border-border">
-                        {stockOptions.length} stocks available
-                      </div>
+                      {filteredStocks.length === 0 && (
+                        <div className="px-3 py-2 text-xs text-muted-foreground">No stocks found</div>
+                      )}
                     </div>
                   )}
                 </div>
               )}
             </div>
 
+            {/* Custom stock input */}
+            {assetType === 'stock' && (
+              <div className="min-w-[100px]">
+                <label className="text-[10px] text-muted-foreground block mb-1">Custom Symbol</label>
+                <div className="flex gap-1">
+                  <input
+                    type="text"
+                    value={customSymbol}
+                    onChange={e => setCustomSymbol(e.target.value.toUpperCase())}
+                    onKeyDown={e => e.key === 'Enter' && handleAddCustomStock()}
+                    placeholder="e.g. TCS"
+                    className="bg-secondary text-foreground text-[10px] sm:text-xs font-mono px-2 py-1.5 rounded border border-border w-full"
+                  />
+                  <button
+                    onClick={handleAddCustomStock}
+                    className="px-2 py-1.5 text-[10px] bg-primary text-primary-foreground rounded active:scale-95"
+                  >
+                    Go
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="text-[10px] text-muted-foreground block mb-1">Interval</label>
               <select value={interval} onChange={e => setInterval_(e.target.value)}
-                className="bg-secondary text-foreground text-xs font-mono px-2 py-1.5 rounded border border-border">
+                className="bg-secondary text-foreground text-[10px] sm:text-xs font-mono px-2 py-1.5 rounded border border-border">
                 {assetType === 'crypto'
                   ? [{ v: '1m', l: '1m' }, { v: '5m', l: '5m' }, { v: '15m', l: '15m' }, { v: '1h', l: '1h' }, { v: '1d', l: '1D' }].map(i =>
                     <option key={i.v} value={i.v}>{i.l}</option>)
@@ -304,21 +390,21 @@ export default function BacktestPage() {
             </div>
 
             <button onClick={() => setShowConfig(!showConfig)}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs bg-secondary rounded border border-border text-muted-foreground hover:text-foreground transition-colors">
+              className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] sm:text-xs bg-secondary rounded border border-border text-muted-foreground hover:text-foreground transition-colors">
               <Settings className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Config</span>
               <ChevronDown className={`w-3 h-3 transition-transform ${showConfig ? 'rotate-180' : ''}`} />
             </button>
 
             <button onClick={runTest} disabled={running}
-              className="flex items-center gap-2 px-4 py-1.5 text-xs font-semibold rounded bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] disabled:opacity-50 transition-all">
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[10px] sm:text-xs font-semibold rounded bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] disabled:opacity-50 transition-all">
               <Play className="w-3.5 h-3.5" />
               {running ? 'Running...' : 'Run Backtest'}
             </button>
           </div>
 
           {showConfig && (
-            <div className="mt-3 pt-3 border-t border-border grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            <div className="mt-3 pt-3 border-t border-border grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 sm:gap-3">
               {[
                 { key: 'initialCapital', label: 'Capital', step: 10000 },
                 { key: 'maxRiskPerTrade', label: 'Max Risk/Trade', step: 0.005, suffix: '%', mult: 100 },
@@ -332,7 +418,7 @@ export default function BacktestPage() {
                   <input type="number" step={step}
                     value={mult ? (config as any)[key] * mult : (config as any)[key]}
                     onChange={e => setConfig({ ...config, [key]: mult ? Number(e.target.value) / mult : Number(e.target.value) })}
-                    className="w-full bg-secondary text-foreground text-xs font-mono px-2 py-1.5 rounded border border-border"
+                    className="w-full bg-secondary text-foreground text-[10px] sm:text-xs font-mono px-2 py-1.5 rounded border border-border"
                   />
                 </div>
               ))}
@@ -341,15 +427,15 @@ export default function BacktestPage() {
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-loss/10 border border-loss/20">
+          <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-lg bg-loss/10 border border-loss/20">
             <AlertTriangle className="w-4 h-4 text-loss flex-shrink-0" />
-            <span className="text-xs text-loss">{error}</span>
+            <span className="text-[10px] sm:text-xs text-loss">{error}</span>
           </div>
         )}
 
         {result && (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5 sm:gap-2">
               <MetricCard label="Total Return" value={`${result.totalReturnPct >= 0 ? '+' : ''}${result.totalReturnPct.toFixed(2)}%`}
                 sub={`₹${result.totalReturn.toFixed(0)}`} positive={result.totalReturn >= 0} />
               <MetricCard label="Sharpe Ratio" value={result.sharpeRatio.toFixed(2)} positive={result.sharpeRatio > 1} />
@@ -364,20 +450,20 @@ export default function BacktestPage() {
             </div>
 
             <div className="bg-card rounded-lg border border-border overflow-hidden">
-              <div className="px-4 py-2 bg-panel-header border-b border-border flex items-center gap-2">
+              <div className="px-3 sm:px-4 py-2 bg-panel-header border-b border-border flex items-center gap-2">
                 <TrendingUp className="w-3.5 h-3.5 text-primary" />
-                <h3 className="text-sm font-semibold text-foreground">Equity Curve</h3>
+                <h3 className="text-xs sm:text-sm font-semibold text-foreground">Equity Curve</h3>
                 <span className="text-[10px] text-muted-foreground font-mono">{result.totalTrades} trades</span>
               </div>
-              <div className="h-48 sm:h-64 md:h-72">
+              <div className="h-44 sm:h-64 md:h-72">
                 <EquityChart result={result} />
               </div>
             </div>
 
             <div className="bg-card rounded-lg border border-border overflow-hidden">
-              <div className="px-4 py-2 bg-panel-header border-b border-border flex items-center gap-2">
+              <div className="px-3 sm:px-4 py-2 bg-panel-header border-b border-border flex items-center gap-2">
                 <BarChart3 className="w-3.5 h-3.5 text-primary" />
-                <h3 className="text-sm font-semibold text-foreground">Trade History</h3>
+                <h3 className="text-xs sm:text-sm font-semibold text-foreground">Trade History</h3>
                 <span className="text-[10px] text-muted-foreground">{result.trades.length} trades</span>
               </div>
               <TradesTable trades={result.trades} />
@@ -386,10 +472,10 @@ export default function BacktestPage() {
         )}
 
         {!result && !running && (
-          <div className="flex-1 flex flex-col items-center justify-center gap-3 text-muted-foreground py-12">
-            <BarChart3 className="w-12 h-12 opacity-20" />
-            <p className="text-sm text-center">Configure parameters and run a backtest to see results</p>
-            <p className="text-[10px] text-muted-foreground/60 text-center">Uses real historical data • Walk-forward signal generation • Includes commissions</p>
+          <div className="flex-1 flex flex-col items-center justify-center gap-3 text-muted-foreground py-8 sm:py-12">
+            <BarChart3 className="w-10 h-10 sm:w-12 sm:h-12 opacity-20" />
+            <p className="text-xs sm:text-sm text-center">Configure parameters and run a backtest</p>
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground/60 text-center px-4">Real historical data • Walk-forward signals • Includes commissions</p>
           </div>
         )}
       </div>
