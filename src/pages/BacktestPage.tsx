@@ -389,7 +389,7 @@ export default function BacktestPage() {
               <label className="text-[10px] text-muted-foreground block mb-1">Asset</label>
               <div className="flex gap-1">
                 {(['crypto', 'stock'] as const).map(t => (
-                  <button key={t} onClick={() => { setAssetType(t); setSymbol(t === 'crypto' ? 'BTCUSDT' : 'NIFTY 50'); setStockSearch(''); }}
+                  <button key={t} onClick={() => { setAssetType(t); setSymbol(t === 'crypto' ? 'BTCUSDT' : 'NIFTY 50'); setStockSearch(null); }}
                     className={`px-2.5 py-1.5 text-[10px] sm:text-xs rounded capitalize transition-colors ${assetType === t ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
                   >{t}</button>
                 ))}
