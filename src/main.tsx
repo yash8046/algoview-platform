@@ -1,7 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-import { initAdMob } from "./lib/adService";
+import { initAdMob, showAppOpenAd } from "./lib/adService";
 import { Capacitor } from "@capacitor/core";
 
 // Hide splash screen once app is ready
@@ -12,10 +12,10 @@ async function hideSplash() {
   }
 }
 
-// Initialize AdMob after the app bootstraps on native platforms
-setTimeout(() => {
-  void initAdMob();
-}, 800);
+// Initialize AdMob and show app-open ad on native platforms
+initAdMob().then(() => {
+  setTimeout(() => showAppOpenAd(), 2000);
+});
 
 createRoot(document.getElementById("root")!).render(<App />);
 

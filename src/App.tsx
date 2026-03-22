@@ -8,7 +8,6 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { DisclaimerBanner, FirstUseDisclaimer } from "@/components/DisclaimerBanner";
 import MobileBottomNav from "./components/MobileBottomNav";
-import AdDebugOverlay from "./components/AdDebugOverlay";
 import Index from "./pages/Index.tsx";
 import Portfolio from "./pages/Portfolio.tsx";
 import CryptoPage from "./pages/CryptoPage.tsx";
@@ -51,7 +50,6 @@ const App = () => {
             <Route path="*" element={<NotFound />} />
           </Routes>
           <MobileBottomNav />
-          <AdDebugOverlay />
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
