@@ -19,7 +19,7 @@ export default function PrivacyPolicy() {
 
           <div className="bg-card rounded-lg border border-border p-5 sm:p-6 space-y-5 text-sm text-muted-foreground leading-relaxed">
             <Section title="1. Information We Collect">
-              <p>We collect the following information when you use MarketLens:</p>
+              <p>We collect the following information when you use AlgoInsight:</p>
               <ul className="list-disc list-inside space-y-1 mt-2 text-xs">
                 <li><strong className="text-foreground">Account data:</strong> Email address used to create your account.</li>
                 <li><strong className="text-foreground">Usage data:</strong> Simulated trades, watchlist selections, and analysis preferences stored to provide the service.</li>
@@ -41,7 +41,7 @@ export default function PrivacyPolicy() {
             </Section>
 
             <Section title="4. Third-Party Services">
-              <p>MarketLens uses the following third-party services to operate:</p>
+              <p>AlgoInsight uses the following third-party services to operate:</p>
               <ul className="list-disc list-inside space-y-1 mt-2 text-xs">
                 <li>Cloud authentication and database services for account management</li>
                 <li>AI language models for generating market insights</li>
@@ -51,7 +51,7 @@ export default function PrivacyPolicy() {
             </Section>
 
             <Section title="5. No Financial Data Collection">
-              <p>MarketLens does not collect, store, or process any real financial account information, bank details, brokerage credentials, or payment information. All trading within the app is simulated using virtual currency.</p>
+              <p>AlgoInsight does not collect, store, or process any real financial account information, bank details, brokerage credentials, or payment information. All trading within the app is simulated using virtual currency.</p>
             </Section>
 
             <Section title="6. Data Retention">
@@ -59,7 +59,7 @@ export default function PrivacyPolicy() {
             </Section>
 
             <Section title="7. Children's Privacy">
-              <p>MarketLens is not intended for use by individuals under the age of 18. We do not knowingly collect personal information from children.</p>
+              <p>AlgoInsight is not intended for use by individuals under the age of 18. We do not knowingly collect personal information from children.</p>
             </Section>
 
             <Section title="8. Your Rights">
