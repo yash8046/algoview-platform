@@ -1,4 +1,4 @@
-import { MousePointer, Minus, GripVertical, TrendingUp, Activity, Square, Pencil, Zap, Trash2, CandlestickChart } from 'lucide-react';
+import { MousePointer, Minus, GripVertical, TrendingUp, Activity, Square, Pencil, Zap, Trash2, BarChart3 } from 'lucide-react';
 
 export type DrawingMode = 'none' | 'hline' | 'vline' | 'trendline' | 'fib_retracement' | 'fib_extension' | 'rectangle' | 'pen' | 'laser';
 
