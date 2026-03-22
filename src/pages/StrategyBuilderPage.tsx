@@ -307,6 +307,7 @@ export default function StrategyBuilderPage() {
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <TopBar />
+      <AdBanner position="TOP" />
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
         <div className={`${sidebarOpen ? 'w-80 lg:w-96' : 'w-0'} transition-all duration-300 overflow-hidden border-r border-border bg-card flex-shrink-0`}>
