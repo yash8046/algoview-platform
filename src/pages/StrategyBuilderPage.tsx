@@ -265,7 +265,7 @@ export default function StrategyBuilderPage() {
   // Fullscreen overlay
   if (fullscreenChart && result) {
     const isEquity = fullscreenChart === 'equity';
-    const data = isEquity ? result.equityCurve.map(e => ({ time: e.time, value: e.equity })) : result.drawdownCurve;
+    const data = isEquity ? result.equityCurve.map(e => ({ time: e.time, value: e.equity })) : result.drawdownCurve.map(d => ({ time: d.time, value: d.drawdown }));
     return (
       <div className="fixed inset-0 z-[100] bg-background flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
