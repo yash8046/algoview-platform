@@ -6,7 +6,7 @@ import { fetchYahooFinanceData } from '@/lib/yahooFinance';
 import { type OHLCV, type BacktestResult, type BacktestConfig, runBacktest } from '@/lib/technicalIndicators';
 import { CRYPTO_PAIRS } from '@/stores/cryptoStore';
 import { supabase } from '@/integrations/supabase/client';
-import { BarChart3, TrendingUp, AlertTriangle, Play, Settings, ChevronDown, Info, Search, X, Plus, Save, Trash2 } from 'lucide-react';
+import { BarChart3, TrendingUp, AlertTriangle, Play, Settings, ChevronDown, Info, Search, X, Plus, Save, Trash2, Maximize2, Minimize2 } from 'lucide-react';
 
 interface StockOption { symbol: string; name: string; }
 
@@ -48,17 +48,12 @@ function MetricCard({ label, value, sub, positive }: { label: string; value: str
   );
 }
 
-function EquityChart({ result }: { result: BacktestResult }) {
+function EquityChart({ result, fullscreen, onToggleFullscreen }: { result: BacktestResult; fullscreen?: boolean; onToggleFullscreen?: () => void }) {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<IChartApi | null>(null);
   const seriesInstance = useRef<any>(null);
   const vMargins = useRef({ top: 0.2, bottom: 0.2 });
-
-  const freezePriceScale = () => {
-    requestAnimationFrame(() => {
-      chartInstance.current?.priceScale('right').applyOptions({ autoScale: false });
-    });
-  };
+  const dataRef = useRef<any[]>([]);
 
   const zoomRange = (factor: number) => {
     const chart = chartInstance.current;
@@ -114,14 +109,11 @@ function EquityChart({ result }: { result: BacktestResult }) {
       .filter((_, i) => i % step === 0)
       .map(e => ({ time: e.time as any, value: e.equity }));
     series.setData(data);
+    dataRef.current = data;
     series.priceScale().applyOptions({ scaleMargins: vMargins.current });
     chart.timeScale().fitContent();
     chartInstance.current = chart;
     seriesInstance.current = series;
-    if (data.length > 40) {
-      zoomRange(0.32);
-    }
-    freezePriceScale();
 
     const observer = new ResizeObserver(() => {
       if (container) chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
@@ -174,24 +166,38 @@ function EquityChart({ result }: { result: BacktestResult }) {
     chart.priceScale('right').applyOptions({ autoScale: true });
     vMargins.current = { top: 0.2, bottom: 0.2 };
     seriesInstance.current?.priceScale().applyOptions({ scaleMargins: vMargins.current });
-    chart.timeScale().resetTimeScale();
-    chart.timeScale().fitContent();
-    freezePriceScale();
+    if (dataRef.current.length > 0) {
+      chart.timeScale().setVisibleLogicalRange({ from: -1, to: dataRef.current.length });
+    }
+    requestAnimationFrame(() => {
+      chart.priceScale('right').applyOptions({ autoScale: true });
+      seriesInstance.current?.priceScale().applyOptions({ scaleMargins: vMargins.current });
+    });
   };
+
+  const btnBase = fullscreen
+    ? "px-3 py-2 text-sm font-mono bg-card/90 border border-border rounded-lg hover:bg-accent transition-colors text-foreground"
+    : "px-2 py-1 text-xs font-mono bg-card/80 border border-border rounded hover:bg-accent transition-colors text-foreground";
+  const btnSmall = fullscreen
+    ? "px-2.5 py-1.5 text-xs font-mono bg-card/90 border border-border rounded-lg hover:bg-accent transition-colors text-foreground"
+    : "px-1.5 py-1 text-[10px] font-mono bg-card/80 border border-border rounded hover:bg-accent transition-colors text-foreground";
 
   return (
     <div className="relative w-full h-full" style={{ minHeight: '200px' }}>
       <div ref={chartRef} className="w-full h-full touch-none" />
-      {/* Horizontal zoom controls */}
       <div className="absolute top-2 right-2 flex gap-1 z-10">
-        <button onClick={zoomIn} className="px-2 py-1 text-xs font-mono bg-card/80 border border-border rounded hover:bg-accent transition-colors text-foreground" title="Zoom In (Horizontal)">+</button>
-        <button onClick={zoomOut} className="px-2 py-1 text-xs font-mono bg-card/80 border border-border rounded hover:bg-accent transition-colors text-foreground" title="Zoom Out (Horizontal)">−</button>
-        <button onClick={fitAll} className="px-2 py-1 text-[10px] font-mono bg-card/80 border border-border rounded hover:bg-accent transition-colors text-foreground" title="Fit All">Fit</button>
+        <button onClick={zoomIn} className={btnBase} title="Zoom In">+</button>
+        <button onClick={zoomOut} className={btnBase} title="Zoom Out">−</button>
+        <button onClick={fitAll} className={btnBase} title="Fit entire chart">Fit</button>
+        {onToggleFullscreen && (
+          <button onClick={onToggleFullscreen} className={btnBase} title={fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
+            {fullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          </button>
+        )}
       </div>
-      {/* Vertical zoom controls */}
       <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
-        <button onClick={zoomInVertical} className="px-1.5 py-1 text-[10px] font-mono bg-card/80 border border-border rounded hover:bg-accent transition-colors text-foreground" title="Zoom In (Vertical)">↕+</button>
-        <button onClick={zoomOutVertical} className="px-1.5 py-1 text-[10px] font-mono bg-card/80 border border-border rounded hover:bg-accent transition-colors text-foreground" title="Zoom Out (Vertical)">↕−</button>
+        <button onClick={zoomInVertical} className={btnSmall} title="Zoom In (Vertical)">↕+</button>
+        <button onClick={zoomOutVertical} className={btnSmall} title="Zoom Out (Vertical)">↕−</button>
       </div>
     </div>
   );
@@ -280,6 +286,7 @@ export default function BacktestPage() {
   const [showCreateStrategy, setShowCreateStrategy] = useState(false);
   const [newStrategyName, setNewStrategyName] = useState('');
   const [newStrategyDesc, setNewStrategyDesc] = useState('');
+  const [fullscreenChart, setFullscreenChart] = useState(false);
   const [config, setConfig] = useState<BacktestConfig>({
     initialCapital: 100000,
     maxRiskPerTrade: 0.02,
@@ -617,7 +624,7 @@ export default function BacktestPage() {
                 <span className="text-[10px] text-muted-foreground font-mono">{result.totalTrades} trades</span>
               </div>
               <div className="h-[600px] sm:h-[720px] lg:h-[820px]">
-                <EquityChart result={result} />
+                <EquityChart result={result} onToggleFullscreen={() => setFullscreenChart(true)} />
               </div>
             </div>
 
@@ -640,6 +647,24 @@ export default function BacktestPage() {
           </div>
         )}
       </div>
+
+      {fullscreenChart && result && (
+        <div className="fixed inset-0 z-[100] bg-background flex flex-col">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">Equity Curve</h3>
+              <span className="text-[10px] text-muted-foreground font-mono">{result.totalTrades} trades</span>
+            </div>
+            <button onClick={() => setFullscreenChart(false)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-secondary text-foreground hover:bg-accent transition-colors">
+              <Minimize2 className="w-3.5 h-3.5" /> Exit
+            </button>
+          </div>
+          <div className="flex-1 min-h-0">
+            <EquityChart result={result} fullscreen onToggleFullscreen={() => setFullscreenChart(false)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
