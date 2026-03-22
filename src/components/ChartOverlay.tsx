@@ -9,13 +9,14 @@ const FIB_COLORS = ['#ef4444', '#f59e0b', '#eab308', '#22c55e', '#06b6d4', '#3b8
 interface ChartOverlayProps {
   chart: IChartApi | null;
   series: any;
+  drawingMode: DrawingMode;
   drawingModeRef: React.MutableRefObject<DrawingMode>;
   drawings: DrawingLine[];
   onAddDrawing: (drawing: DrawingLine) => void;
   onFinishDrawing: () => void;
 }
 
-export default function ChartOverlay({ chart, series, drawingModeRef, drawings, onAddDrawing, onFinishDrawing }: ChartOverlayProps) {
+export default function ChartOverlay({ chart, series, drawingMode, drawingModeRef, drawings, onAddDrawing, onFinishDrawing }: ChartOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawing = useRef(false);
   const startCoord = useRef<{ time: Time; price: number } | null>(null);
