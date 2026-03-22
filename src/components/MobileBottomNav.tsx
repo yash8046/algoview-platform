@@ -1,12 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
-import { BarChart3, Bitcoin, FlaskConical, Settings } from 'lucide-react';
+import { BarChart3, Bitcoin, FlaskConical, MoreHorizontal } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const tabs = [
   { to: '/', label: 'Stocks', icon: BarChart3 },
   { to: '/crypto', label: 'Crypto', icon: Bitcoin },
   { to: '/backtest', label: 'Backtest', icon: FlaskConical },
-  { to: '/disclaimer', label: 'More', icon: Settings },
+  { to: '/more', label: 'More', icon: MoreHorizontal },
 ];
 
 export default function MobileBottomNav() {
@@ -19,7 +19,9 @@ export default function MobileBottomNav() {
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-area-bottom">
       <div className="flex items-stretch">
         {tabs.map((tab) => {
-          const isActive = location.pathname === tab.to;
+          const isActive = tab.to === '/'
+            ? location.pathname === '/'
+            : location.pathname.startsWith(tab.to);
           return (
             <Link
               key={tab.to}

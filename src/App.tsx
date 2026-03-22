@@ -15,6 +15,7 @@ import BacktestPage from "./pages/BacktestPage.tsx";
 import DisclaimerPage from "./pages/DisclaimerPage.tsx";
 import PrivacyPolicy from "./pages/PrivacyPolicy.tsx";
 import TermsOfService from "./pages/TermsOfService.tsx";
+import MorePage from "./pages/MorePage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => {
             <Route path="/portfolio" element={<ProtectedRoute><Portfolio /></ProtectedRoute>} />
             <Route path="/crypto" element={<ProtectedRoute><CryptoPage /></ProtectedRoute>} />
             <Route path="/backtest" element={<ProtectedRoute><BacktestPage /></ProtectedRoute>} />
+            <Route path="/more" element={<ProtectedRoute><MorePage /></ProtectedRoute>} />
             <Route path="/disclaimer" element={<ProtectedRoute><DisclaimerPage /></ProtectedRoute>} />
             <Route path="/privacy" element={<ProtectedRoute><PrivacyPolicy /></ProtectedRoute>} />
             <Route path="/terms" element={<ProtectedRoute><TermsOfService /></ProtectedRoute>} />
