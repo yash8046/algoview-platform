@@ -314,10 +314,10 @@ export default function StrategyBuilderPage() {
             {/* Templates */}
             <div>
               <label className="text-[10px] text-muted-foreground block mb-1.5">Templates</label>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1 max-h-28 overflow-y-auto overscroll-contain scrollbar-thin" style={{ WebkitOverflowScrolling: 'touch' }}>
                 {STRATEGY_TEMPLATES.map(t => (
                   <button key={t.name} onClick={() => loadTemplate(t)}
-                    className={`px-2 py-1 text-[10px] rounded transition-colors ${strategy.name === t.name ? 'bg-primary text-primary-foreground font-semibold' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}>
+                    className={`px-2 py-1 text-[10px] rounded transition-colors min-h-[28px] active:scale-95 ${strategy.name === t.name ? 'bg-primary text-primary-foreground font-semibold' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}>
                     {t.name}
                   </button>
                 ))}
