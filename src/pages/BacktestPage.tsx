@@ -82,7 +82,7 @@ function EquityChart({ result }: { result: BacktestResult }) {
         rightOffset: 5,
       },
       crosshair: { mode: 0 },
-      handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: true },
+      handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
       handleScale: { mouseWheel: true, pinch: true, axisPressedMouseMove: true, axisDoubleClickReset: true },
     });
 
@@ -605,7 +605,7 @@ export default function BacktestPage() {
                 <h3 className="text-xs sm:text-sm font-semibold text-foreground">Equity Curve</h3>
                 <span className="text-[10px] text-muted-foreground font-mono">{result.totalTrades} trades</span>
               </div>
-              <div style={{ height: '280px' }}>
+              <div style={{ height: '420px' }}>
                 <EquityChart result={result} />
               </div>
             </div>
