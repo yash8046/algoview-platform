@@ -1,5 +1,5 @@
 import { useEffect, useRef, useMemo, useState } from 'react';
-import { createChart, CandlestickSeries, HistogramSeries, LineSeries, type IChartApi } from 'lightweight-charts';
+import { createChart, CandlestickSeries, HistogramSeries, LineSeries, createSeriesMarkers, type IChartApi } from 'lightweight-charts';
 import { useCryptoData } from '@/hooks/useCryptoData';
 import { useCryptoStore, CRYPTO_PAIRS } from '@/stores/cryptoStore';
 import { formatINR } from '@/lib/exchangeRate';

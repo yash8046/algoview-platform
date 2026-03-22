@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { createChart, ColorType, IChartApi, CandlestickSeries, HistogramSeries, LineSeries } from 'lightweight-charts';
+import { createChart, ColorType, IChartApi, CandlestickSeries, HistogramSeries, LineSeries, createSeriesMarkers } from 'lightweight-charts';
 import { useTradingStore } from '@/stores/tradingStore';
 import { fetchYahooFinanceData } from '@/lib/yahooFinance';
 import { calculateSMA } from '@/lib/mockData';
