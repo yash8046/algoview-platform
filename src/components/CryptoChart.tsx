@@ -31,6 +31,7 @@ export default function CryptoChart() {
   const [chartApi, setChartApi] = useState<IChartApi | null>(null);
   const [seriesApi, setSeriesApi] = useState<any>(null);
   const [showPatterns, setShowPatterns] = useState(false);
+  const markersRef = useRef<any>(null);
   const formattedCandlesRef = useRef<any[]>([]);
 
   const {
