@@ -136,6 +136,8 @@ export default function TradingChart() {
     }
   }, [showPatterns, seriesApi]);
 
+  const isDrawingActive = drawingMode !== 'none';
+
   return (
     <div className="flex flex-col h-full bg-card rounded-lg border border-border overflow-hidden">
       <div className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2 bg-panel-header border-b border-border gap-2">
