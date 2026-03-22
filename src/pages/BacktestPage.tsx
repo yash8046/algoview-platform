@@ -410,13 +410,6 @@ export default function BacktestPage() {
         <div className="bg-card rounded-lg border border-border p-2.5 sm:p-3">
           <div className="flex items-center justify-between mb-1.5">
             <label className="text-[10px] text-muted-foreground">Strategy Pattern</label>
-            <button
-              onClick={() => setShowCreateStrategy(!showCreateStrategy)}
-              className="flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 transition-colors"
-            >
-              <Plus className="w-3 h-3" />
-              <span>Custom</span>
-            </button>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {allPresets.map(preset => (
@@ -540,18 +533,6 @@ export default function BacktestPage() {
               )}
             </div>
 
-            {/* Custom stock symbol input */}
-            {assetType === 'stock' && (
-              <div className="min-w-[90px]">
-                <label className="text-[10px] text-muted-foreground block mb-1">Custom</label>
-                <div className="flex gap-1">
-                  <input type="text" value={customSymbol} onChange={e => setCustomSymbol(e.target.value.toUpperCase())}
-                    onKeyDown={e => e.key === 'Enter' && handleAddCustomStock()}
-                    placeholder="TCS" className="bg-secondary text-foreground text-[10px] sm:text-xs font-mono px-2 py-1.5 rounded border border-border w-16 sm:w-20" />
-                  <button onClick={handleAddCustomStock} className="px-2 py-1.5 text-[10px] bg-primary text-primary-foreground rounded active:scale-95">Go</button>
-                </div>
-              </div>
-            )}
 
             <div>
               <label className="text-[10px] text-muted-foreground block mb-1">Interval</label>

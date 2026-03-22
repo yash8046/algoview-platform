@@ -52,14 +52,27 @@ function LWChart({ data, color, label, height }: { data: { time: number; value: 
 
     const series = chart.addSeries(LineSeries, { color, lineWidth: 2, priceLineVisible: false });
     const step = Math.max(1, Math.floor(data.length / 500));
-    series.setData(data.filter((_, i) => i % step === 0).map(d => ({ time: d.time as any, value: d.value })));
-    chart.timeScale().fitContent();
+    const filtered = data.filter((_, i) => i % step === 0);
+    
+    // Deduplicate and sort by time to avoid lightweight-charts errors
+    const seen = new Set<number>();
+    const dedupedData = filtered.filter(d => {
+      if (seen.has(d.time)) return false;
+      seen.add(d.time);
+      return true;
+    }).sort((a, b) => a.time - b.time).map(d => ({ time: d.time as any, value: d.value }));
+    
+    if (dedupedData.length > 0) {
+      series.setData(dedupedData);
+      chart.timeScale().fitContent();
+    }
     chartRef.current = chart;
 
+    const el = ref.current;
     const obs = new ResizeObserver(() => {
-      if (ref.current) chart.applyOptions({ width: ref.current.clientWidth, height: ref.current.clientHeight });
+      if (el) chart.applyOptions({ width: el.clientWidth, height: el.clientHeight });
     });
-    obs.observe(ref.current);
+    obs.observe(el);
     return () => { obs.disconnect(); chart.remove(); chartRef.current = null; };
   }, [data, color]);
 
