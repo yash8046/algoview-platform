@@ -34,9 +34,9 @@ const cards = [
 
 export default function MorePage() {
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <div className="flex flex-col h-[100dvh] overflow-hidden">
       <TopBar />
-      <div className="flex-1 overflow-y-auto pb-20 p-3 sm:p-4">
+      <div className="flex-1 overflow-hidden pb-20 p-3 sm:p-4 flex flex-col">
         <div className="flex items-center gap-2 mb-4">
           <Info className="w-5 h-5 text-primary" />
           <h1 className="text-base font-bold text-foreground">More</h1>
