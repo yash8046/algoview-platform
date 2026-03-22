@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRewardedAd } from '@/hooks/useRewardedAd';
+import { useRewardedAd, useInterstitialAd } from '@/hooks/useRewardedAd';
+import AdBanner from '@/components/AdBanner';
 import { createChart, LineSeries, type IChartApi } from 'lightweight-charts';
 import TopBar from '@/components/TopBar';
 import { fetchKlines } from '@/lib/binanceApi';
