@@ -147,6 +147,7 @@ export default function TradingChart() {
             {selectedSymbol === 'NIFTY 50' ? 'NIFTY 50' : `${selectedSymbol}.NS`}
           </h2>
           <span className="text-[10px] text-muted-foreground hidden sm:inline">NSE</span>
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-warning/10 text-warning border border-warning/20 hidden sm:inline">~15min delayed</span>
           {loading && <span className="text-[10px] text-primary animate-pulse">Loading...</span>}
           {error && <span className="text-[10px] text-loss truncate max-w-[100px]">Error</span>}
         </div>

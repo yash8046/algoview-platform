@@ -80,7 +80,7 @@ export default function TradePanel() {
         </div>
 
         <div>
-          <label className="text-[11px] text-muted-foreground mb-1 block">Price</label>
+          <label className="text-[11px] text-muted-foreground mb-1 block">Price <span className="text-warning/70">(~15min delayed)</span></label>
           <div className="bg-secondary rounded px-3 py-2 font-mono text-sm text-foreground">
             {price > 0 ? `₹${price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : 'Loading...'}
           </div>
