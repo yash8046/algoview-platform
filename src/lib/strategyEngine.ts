@@ -238,8 +238,8 @@ export function runCustomStrategy(candles: OHLCV[], strategy: StrategyDefinition
     if (!inPosition && i < candles.length - 2) {
       if (evaluateAllConditions(strategy.entryConditions, i, indicators)) {
         const positionValue = capital * (strategy.positionSizePct / 100);
-        positionQty = Math.floor(positionValue / price);
-        if (positionQty <= 0 || positionQty * price > capital * 0.95) continue;
+        positionQty = positionValue / price; // Allow fractional quantities for expensive assets
+        if (positionQty <= 0.001 || positionQty * price > capital * 0.95) continue;
 
         entryPrice = price;
         entryTime = candles[i].time;
