@@ -410,14 +410,6 @@ export default function BacktestPage() {
         <div className="bg-card rounded-lg border border-border p-2.5 sm:p-3">
           <div className="flex items-center justify-between mb-1.5">
             <label className="text-[10px] text-muted-foreground">Strategy Pattern</label>
-            <button
-              onClick={() => setShowCreateStrategy(!showCreateStrategy)}
-              className="flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 transition-colors"
-            >
-              <Plus className="w-3 h-3" />
-              <span>Custom</span>
-            </button>
-          </div>
           <div className="flex flex-wrap gap-1.5">
             {allPresets.map(preset => (
               <div key={preset.id} className="flex items-center gap-0.5">
