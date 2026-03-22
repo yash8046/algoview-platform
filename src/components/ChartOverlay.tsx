@@ -342,7 +342,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   useEffect(() => { render(); }, [drawings, render]);
   useEffect(() => () => { cancelAnimationFrame(laserRaf.current); }, []);
 
-  const isActive = drawingModeRef.current !== 'none';
+  const isActive = drawingMode !== 'none';
 
   return (
     <canvas
