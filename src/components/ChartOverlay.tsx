@@ -275,6 +275,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
     if (mode === 'laser') {
       laserPixels.current.push({ x, y, t: Date.now() });
+      render();
       return;
     }
     if (mode === 'pen') {
