@@ -208,8 +208,8 @@ export default function CryptoChart() {
           </div>
         </div>
       </div>
-      <div className="relative flex-1">
-        <div ref={chartRef} className="absolute inset-0 bg-chart" />
+      <div className="relative flex-1 min-h-0">
+        <div ref={chartRef} className="w-full h-full bg-chart" />
         <ChartOverlay
           chart={chartApi}
           series={seriesApi}
