@@ -90,9 +90,6 @@ function EquityChart({ result }: { result: BacktestResult }) {
       color: result.totalReturn >= 0 ? 'hsl(142, 71%, 45%)' : 'hsl(0, 72%, 51%)',
       lineWidth: 2,
       priceLineVisible: false,
-      autoscaleInfoProvider: () => ({
-        priceRange: null,
-      }),
     });
 
     const maxPoints = 500;
