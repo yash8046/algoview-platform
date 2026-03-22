@@ -539,7 +539,7 @@ export default function StrategyBuilderPage() {
             {/* Actions */}
             <div className="flex gap-2 pt-2 border-t border-border">
               <button onClick={runTest} disabled={running || strategy.entryConditions.length === 0}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 active:scale-[0.97]">
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-semibold rounded bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 active:scale-[0.97] min-h-[44px]">
                 <Play className="w-3.5 h-3.5" />{running ? 'Running...' : 'Run Backtest'}
               </button>
               <button onClick={saveStrategy} className="px-3 py-2 text-xs rounded bg-secondary text-foreground hover:bg-accent border border-border" title="Save Strategy">

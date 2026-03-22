@@ -77,7 +77,7 @@ export default function ChartDrawingTools({
 
       {/* Dropdown panel */}
       {expanded && (
-        <div className="absolute top-full left-0 mt-1 z-[200] bg-card border border-border rounded-lg shadow-xl min-w-[160px] max-h-[320px] overflow-y-auto scrollbar-thin">
+        <div className="absolute top-full left-0 mt-1 z-[200] bg-card border border-border rounded-lg shadow-xl min-w-[160px] max-h-[60vh] overflow-y-auto overscroll-contain scrollbar-thin" style={{ WebkitOverflowScrolling: 'touch' }}>
           <div className="flex flex-col p-1">
             {tools.map((tool) => (
               <button

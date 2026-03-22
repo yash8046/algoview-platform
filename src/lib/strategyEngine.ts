@@ -397,6 +397,92 @@ export const STRATEGY_TEMPLATES: StrategyDefinition[] = [
     positionSizePct: 10,
     commissionPct: 0.001,
   },
+  {
+    name: 'Triple EMA',
+    description: 'Triple EMA filter: fast crosses mid with RSI > 50 confirmation',
+    market: 'stocks',
+    indicators: [
+      { type: 'EMA', params: { period: 9 } },
+      { type: 'EMA', params: { period: 21 } },
+      { type: 'RSI', params: { period: 14 } },
+    ],
+    entryConditions: [
+      { id: '1', left: 'ema1', operator: 'crosses_above', right: 'ema2' },
+      { id: '2', left: 'rsi', operator: '>', right: 'value', rightValue: 50 },
+    ],
+    exitConditions: [
+      { id: '1', left: 'ema1', operator: 'crosses_below', right: 'ema2' },
+    ],
+    stopLoss: { type: 'atr', value: 2 },
+    takeProfit: { type: 'rr_ratio', value: 2.5 },
+    initialCapital: 100000,
+    positionSizePct: 15,
+    commissionPct: 0.001,
+  },
+  {
+    name: 'Mean Reversion',
+    description: 'SMA mean reversion: buy below lower BB with RSI oversold, exit at SMA',
+    market: 'stocks',
+    indicators: [
+      { type: 'SMA', params: { period: 20 } },
+      { type: 'BollingerBands', params: { period: 20, stdDev: 2 } },
+      { type: 'RSI', params: { period: 14 } },
+    ],
+    entryConditions: [
+      { id: '1', left: 'price', operator: '<', right: 'bb_lower' },
+      { id: '2', left: 'rsi', operator: 'crosses_above', right: 'value', rightValue: 25 },
+    ],
+    exitConditions: [
+      { id: '1', left: 'price', operator: '>', right: 'sma1' },
+    ],
+    stopLoss: { type: 'percentage', value: 5 },
+    takeProfit: { type: 'percentage', value: 10 },
+    initialCapital: 200000,
+    positionSizePct: 20,
+    commissionPct: 0.001,
+  },
+  {
+    name: 'Scalper RSI',
+    description: 'Quick RSI scalp: enter on deep oversold, exit fast on overbought',
+    market: 'crypto',
+    indicators: [
+      { type: 'RSI', params: { period: 7 } },
+      { type: 'EMA', params: { period: 20 } },
+    ],
+    entryConditions: [
+      { id: '1', left: 'rsi', operator: 'crosses_above', right: 'value', rightValue: 20 },
+      { id: '2', left: 'price', operator: '>', right: 'ema1' },
+    ],
+    exitConditions: [
+      { id: '1', left: 'rsi', operator: '>', right: 'value', rightValue: 65 },
+    ],
+    stopLoss: { type: 'percentage', value: 2 },
+    takeProfit: { type: 'rr_ratio', value: 2 },
+    initialCapital: 50000,
+    positionSizePct: 25,
+    commissionPct: 0.001,
+  },
+  {
+    name: 'BB Squeeze',
+    description: 'Bollinger Band squeeze breakout with MACD confirmation',
+    market: 'stocks',
+    indicators: [
+      { type: 'BollingerBands', params: { period: 20, stdDev: 2 } },
+      { type: 'MACD', params: { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 } },
+    ],
+    entryConditions: [
+      { id: '1', left: 'price', operator: 'crosses_above', right: 'bb_upper' },
+      { id: '2', left: 'macd_histogram', operator: '>', right: 'value', rightValue: 0 },
+    ],
+    exitConditions: [
+      { id: '1', left: 'price', operator: '<', right: 'bb_middle' },
+    ],
+    stopLoss: { type: 'atr', value: 1.5 },
+    takeProfit: { type: 'rr_ratio', value: 3 },
+    initialCapital: 100000,
+    positionSizePct: 10,
+    commissionPct: 0.001,
+  },
 ];
 
 export function exportTradesCSV(trades: StrategyTrade[]): string {
