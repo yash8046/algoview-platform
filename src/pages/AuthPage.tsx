@@ -97,9 +97,6 @@ export default function AuthPage() {
               </button>
             </form>
           ) : (
-          <p className="text-sm text-muted-foreground text-center mb-6">
-            {isLogin ? 'Sign in to access your portfolio' : 'Start paper trading with ₹10,00,000'}
-          </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
