@@ -347,7 +347,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   return (
     <canvas
       ref={canvasRef}
-      className={`absolute inset-0 z-10 ${isActive ? 'cursor-crosshair' : 'pointer-events-none'}`}
+      className={`w-full h-full ${isActive ? 'cursor-crosshair' : ''}`}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
