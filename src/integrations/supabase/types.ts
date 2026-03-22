@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_insights_cache: {
+        Row: {
+          cache_key: string
+          created_at: string
+          expires_at: string
+          id: string
+          pair: string
+          result: Json
+          timeframe: string
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          pair: string
+          result: Json
+          timeframe: string
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          pair?: string
+          result?: Json
+          timeframe?: string
+        }
+        Relationships: []
+      }
       paper_positions: {
         Row: {
           created_at: string
