@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRewardedAd, useInterstitialAd } from '@/hooks/useRewardedAd';
-import AdBanner from '@/components/AdBanner';
+import { useRewardedAd } from '@/hooks/useRewardedAd';
 import { createChart, LineSeries, type IChartApi } from 'lightweight-charts';
 import TopBar from '@/components/TopBar';
 import { fetchKlines } from '@/lib/binanceApi';
@@ -272,7 +271,6 @@ function BacktestExplainer({ onClose }: { onClose: () => void }) {
 
 export default function BacktestPage() {
   const { gateWithAd: gateBacktest } = useRewardedAd('Backtest');
-  const { showInterstitial } = useInterstitialAd();
   const [assetType, setAssetType] = useState<'crypto' | 'stock'>('stock');
   const [symbol, setSymbol] = useState('NIFTY 50');
   const [interval, setInterval_] = useState('1d');
@@ -377,8 +375,6 @@ export default function BacktestPage() {
       }
       const backtestResult = runBacktest(candles, config);
       setResult(backtestResult);
-      // Show interstitial ad after backtest completes
-      showInterstitial();
     } catch (e: any) {
       setError(e.message || 'Backtest failed');
     } finally {
@@ -398,7 +394,6 @@ export default function BacktestPage() {
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <TopBar />
-      <AdBanner position="TOP" />
       <div className="flex-1 flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 overflow-auto pb-20 md:pb-3">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-2">

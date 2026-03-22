@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createChart, LineSeries, type IChartApi } from 'lightweight-charts';
 import TopBar from '@/components/TopBar';
-import { useRewardedAd, useInterstitialAd } from '@/hooks/useRewardedAd';
-import AdBanner from '@/components/AdBanner';
+import { useRewardedAd } from '@/hooks/useRewardedAd';
 import { fetchKlines } from '@/lib/binanceApi';
 import { fetchYahooFinanceData } from '@/lib/yahooFinance';
 import { type OHLCV } from '@/lib/technicalIndicators';
@@ -156,7 +155,6 @@ function IndicatorBadge({ config, onRemove }: { config: IndicatorConfig; onRemov
 
 export default function StrategyBuilderPage() {
   const { gateWithAd: gateStrategy } = useRewardedAd('Strategy Backtest');
-  const { showInterstitial } = useInterstitialAd();
   // Strategy state
   const [strategy, setStrategy] = useState<StrategyDefinition>({ ...STRATEGY_TEMPLATES[0] });
   const [result, setResult] = useState<StrategyResult | null>(null);
@@ -261,8 +259,6 @@ export default function StrategyBuilderPage() {
       }
       const stratResult = runCustomStrategy(candles, strategy);
       setResult(stratResult);
-      // Show interstitial ad after strategy backtest completes
-      showInterstitial();
     } catch (e: any) {
       setError(e.message || 'Backtest failed');
     } finally {
@@ -307,7 +303,6 @@ export default function StrategyBuilderPage() {
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <TopBar />
-      <AdBanner position="TOP" />
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
         <div className={`${sidebarOpen ? 'w-80 lg:w-96' : 'w-0'} transition-all duration-300 overflow-hidden border-r border-border bg-card flex-shrink-0`}>
