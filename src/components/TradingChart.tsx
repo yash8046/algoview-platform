@@ -3,27 +3,27 @@ import { createChart, ColorType, IChartApi, CandlestickSeries, HistogramSeries, 
 import { useTradingStore } from '@/stores/tradingStore';
 import { fetchYahooFinanceData } from '@/lib/yahooFinance';
 import { calculateSMA } from '@/lib/mockData';
-import ChartDrawingTools, { type DrawingMode } from '@/components/ChartDrawingTools';
+import ChartDrawingTools from '@/components/ChartDrawingTools';
+import ChartOverlay from '@/components/ChartOverlay';
 import { useChartDrawings } from '@/hooks/useChartDrawings';
+import { detectCandlestickPatterns } from '@/lib/candlestickPatterns';
 
 const TIMEFRAMES = ['1m', '5m', '15m', '1H', '4H', '1D', '1W'];
 
 export default function TradingChart() {
   const chartRef = useRef<HTMLDivElement>(null);
-  const chartInstance = useRef<IChartApi | null>(null);
-  const candleSeriesRef = useRef<any>(null);
   const { selectedSymbol, selectedTimeframe, setSelectedTimeframe, updatePrice } = useTradingStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [chartApi, setChartApi] = useState<IChartApi | null>(null);
+  const [seriesApi, setSeriesApi] = useState<any>(null);
+  const [showPatterns, setShowPatterns] = useState(false);
+  const candleDataRef = useRef<any[]>([]);
 
   const {
-    drawingMode,
-    setDrawingMode,
-    drawings,
-    addHorizontalLine,
-    clearAllDrawings,
-    restoreDrawings,
-  } = useChartDrawings(selectedSymbol, chartInstance.current);
+    drawingMode, setDrawingMode, drawingModeRef,
+    drawings, addDrawing, clearAllDrawings, finishDrawing,
+  } = useChartDrawings(selectedSymbol);
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -49,36 +49,22 @@ export default function TradingChart() {
       localization: { priceFormatter: (p: number) => '₹' + p.toFixed(2) },
     });
 
-    chartInstance.current = chart;
-
     const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: '#22c55e',
-      downColor: '#ef4444',
-      borderDownColor: '#ef4444',
-      borderUpColor: '#22c55e',
-      wickDownColor: '#ef4444',
-      wickUpColor: '#22c55e',
+      upColor: '#22c55e', downColor: '#ef4444',
+      borderDownColor: '#ef4444', borderUpColor: '#22c55e',
+      wickDownColor: '#ef4444', wickUpColor: '#22c55e',
     });
-    candleSeriesRef.current = candleSeries;
 
     const volumeSeries = chart.addSeries(HistogramSeries, {
-      priceFormat: { type: 'volume' },
-      priceScaleId: '',
+      priceFormat: { type: 'volume' }, priceScaleId: '',
     });
     volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
     const sma20Series = chart.addSeries(LineSeries, { color: '#26c6da', lineWidth: 1, title: 'SMA 20' });
     const sma50Series = chart.addSeries(LineSeries, { color: '#f59e0b', lineWidth: 1, title: 'SMA 50' });
 
-    // Handle click for drawing mode
-    chart.subscribeClick((param) => {
-      if (drawingMode === 'hline' && param.point) {
-        const price = candleSeries.coordinateToPrice(param.point.y);
-        if (price !== null) {
-          addHorizontalLine(price, candleSeries);
-        }
-      }
-    });
+    setChartApi(chart);
+    setSeriesApi(candleSeries);
 
     setLoading(true);
     setError(null);
@@ -87,32 +73,22 @@ export default function TradingChart() {
       .then((resp) => {
         const candleData = resp.candles.map(c => ({
           time: c.time as any,
-          open: +c.open.toFixed(2),
-          high: +c.high.toFixed(2),
-          low: +c.low.toFixed(2),
-          close: +c.close.toFixed(2),
+          open: +c.open.toFixed(2), high: +c.high.toFixed(2),
+          low: +c.low.toFixed(2), close: +c.close.toFixed(2),
         }));
-
         const volData = resp.candles.map(c => ({
-          time: c.time as any,
-          value: c.volume,
+          time: c.time as any, value: c.volume,
           color: c.close >= c.open ? 'rgba(38, 166, 91, 0.3)' : 'rgba(239, 83, 80, 0.3)',
         }));
 
         candleSeries.setData(candleData);
         volumeSeries.setData(volData);
+        candleDataRef.current = candleData;
 
-        if (candleData.length >= 20) {
-          sma20Series.setData(calculateSMA(candleData, 20) as any);
-        }
-        if (candleData.length >= 50) {
-          sma50Series.setData(calculateSMA(candleData, 50) as any);
-        }
+        if (candleData.length >= 20) sma20Series.setData(calculateSMA(candleData, 20) as any);
+        if (candleData.length >= 50) sma50Series.setData(calculateSMA(candleData, 50) as any);
 
         chart.timeScale().fitContent();
-
-        // Restore drawings
-        restoreDrawings(candleSeries);
 
         if (resp.regularMarketPrice) {
           updatePrice(selectedSymbol, resp.regularMarketPrice, resp.previousClose || resp.regularMarketPrice);
@@ -130,10 +106,7 @@ export default function TradingChart() {
 
     const observer = new ResizeObserver(() => {
       if (chartRef.current) {
-        chart.applyOptions({
-          width: chartRef.current.clientWidth,
-          height: chartRef.current.clientHeight,
-        });
+        chart.applyOptions({ width: chartRef.current.clientWidth, height: chartRef.current.clientHeight });
       }
     });
     observer.observe(chartRef.current);
@@ -141,8 +114,21 @@ export default function TradingChart() {
     return () => {
       observer.disconnect();
       chart.remove();
+      setChartApi(null);
+      setSeriesApi(null);
     };
   }, [selectedSymbol, selectedTimeframe]);
+
+  // Apply candlestick pattern markers
+  useEffect(() => {
+    if (!seriesApi || candleDataRef.current.length === 0) return;
+    if (showPatterns) {
+      const markers = detectCandlestickPatterns(candleDataRef.current);
+      seriesApi.setMarkers(markers);
+    } else {
+      seriesApi.setMarkers([]);
+    }
+  }, [showPatterns, seriesApi]);
 
   return (
     <div className="flex flex-col h-full bg-card rounded-lg border border-border overflow-hidden">
@@ -161,6 +147,8 @@ export default function TradingChart() {
             onModeChange={setDrawingMode}
             drawings={drawings}
             onClearAll={clearAllDrawings}
+            showPatterns={showPatterns}
+            onTogglePatterns={() => setShowPatterns(p => !p)}
           />
           <div className="flex items-center gap-0.5">
             {TIMEFRAMES.map(tf => (
@@ -179,10 +167,17 @@ export default function TradingChart() {
           </div>
         </div>
       </div>
-      <div
-        ref={chartRef}
-        className={`flex-1 bg-chart ${drawingMode !== 'none' ? 'cursor-crosshair' : ''}`}
-      />
+      <div className="relative flex-1">
+        <div ref={chartRef} className="absolute inset-0 bg-chart" />
+        <ChartOverlay
+          chart={chartApi}
+          series={seriesApi}
+          drawingModeRef={drawingModeRef}
+          drawings={drawings}
+          onAddDrawing={addDrawing}
+          onFinishDrawing={finishDrawing}
+        />
+      </div>
     </div>
   );
 }

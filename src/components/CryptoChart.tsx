@@ -1,11 +1,13 @@
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useState } from 'react';
 import { createChart, CandlestickSeries, HistogramSeries, LineSeries, type IChartApi } from 'lightweight-charts';
 import { useCryptoData } from '@/hooks/useCryptoData';
 import { useCryptoStore, CRYPTO_PAIRS } from '@/stores/cryptoStore';
 import { formatINR } from '@/lib/exchangeRate';
 import { calcSMA, calcEMA, calcBollingerBands } from '@/lib/technicalIndicators';
 import ChartDrawingTools from '@/components/ChartDrawingTools';
+import ChartOverlay from '@/components/ChartOverlay';
 import { useChartDrawings } from '@/hooks/useChartDrawings';
+import { detectCandlestickPatterns } from '@/lib/candlestickPatterns';
 
 const INTERVALS = [
   { label: '1m', value: '1m' },
@@ -19,7 +21,6 @@ export default function CryptoChart() {
   const { selectedPair, selectedInterval, setSelectedPair, setSelectedInterval, updatePositionPrice, usdToInr } = useCryptoStore();
   const { candles, livePrice, loading, error } = useCryptoData(selectedPair, selectedInterval);
   const chartRef = useRef<HTMLDivElement>(null);
-  const chartInstance = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<any>(null);
   const volumeSeriesRef = useRef<any>(null);
   const sma20Ref = useRef<any>(null);
@@ -27,15 +28,15 @@ export default function CryptoChart() {
   const ema26Ref = useRef<any>(null);
   const bbUpperRef = useRef<any>(null);
   const bbLowerRef = useRef<any>(null);
+  const [chartApi, setChartApi] = useState<IChartApi | null>(null);
+  const [seriesApi, setSeriesApi] = useState<any>(null);
+  const [showPatterns, setShowPatterns] = useState(false);
+  const formattedCandlesRef = useRef<any[]>([]);
 
   const {
-    drawingMode,
-    setDrawingMode,
-    drawings,
-    addHorizontalLine,
-    clearAllDrawings,
-    restoreDrawings,
-  } = useChartDrawings(selectedPair, chartInstance.current);
+    drawingMode, setDrawingMode, drawingModeRef,
+    drawings, addDrawing, clearAllDrawings, finishDrawing,
+  } = useChartDrawings(selectedPair);
 
   useEffect(() => {
     if (livePrice > 0) updatePositionPrice(selectedPair, livePrice);
@@ -43,7 +44,6 @@ export default function CryptoChart() {
 
   useEffect(() => {
     if (!chartRef.current) return;
-    if (chartInstance.current) chartInstance.current.remove();
 
     const chart = createChart(chartRef.current, {
       layout: {
@@ -78,17 +78,8 @@ export default function CryptoChart() {
     const bbUpperSeries = chart.addSeries(LineSeries, { color: 'rgba(128, 128, 128, 0.3)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
     const bbLowerSeries = chart.addSeries(LineSeries, { color: 'rgba(128, 128, 128, 0.3)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
 
-    // Handle click for drawing
-    chart.subscribeClick((param) => {
-      if (drawingMode === 'hline' && param.point) {
-        const price = candleSeries.coordinateToPrice(param.point.y);
-        if (price !== null) {
-          addHorizontalLine(price, candleSeries);
-        }
-      }
-    });
-
-    chartInstance.current = chart;
+    setChartApi(chart);
+    setSeriesApi(candleSeries);
     candleSeriesRef.current = candleSeries;
     volumeSeriesRef.current = volumeSeries;
     sma20Ref.current = sma20Series;
@@ -102,7 +93,12 @@ export default function CryptoChart() {
     });
     observer.observe(chartRef.current);
 
-    return () => { observer.disconnect(); chart.remove(); chartInstance.current = null; };
+    return () => {
+      observer.disconnect();
+      chart.remove();
+      setChartApi(null);
+      setSeriesApi(null);
+    };
   }, [selectedPair, selectedInterval]);
 
   const indicators = useMemo(() => {
@@ -131,6 +127,7 @@ export default function CryptoChart() {
 
     candleSeriesRef.current.setData(formatted);
     volumeSeriesRef.current.setData(volumes);
+    formattedCandlesRef.current = formatted;
 
     if (indicators) {
       const toLine = (arr: number[]) =>
@@ -142,11 +139,16 @@ export default function CryptoChart() {
       bbLowerRef.current?.setData(toLine(indicators.bb.map(b => b.lower)));
     }
 
-    // Restore drawings
-    restoreDrawings(candleSeriesRef.current);
+    // Apply patterns if enabled
+    if (showPatterns && formatted.length > 2) {
+      const markers = detectCandlestickPatterns(formatted);
+      candleSeriesRef.current.setMarkers(markers);
+    } else {
+      candleSeriesRef.current.setMarkers([]);
+    }
 
-    chartInstance.current?.timeScale().fitContent();
-  }, [candles, usdToInr, indicators]);
+    chartApi?.timeScale().fitContent();
+  }, [candles, usdToInr, indicators, showPatterns, chartApi]);
 
   const livePriceINR = livePrice * usdToInr;
 
@@ -163,7 +165,6 @@ export default function CryptoChart() {
               <option key={p.symbol} value={p.symbol}>{p.label}</option>
             ))}
           </select>
-
           {livePrice > 0 && (
             <span className="font-mono text-xs sm:text-sm font-bold text-foreground">{formatINR(livePriceINR)}</span>
           )}
@@ -172,7 +173,6 @@ export default function CryptoChart() {
               (${livePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
             </span>
           )}
-
           {loading && <span className="text-[10px] text-muted-foreground animate-pulse">Loading...</span>}
           {error && <span className="text-[10px] text-loss">{error}</span>}
         </div>
@@ -183,6 +183,8 @@ export default function CryptoChart() {
             onModeChange={setDrawingMode}
             drawings={drawings}
             onClearAll={clearAllDrawings}
+            showPatterns={showPatterns}
+            onTogglePatterns={() => setShowPatterns(p => !p)}
           />
           <div className="flex gap-0.5">
             {INTERVALS.map((i) => (
@@ -201,7 +203,17 @@ export default function CryptoChart() {
           </div>
         </div>
       </div>
-      <div ref={chartRef} className={`flex-1 bg-chart ${drawingMode !== 'none' ? 'cursor-crosshair' : ''}`} />
+      <div className="relative flex-1">
+        <div ref={chartRef} className="absolute inset-0 bg-chart" />
+        <ChartOverlay
+          chart={chartApi}
+          series={seriesApi}
+          drawingModeRef={drawingModeRef}
+          drawings={drawings}
+          onAddDrawing={addDrawing}
+          onFinishDrawing={finishDrawing}
+        />
+      </div>
     </div>
   );
 }
