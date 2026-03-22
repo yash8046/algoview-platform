@@ -299,10 +299,11 @@ export default function CryptoAISignals() {
   const { selectedPair, selectedInterval } = useCryptoStore();
   const { candles } = useCryptoData(selectedPair, selectedInterval);
   const { analysis, loading, error, analyze } = useAIAnalysis();
+  const { gateWithAd } = useRewardedAd('AI Insight');
 
   const handlePredict = () => {
     if (candles.length >= 50) {
-      analyze(candles, selectedPair, selectedInterval);
+      gateWithAd(() => analyze(candles, selectedPair, selectedInterval));
     }
   };
 

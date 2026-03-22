@@ -355,7 +355,7 @@ export default function AISignals() {
             <Shield className="w-10 h-10 text-muted-foreground/20" />
             <span className="text-xs text-muted-foreground">{selectedSymbol} ready for analysis</span>
             <button
-              onClick={refresh}
+              onClick={() => gateWithAd(refresh)}
               disabled={loading}
               className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition-all disabled:opacity-50"
             >
