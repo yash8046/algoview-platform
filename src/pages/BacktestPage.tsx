@@ -111,11 +111,11 @@ function EquityChart({ result }: { result: BacktestResult }) {
     series.priceScale().applyOptions({ scaleMargins: vMargins.current });
     chart.timeScale().fitContent();
     chart.priceScale('right').applyOptions({ autoScale: false });
+    chartInstance.current = chart;
+    seriesInstance.current = series;
     if (data.length > 40) {
       zoomRange(0.42);
     }
-    chartInstance.current = chart;
-    seriesInstance.current = series;
 
     const observer = new ResizeObserver(() => {
       if (container) chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
