@@ -25,7 +25,7 @@ const cards = [
     to: '/terms',
     icon: Scale,
     title: 'Terms of Service',
-    description: 'Rules and conditions for using MarketLens',
+    description: 'Rules and conditions for using AlgoInsight',
     color: 'text-gain',
     bgColor: 'bg-gain/10',
     borderColor: 'border-gain/20',
@@ -63,7 +63,7 @@ export default function MorePage() {
           </div>
 
           <div className="text-center">
-            <p className="text-[10px] text-muted-foreground/50 font-mono">MarketLens v1.0 • AI Market Analysis Tool</p>
+            <p className="text-[10px] text-muted-foreground/50 font-mono">AlgoInsight v1.0 • AI Market Analysis Tool</p>
             <p className="text-[10px] text-muted-foreground/40 mt-1">For educational & research purposes only</p>
           </div>
         </div>

@@ -23,7 +23,7 @@ const queryClient = new QueryClient();
 
 const App = () => {
   useEffect(() => {
-    document.title = "MarketLens — AI Market Analysis";
+    document.title = "AlgoInsight — AI Market Analysis";
   }, []);
 
   return (
