@@ -176,7 +176,8 @@ export default function BacktestPage() {
   const [showConfig, setShowConfig] = useState(false);
   const [showExplainer, setShowExplainer] = useState(false);
   const [stockOptions, setStockOptions] = useState<StockOption[]>([]);
-  const [stockSearch, setStockSearch] = useState('');
+  const [stockSearch, setStockSearch] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [customSymbol, setCustomSymbol] = useState('');
   const [selectedPreset, setSelectedPreset] = useState('default');
   const [customPresets, setCustomPresets] = useState<StrategyPreset[]>(() => loadCustomPresets());
