@@ -13,6 +13,33 @@
 
 import { Capacitor } from '@capacitor/core';
 
+// ============ Debug Log (visible in-app) ============
+type AdLogEntry = { time: string; msg: string; level: 'info' | 'warn' | 'error' };
+const adLogs: AdLogEntry[] = [];
+const adLogListeners: Array<(logs: AdLogEntry[]) => void> = [];
+
+function adLog(msg: string, level: 'info' | 'warn' | 'error' = 'info') {
+  const entry: AdLogEntry = { time: new Date().toLocaleTimeString(), msg, level };
+  adLogs.push(entry);
+  if (adLogs.length > 50) adLogs.shift();
+  adLogListeners.forEach(fn => fn([...adLogs]));
+  if (level === 'error') console.error('[AdService]', msg);
+  else if (level === 'warn') console.warn('[AdService]', msg);
+  else console.log('[AdService]', msg);
+}
+
+export function subscribeAdLogs(fn: (logs: AdLogEntry[]) => void) {
+  adLogListeners.push(fn);
+  fn([...adLogs]);
+  return () => {
+    const idx = adLogListeners.indexOf(fn);
+    if (idx >= 0) adLogListeners.splice(idx, 1);
+  };
+}
+
+export function getAdLogs() { return [...adLogs]; }
+export type { AdLogEntry };
+
 // ============ State ============
 let isInitialized = false;
 let rewardedAdLoaded = false;
@@ -22,12 +49,11 @@ let lastAdShownAt = { rewarded: 0, interstitial: 0, appOpen: 0 };
 let bannerVisible = false;
 
 // ============ Config ============
-// Replace with your REAL ad unit IDs for production
 const AD_UNITS = {
-  banner: 'ca-app-pub-3940256099942544/6300978111',
-  interstitial: 'ca-app-pub-3940256099942544/1033173712',
-  rewarded: 'ca-app-pub-3940256099942544/5224354917',
-  appOpen: 'ca-app-pub-3940256099942544/9257395921',
+  banner: 'ca-app-pub-3940256099942544/9214589741',       // Adaptive Banner test
+  interstitial: 'ca-app-pub-3940256099942544/1033173712',  // Interstitial test
+  rewarded: 'ca-app-pub-3940256099942544/5224354917',      // Rewarded test
+  appOpen: 'ca-app-pub-3940256099942544/9257395921',       // App Open test
 };
 
 const COOLDOWNS = {
