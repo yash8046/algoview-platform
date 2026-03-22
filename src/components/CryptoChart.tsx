@@ -1,5 +1,5 @@
 import { useEffect, useRef, useMemo, useState } from 'react';
-import { createChart, CandlestickSeries, HistogramSeries, LineSeries, type IChartApi } from 'lightweight-charts';
+import { createChart, CandlestickSeries, HistogramSeries, LineSeries, createSeriesMarkers, type IChartApi } from 'lightweight-charts';
 import { useCryptoData } from '@/hooks/useCryptoData';
 import { useCryptoStore, CRYPTO_PAIRS } from '@/stores/cryptoStore';
 import { formatINR } from '@/lib/exchangeRate';
@@ -31,6 +31,7 @@ export default function CryptoChart() {
   const [chartApi, setChartApi] = useState<IChartApi | null>(null);
   const [seriesApi, setSeriesApi] = useState<any>(null);
   const [showPatterns, setShowPatterns] = useState(false);
+  const markersRef = useRef<any>(null);
   const formattedCandlesRef = useRef<any[]>([]);
 
   const {
@@ -140,11 +141,15 @@ export default function CryptoChart() {
     }
 
     // Apply patterns if enabled
+    if (markersRef.current) {
+      markersRef.current.detach();
+      markersRef.current = null;
+    }
     if (showPatterns && formatted.length > 2) {
       const markers = detectCandlestickPatterns(formatted);
-      candleSeriesRef.current.setMarkers(markers);
-    } else {
-      candleSeriesRef.current.setMarkers([]);
+      if (markers.length > 0) {
+        markersRef.current = createSeriesMarkers(candleSeriesRef.current, markers);
+      }
     }
 
     chartApi?.timeScale().fitContent();

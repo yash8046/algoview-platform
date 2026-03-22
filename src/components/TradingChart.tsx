@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { createChart, ColorType, IChartApi, CandlestickSeries, HistogramSeries, LineSeries } from 'lightweight-charts';
+import { createChart, ColorType, IChartApi, CandlestickSeries, HistogramSeries, LineSeries, createSeriesMarkers } from 'lightweight-charts';
 import { useTradingStore } from '@/stores/tradingStore';
 import { fetchYahooFinanceData } from '@/lib/yahooFinance';
 import { calculateSMA } from '@/lib/mockData';
@@ -18,6 +18,7 @@ export default function TradingChart() {
   const [chartApi, setChartApi] = useState<IChartApi | null>(null);
   const [seriesApi, setSeriesApi] = useState<any>(null);
   const [showPatterns, setShowPatterns] = useState(false);
+  const markersRef = useRef<any>(null);
   const candleDataRef = useRef<any[]>([]);
 
   const {
@@ -122,11 +123,16 @@ export default function TradingChart() {
   // Apply candlestick pattern markers
   useEffect(() => {
     if (!seriesApi || candleDataRef.current.length === 0) return;
+    // Clean up previous markers
+    if (markersRef.current) {
+      markersRef.current.detach();
+      markersRef.current = null;
+    }
     if (showPatterns) {
       const markers = detectCandlestickPatterns(candleDataRef.current);
-      seriesApi.setMarkers(markers);
-    } else {
-      seriesApi.setMarkers([]);
+      if (markers.length > 0) {
+        markersRef.current = createSeriesMarkers(seriesApi, markers);
+      }
     }
   }, [showPatterns, seriesApi]);
 
