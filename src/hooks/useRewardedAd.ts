@@ -1,6 +1,5 @@
 import { useCallback, useRef } from 'react';
 import { showRewardedAd, showInterstitialAd } from '@/lib/adService';
-import { toast } from 'sonner';
 
 /**
  * Hook to gate a feature behind a rewarded ad.
@@ -15,9 +14,6 @@ export function useRewardedAd(featureName: string = 'AI Insight') {
     try {
       const result = await showRewardedAd(featureName);
       if (result.granted) callback();
-      if (result.message && !result.adShown) {
-        toast.info(result.message, { duration: 2500 });
-      }
     } catch {
       callback();
     } finally {

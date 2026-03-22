@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { BarChart3, Bitcoin, FlaskConical, Layers, MoreHorizontal } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/contexts/AuthContext';
 
 const tabs = [
   { to: '/', label: 'Stocks', icon: BarChart3 },
@@ -13,8 +14,12 @@ const tabs = [
 export default function MobileBottomNav() {
   const isMobile = useIsMobile();
   const location = useLocation();
+  const { user } = useAuth();
 
-  if (!isMobile) return null;
+  const hiddenRoutes = ['/reset-password'];
+  const isHidden = !user || hiddenRoutes.includes(location.pathname);
+
+  if (!isMobile || isHidden) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-area-bottom">
