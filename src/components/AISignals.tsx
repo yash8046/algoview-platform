@@ -136,6 +136,7 @@ function FactorsList({ positive, negative }: { positive: string[]; negative: str
 export default function AISignals() {
   const { selectedSymbol, selectedTimeframe } = useTradingStore();
   const { result, loading, error, refresh } = useStockAIAnalysis(selectedSymbol, selectedTimeframe);
+  const { gateWithAd } = useRewardedAd('AI Insight');
 
   const detailedKey = result?.detailedSignal || result?.signal || 'hold';
   const cfg = signalConfig[detailedKey as keyof typeof signalConfig] || signalConfig[result?.signal as keyof typeof signalConfig] || signalConfig.hold;
