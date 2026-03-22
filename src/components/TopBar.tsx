@@ -1,8 +1,14 @@
 import { useState } from 'react';
-import { Activity, Zap, BarChart3, Bitcoin, LogOut, FlaskConical, Menu, X, Info, Shield, FileText } from 'lucide-react';
+import { Activity, Zap, BarChart3, Bitcoin, LogOut, FlaskConical, Menu, X, Info, Shield, FileText, MoreHorizontal } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export default function TopBar() {
   const location = useLocation();
@@ -10,15 +16,22 @@ export default function TopBar() {
   const isMobile = useIsMobile();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const navLinks = [
+  const mainNavLinks = [
     { to: '/', label: 'Analysis', icon: null },
     { to: '/crypto', label: 'Crypto', icon: Bitcoin },
     { to: '/portfolio', label: 'Portfolio', icon: BarChart3 },
     { to: '/backtest', label: 'Backtest', icon: FlaskConical },
+  ];
+
+  const moreLinks = [
     { to: '/disclaimer', label: 'Disclaimer', icon: Info },
     { to: '/privacy', label: 'Privacy', icon: Shield },
     { to: '/terms', label: 'Terms', icon: FileText },
   ];
+
+  const allNavLinks = [...mainNavLinks, ...moreLinks];
+
+  const isMoreActive = moreLinks.some(link => link.to === location.pathname);
 
   return (
     <header className="flex items-center justify-between px-3 sm:px-5 py-2 sm:py-2.5 bg-card border-b border-border relative">
@@ -33,13 +46,31 @@ export default function TopBar() {
         {!isMobile && (
           <>
             <nav className="flex items-center gap-1 ml-2">
-              {navLinks.map(link => (
+              {mainNavLinks.map(link => (
                 <Link key={link.to} to={link.to}
                   className={`text-xs px-3 py-1.5 rounded-md transition-colors flex items-center gap-1 ${location.pathname === link.to ? 'bg-primary/15 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}>
                   {link.icon && <link.icon className="w-3 h-3" />}
                   {link.label}
                 </Link>
               ))}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className={`text-xs px-3 py-1.5 rounded-md transition-colors flex items-center gap-1 outline-none ${isMoreActive ? 'bg-primary/15 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}>
+                    <MoreHorizontal className="w-3 h-3" />
+                    More
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  {moreLinks.map(link => (
+                    <DropdownMenuItem key={link.to} asChild>
+                      <Link to={link.to} className={`flex items-center gap-2 ${location.pathname === link.to ? 'text-primary font-semibold' : ''}`}>
+                        <link.icon className="w-3.5 h-3.5" />
+                        {link.label}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </nav>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-warning/10 text-warning font-medium border border-warning/20">
               SIMULATION MODE
@@ -76,7 +107,7 @@ export default function TopBar() {
       {/* Mobile dropdown */}
       {isMobile && menuOpen && (
         <div className="absolute top-full left-0 right-0 bg-card border-b border-border z-50 p-3 space-y-1">
-          {navLinks.map(link => (
+          {allNavLinks.map(link => (
             <Link key={link.to} to={link.to} onClick={() => setMenuOpen(false)}
               className={`block text-sm px-3 py-2.5 rounded-md transition-colors ${location.pathname === link.to ? 'bg-primary/15 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}>
               <span className="flex items-center gap-2">
