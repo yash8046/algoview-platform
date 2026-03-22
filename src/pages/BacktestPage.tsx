@@ -167,16 +167,17 @@ function BacktestExplainer({ onClose }: { onClose: () => void }) {
 }
 
 export default function BacktestPage() {
-  const [assetType, setAssetType] = useState<'crypto' | 'stock'>('crypto');
-  const [symbol, setSymbol] = useState('BTCUSDT');
-  const [interval, setInterval_] = useState('1h');
+  const [assetType, setAssetType] = useState<'crypto' | 'stock'>('stock');
+  const [symbol, setSymbol] = useState('NIFTY 50');
+  const [interval, setInterval_] = useState('1d');
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showConfig, setShowConfig] = useState(false);
   const [showExplainer, setShowExplainer] = useState(false);
   const [stockOptions, setStockOptions] = useState<StockOption[]>([]);
-  const [stockSearch, setStockSearch] = useState('');
+  const [stockSearch, setStockSearch] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [customSymbol, setCustomSymbol] = useState('');
   const [selectedPreset, setSelectedPreset] = useState('default');
   const [customPresets, setCustomPresets] = useState<StrategyPreset[]>(() => loadCustomPresets());
@@ -206,7 +207,7 @@ export default function BacktestPage() {
     })();
   }, [assetType]);
 
-  const filteredStocks = stockSearch
+  const filteredStocks = stockSearch !== null && stockSearch.length > 0
     ? stockOptions.filter(s => s.symbol.toLowerCase().includes(stockSearch.toLowerCase()) || s.name.toLowerCase().includes(stockSearch.toLowerCase())).slice(0, 100)
     : stockOptions.slice(0, 100);
 
@@ -388,7 +389,7 @@ export default function BacktestPage() {
               <label className="text-[10px] text-muted-foreground block mb-1">Asset</label>
               <div className="flex gap-1">
                 {(['crypto', 'stock'] as const).map(t => (
-                  <button key={t} onClick={() => { setAssetType(t); setSymbol(t === 'crypto' ? 'BTCUSDT' : 'RELIANCE'); setStockSearch(''); }}
+                  <button key={t} onClick={() => { setAssetType(t); setSymbol(t === 'crypto' ? 'BTCUSDT' : 'NIFTY 50'); setStockSearch(null); }}
                     className={`px-2.5 py-1.5 text-[10px] sm:text-xs rounded capitalize transition-colors ${assetType === t ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
                   >{t}</button>
                 ))}
@@ -407,18 +408,22 @@ export default function BacktestPage() {
                   <div className="flex items-center gap-1 bg-secondary rounded border border-border px-2 py-1.5">
                     <Search className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                     <input
+                      ref={searchInputRef}
                       type="text"
-                      value={stockSearch || symbol}
+                      value={stockSearch !== null ? stockSearch : symbol}
                       onChange={e => setStockSearch(e.target.value)}
-                      onFocus={() => setStockSearch(symbol)}
+                      onFocus={() => setStockSearch('')}
+                      onBlur={() => setTimeout(() => setStockSearch(null), 200)}
                       placeholder="Search 500+ stocks..."
                       className="bg-transparent text-[10px] sm:text-xs font-mono text-foreground outline-none w-full"
                     />
                   </div>
-                  {stockSearch && (
+                  {stockSearch !== null && (
                     <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-card border border-border rounded-md shadow-lg max-h-56 overflow-y-auto scrollbar-thin">
                       {filteredStocks.map(s => (
-                        <button key={s.symbol} onClick={() => { setSymbol(s.symbol); setStockSearch(''); }}
+                        <button key={s.symbol}
+                          onMouseDown={e => e.preventDefault()}
+                          onClick={() => { setSymbol(s.symbol); setStockSearch(null); }}
                           className={`w-full text-left px-3 py-1.5 text-[10px] sm:text-xs hover:bg-accent transition-colors ${symbol === s.symbol ? 'bg-accent' : ''}`}>
                           <span className="font-mono font-semibold text-foreground">{s.symbol}</span>
                           <span className="text-muted-foreground ml-2">{s.name}</span>
