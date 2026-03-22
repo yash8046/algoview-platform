@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import type { IChartApi } from 'lightweight-charts';
 import type { DrawingMode, DrawingLine } from '@/components/ChartDrawingTools';
 
 const STORAGE_KEY = 'chart_drawings';
@@ -17,83 +16,42 @@ function saveDrawings(symbol: string, drawings: DrawingLine[]) {
   localStorage.setItem(`${STORAGE_KEY}_${symbol}`, JSON.stringify(drawings));
 }
 
-export function useChartDrawings(symbol: string, chart: IChartApi | null) {
+export function useChartDrawings(symbol: string) {
   const [drawingMode, setDrawingMode] = useState<DrawingMode>('none');
+  const drawingModeRef = useRef<DrawingMode>('none');
   const [drawings, setDrawings] = useState<DrawingLine[]>(() => loadDrawings(symbol));
-  const priceLineRefs = useRef<Map<string, any>>(new Map());
-  const trendlineStartRef = useRef<{ time: number; price: number } | null>(null);
 
-  // Reload drawings when symbol changes
+  useEffect(() => {
+    drawingModeRef.current = drawingMode;
+  }, [drawingMode]);
+
   useEffect(() => {
     setDrawings(loadDrawings(symbol));
   }, [symbol]);
 
-  // Save drawings when they change
   useEffect(() => {
     saveDrawings(symbol, drawings);
   }, [drawings, symbol]);
 
-  const addHorizontalLine = useCallback(
-    (price: number, series: any) => {
-      if (!series) return;
-      const id = `hline_${Date.now()}`;
-      const color = '#f59e0b';
-
-      const priceLine = series.createPriceLine({
-        price,
-        color,
-        lineWidth: 1,
-        lineStyle: 2,
-        axisLabelVisible: true,
-        title: 'H-Line',
-      });
-
-      priceLineRefs.current.set(id, { priceLine, series });
-
-      const newLine: DrawingLine = { id, type: 'hline', price, color };
-      setDrawings((prev) => [...prev, newLine]);
-      setDrawingMode('none');
-    },
-    []
-  );
+  const addDrawing = useCallback((d: DrawingLine) => {
+    setDrawings((prev) => [...prev, d]);
+  }, []);
 
   const clearAllDrawings = useCallback(() => {
-    priceLineRefs.current.forEach(({ priceLine, series }) => {
-      try {
-        series.removePriceLine(priceLine);
-      } catch {}
-    });
-    priceLineRefs.current.clear();
     setDrawings([]);
   }, []);
 
-  // Restore horizontal lines on chart rebuild
-  const restoreDrawings = useCallback(
-    (series: any) => {
-      priceLineRefs.current.clear();
-      drawings.forEach((d) => {
-        if (d.type === 'hline' && d.price && series) {
-          const priceLine = series.createPriceLine({
-            price: d.price,
-            color: d.color,
-            lineWidth: 1,
-            lineStyle: 2,
-            axisLabelVisible: true,
-            title: 'H-Line',
-          });
-          priceLineRefs.current.set(d.id, { priceLine, series });
-        }
-      });
-    },
-    [drawings]
-  );
+  const finishDrawing = useCallback(() => {
+    setDrawingMode('none');
+  }, []);
 
   return {
     drawingMode,
     setDrawingMode,
+    drawingModeRef,
     drawings,
-    addHorizontalLine,
+    addDrawing,
     clearAllDrawings,
-    restoreDrawings,
+    finishDrawing,
   };
 }
