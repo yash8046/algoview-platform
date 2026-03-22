@@ -154,6 +154,7 @@ function IndicatorBadge({ config, onRemove }: { config: IndicatorConfig; onRemov
 // ============ Main Page ============
 
 export default function StrategyBuilderPage() {
+  const { gateWithAd: gateStrategy } = useRewardedAd('Strategy Backtest');
   // Strategy state
   const [strategy, setStrategy] = useState<StrategyDefinition>({ ...STRATEGY_TEMPLATES[0] });
   const [result, setResult] = useState<StrategyResult | null>(null);
