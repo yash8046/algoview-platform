@@ -270,6 +270,7 @@ function BacktestExplainer({ onClose }: { onClose: () => void }) {
 }
 
 export default function BacktestPage() {
+  const { gateWithAd: gateBacktest } = useRewardedAd('Backtest');
   const [assetType, setAssetType] = useState<'crypto' | 'stock'>('stock');
   const [symbol, setSymbol] = useState('NIFTY 50');
   const [interval, setInterval_] = useState('1d');
