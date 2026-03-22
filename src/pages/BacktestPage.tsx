@@ -623,7 +623,7 @@ export default function BacktestPage() {
                 <h3 className="text-xs sm:text-sm font-semibold text-foreground">Equity Curve</h3>
                 <span className="text-[10px] text-muted-foreground font-mono">{result.totalTrades} trades</span>
               </div>
-              <div className="h-[85vh] sm:h-[90vh] lg:h-[95vh]">
+              <div className="h-[120vh] sm:h-[140vh] lg:h-[160vh]">
                 <EquityChart result={result} onToggleFullscreen={() => setFullscreenChart(true)} />
               </div>
             </div>
