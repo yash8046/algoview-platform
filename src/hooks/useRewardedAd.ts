@@ -1,11 +1,10 @@
 import { useCallback, useRef } from 'react';
-import { showRewardedAd } from '@/lib/adService';
+import { showRewardedAd, showInterstitialAd } from '@/lib/adService';
 import { toast } from 'sonner';
 
 /**
  * Hook to gate a feature behind a rewarded ad.
- * If the ad fails to load/show, the feature is granted anyway
- * with a friendly toast message.
+ * If the ad fails, feature is granted anyway.
  */
 export function useRewardedAd(featureName: string = 'AI Insight') {
   const pendingRef = useRef(false);
@@ -13,18 +12,13 @@ export function useRewardedAd(featureName: string = 'AI Insight') {
   const gateWithAd = useCallback(async (callback: () => void) => {
     if (pendingRef.current) return;
     pendingRef.current = true;
-
     try {
       const result = await showRewardedAd(featureName);
-      if (result.granted) {
-        callback();
-      }
+      if (result.granted) callback();
       if (result.message && !result.adShown) {
-        // Only toast when ad was skipped (so user knows they got it free)
         toast.info(result.message, { duration: 2500 });
       }
     } catch {
-      // Failsafe: always grant access
       callback();
     } finally {
       pendingRef.current = false;
@@ -32,4 +26,26 @@ export function useRewardedAd(featureName: string = 'AI Insight') {
   }, [featureName]);
 
   return { gateWithAd };
+}
+
+/**
+ * Hook to show an interstitial ad (no gating, fire-and-forget).
+ * Use on page transitions or after completing an action.
+ */
+export function useInterstitialAd() {
+  const pendingRef = useRef(false);
+
+  const showInterstitial = useCallback(async () => {
+    if (pendingRef.current) return;
+    pendingRef.current = true;
+    try {
+      await showInterstitialAd();
+    } catch {
+      // silently ignore
+    } finally {
+      pendingRef.current = false;
+    }
+  }, []);
+
+  return { showInterstitial };
 }
