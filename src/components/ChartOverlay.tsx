@@ -347,11 +347,11 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   return (
     <canvas
       ref={canvasRef}
-      className={`absolute inset-0 ${isActive ? 'cursor-crosshair' : 'pointer-events-none'}`}
+      className={`w-full h-full ${isActive ? 'cursor-crosshair' : ''}`}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      style={{ touchAction: isActive ? 'none' : 'auto', zIndex: isActive ? 999 : 5 }}
+      style={{ touchAction: isActive ? 'none' : 'auto' }}
     />
   );
 }
