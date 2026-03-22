@@ -554,7 +554,7 @@ export default function BacktestPage() {
               <ChevronDown className={`w-3 h-3 transition-transform ${showConfig ? 'rotate-180' : ''}`} />
             </button>
 
-            <button onClick={runTest} disabled={running}
+            <button onClick={() => gateBacktest(runTest)} disabled={running}
               className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[10px] sm:text-xs font-semibold rounded bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] disabled:opacity-50 transition-all">
               <Play className="w-3.5 h-3.5" />{running ? 'Running...' : 'Run Backtest'}
             </button>
