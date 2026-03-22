@@ -398,6 +398,7 @@ export default function BacktestPage() {
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <TopBar />
+      <AdBanner position="TOP" />
       <div className="flex-1 flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 overflow-auto pb-20 md:pb-3">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-2">
