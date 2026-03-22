@@ -71,8 +71,14 @@ function EquityChart({ result }: { result: BacktestResult }) {
         horzLines: { color: 'hsl(222, 30%, 12%)' },
       },
       rightPriceScale: { borderColor: 'hsl(222, 30%, 18%)' },
-      timeScale: { borderColor: 'hsl(222, 30%, 18%)', timeVisible: true },
+      timeScale: {
+        borderColor: 'hsl(222, 30%, 18%)',
+        timeVisible: true,
+        rightOffset: 5,
+      },
       crosshair: { mode: 0 },
+      handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: true },
+      handleScale: { mouseWheel: true, pinch: true, axisPressedMouseMove: true, axisDoubleClickReset: true },
     });
 
     const series = chart.addSeries(LineSeries, {
@@ -98,7 +104,40 @@ function EquityChart({ result }: { result: BacktestResult }) {
     return () => { observer.disconnect(); chart.remove(); chartInstance.current = null; };
   }, [result]);
 
-  return <div ref={chartRef} style={{ width: '100%', height: '100%', minHeight: '200px' }} />;
+  const zoomIn = () => {
+    const chart = chartInstance.current;
+    if (!chart) return;
+    const range = chart.timeScale().getVisibleLogicalRange();
+    if (!range) return;
+    const center = (range.from + range.to) / 2;
+    const halfSpan = (range.to - range.from) / 4;
+    chart.timeScale().setVisibleLogicalRange({ from: center - halfSpan, to: center + halfSpan });
+  };
+
+  const zoomOut = () => {
+    const chart = chartInstance.current;
+    if (!chart) return;
+    const range = chart.timeScale().getVisibleLogicalRange();
+    if (!range) return;
+    const center = (range.from + range.to) / 2;
+    const halfSpan = (range.to - range.from);
+    chart.timeScale().setVisibleLogicalRange({ from: center - halfSpan, to: center + halfSpan });
+  };
+
+  const fitAll = () => {
+    chartInstance.current?.timeScale().fitContent();
+  };
+
+  return (
+    <div className="relative w-full h-full" style={{ minHeight: '200px' }}>
+      <div ref={chartRef} className="w-full h-full" />
+      <div className="absolute top-2 right-2 flex gap-1 z-10">
+        <button onClick={zoomIn} className="px-2 py-1 text-xs font-mono bg-card/80 border border-border rounded hover:bg-accent transition-colors text-foreground" title="Zoom In">+</button>
+        <button onClick={zoomOut} className="px-2 py-1 text-xs font-mono bg-card/80 border border-border rounded hover:bg-accent transition-colors text-foreground" title="Zoom Out">−</button>
+        <button onClick={fitAll} className="px-2 py-1 text-[10px] font-mono bg-card/80 border border-border rounded hover:bg-accent transition-colors text-foreground" title="Fit All">Fit</button>
+      </div>
+    </div>
+  );
 }
 
 function TradesTable({ trades }: { trades: BacktestResult['trades'] }) {
