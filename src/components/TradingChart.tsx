@@ -7,6 +7,7 @@ import ChartDrawingTools from '@/components/ChartDrawingTools';
 import ChartOverlay from '@/components/ChartOverlay';
 import { useChartDrawings } from '@/hooks/useChartDrawings';
 import { detectCandlestickPatterns } from '@/lib/candlestickPatterns';
+import { Maximize2, Minimize2 } from 'lucide-react';
 
 const TIMEFRAMES = ['1m', '5m', '15m', '1H', '4H', '1D', '1W'];
 
@@ -18,6 +19,7 @@ export default function TradingChart() {
   const [chartApi, setChartApi] = useState<IChartApi | null>(null);
   const [seriesApi, setSeriesApi] = useState<any>(null);
   const [showPatterns, setShowPatterns] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   const markersRef = useRef<any>(null);
   const candleDataRef = useRef<any[]>([]);
 
@@ -118,12 +120,11 @@ export default function TradingChart() {
       setChartApi(null);
       setSeriesApi(null);
     };
-  }, [selectedSymbol, selectedTimeframe]);
+  }, [selectedSymbol, selectedTimeframe, fullscreen]);
 
   // Apply candlestick pattern markers
   useEffect(() => {
     if (!seriesApi || candleDataRef.current.length === 0) return;
-    // Clean up previous markers
     if (markersRef.current) {
       markersRef.current.detach();
       markersRef.current = null;
@@ -138,8 +139,8 @@ export default function TradingChart() {
 
   const isDrawingActive = drawingMode !== 'none';
 
-  return (
-    <div className="flex flex-col h-full bg-card rounded-lg border border-border overflow-hidden">
+  const chartContent = (
+    <>
       <div className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2 bg-panel-header border-b border-border gap-2">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <h2 className="font-mono text-xs sm:text-sm font-semibold text-foreground truncate">
@@ -173,6 +174,13 @@ export default function TradingChart() {
               </button>
             ))}
           </div>
+          <button
+            onClick={() => setFullscreen(f => !f)}
+            className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+            title={fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+          >
+            {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
         </div>
       </div>
       <div className="relative flex-1 min-h-0 overflow-hidden">
@@ -189,6 +197,20 @@ export default function TradingChart() {
           />
         </div>
       </div>
+    </>
+  );
+
+  if (fullscreen) {
+    return (
+      <div className="fixed inset-0 z-[200] bg-background flex flex-col">
+        {chartContent}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full bg-card rounded-lg border border-border overflow-hidden">
+      {chartContent}
     </div>
   );
 }
