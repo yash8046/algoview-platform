@@ -408,17 +408,21 @@ export default function BacktestPage() {
                     <Search className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                     <input
                       type="text"
-                      value={stockSearch || symbol}
+                      value={stockSearch !== '' ? stockSearch : (document.activeElement === document.querySelector('#backtest-stock-search') ? stockSearch : symbol)}
                       onChange={e => setStockSearch(e.target.value)}
-                      onFocus={() => setStockSearch(symbol)}
+                      onFocus={e => { setStockSearch(''); }}
+                      onBlur={() => { setTimeout(() => setStockSearch(''), 200); }}
+                      id="backtest-stock-search"
                       placeholder="Search 500+ stocks..."
                       className="bg-transparent text-[10px] sm:text-xs font-mono text-foreground outline-none w-full"
                     />
                   </div>
-                  {stockSearch && (
+                  {stockSearch !== '' && (
                     <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-card border border-border rounded-md shadow-lg max-h-56 overflow-y-auto scrollbar-thin">
                       {filteredStocks.map(s => (
-                        <button key={s.symbol} onClick={() => { setSymbol(s.symbol); setStockSearch(''); }}
+                        <button key={s.symbol}
+                          onMouseDown={e => e.preventDefault()}
+                          onClick={() => { setSymbol(s.symbol); setStockSearch(''); }}
                           className={`w-full text-left px-3 py-1.5 text-[10px] sm:text-xs hover:bg-accent transition-colors ${symbol === s.symbol ? 'bg-accent' : ''}`}>
                           <span className="font-mono font-semibold text-foreground">{s.symbol}</span>
                           <span className="text-muted-foreground ml-2">{s.name}</span>
