@@ -532,18 +532,6 @@ export default function BacktestPage() {
               )}
             </div>
 
-            {/* Custom stock symbol input */}
-            {assetType === 'stock' && (
-              <div className="min-w-[90px]">
-                <label className="text-[10px] text-muted-foreground block mb-1">Custom</label>
-                <div className="flex gap-1">
-                  <input type="text" value={customSymbol} onChange={e => setCustomSymbol(e.target.value.toUpperCase())}
-                    onKeyDown={e => e.key === 'Enter' && handleAddCustomStock()}
-                    placeholder="TCS" className="bg-secondary text-foreground text-[10px] sm:text-xs font-mono px-2 py-1.5 rounded border border-border w-16 sm:w-20" />
-                  <button onClick={handleAddCustomStock} className="px-2 py-1.5 text-[10px] bg-primary text-primary-foreground rounded active:scale-95">Go</button>
-                </div>
-              </div>
-            )}
 
             <div>
               <label className="text-[10px] text-muted-foreground block mb-1">Interval</label>
