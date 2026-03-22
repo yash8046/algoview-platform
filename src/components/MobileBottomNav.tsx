@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { BarChart3, Bitcoin, FlaskConical, Layers, MoreHorizontal } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/contexts/AuthContext';
 
 const tabs = [
   { to: '/', label: 'Stocks', icon: BarChart3 },
