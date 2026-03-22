@@ -303,7 +303,7 @@ export default function StrategyBuilderPage() {
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
         <div className={`${sidebarOpen ? 'w-80 lg:w-96' : 'w-0'} transition-all duration-300 overflow-hidden border-r border-border bg-card flex-shrink-0`}>
-          <div className="h-full overflow-y-auto p-3 space-y-3 pb-20 md:pb-3 scrollbar-thin">
+          <div className="h-full overflow-y-auto overscroll-contain p-3 space-y-3 pb-20 md:pb-3 scrollbar-thin" style={{ WebkitOverflowScrolling: 'touch' }}>
             {/* Strategy Name */}
             <div>
               <label className="text-[10px] text-muted-foreground block mb-1">Strategy Name</label>
