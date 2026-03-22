@@ -167,9 +167,9 @@ function BacktestExplainer({ onClose }: { onClose: () => void }) {
 }
 
 export default function BacktestPage() {
-  const [assetType, setAssetType] = useState<'crypto' | 'stock'>('crypto');
-  const [symbol, setSymbol] = useState('BTCUSDT');
-  const [interval, setInterval_] = useState('1h');
+  const [assetType, setAssetType] = useState<'crypto' | 'stock'>('stock');
+  const [symbol, setSymbol] = useState('NIFTY 50');
+  const [interval, setInterval_] = useState('1d');
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
