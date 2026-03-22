@@ -207,7 +207,7 @@ export default function BacktestPage() {
     })();
   }, [assetType]);
 
-  const filteredStocks = stockSearch
+  const filteredStocks = stockSearch !== null && stockSearch.length > 0
     ? stockOptions.filter(s => s.symbol.toLowerCase().includes(stockSearch.toLowerCase()) || s.name.toLowerCase().includes(stockSearch.toLowerCase())).slice(0, 100)
     : stockOptions.slice(0, 100);
 
