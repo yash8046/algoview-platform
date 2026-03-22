@@ -44,35 +44,48 @@ export default function ChartDrawingTools({
   const [expanded, setExpanded] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+  const [position, setPosition] = useState<{ top: number; left: number; maxH: number } | null>(null);
 
   // Calculate position when expanded
   useEffect(() => {
     if (!expanded || !buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const dropdownHeight = Math.min(400, window.innerHeight * 0.6);
+    const padding = 8; // margin from viewport edges
+    const spaceBelow = window.innerHeight - rect.bottom - padding;
+    const spaceAbove = rect.top - padding;
 
-    if (spaceBelow >= dropdownHeight) {
-      setPosition({ top: rect.bottom + 4, left: rect.left });
+    if (spaceBelow >= 200) {
+      // Open downward, cap height to available space
+      setPosition({ top: rect.bottom + 4, left: Math.max(padding, rect.left), maxH: spaceBelow });
+    } else if (spaceAbove >= 200) {
+      // Open upward
+      const maxH = spaceAbove;
+      setPosition({ top: Math.max(padding, rect.top - Math.min(maxH, 400) - 4), left: Math.max(padding, rect.left), maxH });
     } else {
-      setPosition({ top: rect.top - dropdownHeight - 4, left: rect.left });
+      // Fallback: center vertically
+      const maxH = window.innerHeight - padding * 2;
+      setPosition({ top: padding, left: Math.max(padding, rect.left), maxH });
     }
   }, [expanded]);
 
-  // Close on click outside
+  // Close on click outside (support touch)
   useEffect(() => {
     if (!expanded) return;
-    const handler = (e: MouseEvent) => {
+    const handler = (e: Event) => {
+      const target = e.target as Node;
       if (
-        dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
-        buttonRef.current && !buttonRef.current.contains(e.target as Node)
+        dropdownRef.current && !dropdownRef.current.contains(target) &&
+        buttonRef.current && !buttonRef.current.contains(target)
       ) {
         setExpanded(false);
       }
     };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+    };
   }, [expanded]);
 
   const activeTool = tools.find(t => t.mode === activeMode) || tools[0];
@@ -81,8 +94,14 @@ export default function ChartDrawingTools({
   const dropdown = expanded && position ? createPortal(
     <div
       ref={dropdownRef}
-      className="fixed z-[9999] bg-card border border-border rounded-lg shadow-xl min-w-[160px] max-h-[60vh] overflow-y-auto overscroll-contain scrollbar-thin"
-      style={{ top: position.top, left: position.left, WebkitOverflowScrolling: 'touch' as any }}
+      className="fixed z-[9999] bg-card border border-border rounded-lg shadow-xl min-w-[160px] overflow-y-auto overscroll-contain scrollbar-thin touch-pan-y"
+      style={{
+        top: position.top,
+        left: position.left,
+        maxHeight: Math.min(position.maxH, 400),
+        WebkitOverflowScrolling: 'touch' as any,
+      }}
+      onTouchMove={(e) => e.stopPropagation()}
     >
       <div className="flex flex-col p-1">
         {tools.map((tool) => (
