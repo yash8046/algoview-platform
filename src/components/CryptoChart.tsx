@@ -8,7 +8,7 @@ import ChartDrawingTools from '@/components/ChartDrawingTools';
 import ChartOverlay from '@/components/ChartOverlay';
 import { useChartDrawings } from '@/hooks/useChartDrawings';
 import { detectCandlestickPatterns } from '@/lib/candlestickPatterns';
-import { Maximize2, Minimize2, Smartphone } from 'lucide-react';
+import { Maximize2, Minimize2, Smartphone, X } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 
 const INTERVALS = [
@@ -39,6 +39,15 @@ export default function CryptoChart() {
   const formattedCandlesRef = useRef<any[]>([]);
   const isAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
 
+  const exitLandscape = async () => {
+    try {
+      const { ScreenOrientation } = await import('@capacitor/screen-orientation');
+      await ScreenOrientation.unlock();
+    } catch {}
+    setLandscapeFullscreen(false);
+    setFullscreen(false);
+  };
+
   const toggleLandscapeFullscreen = async () => {
     try {
       const { ScreenOrientation } = await import('@capacitor/screen-orientation');
@@ -47,9 +56,7 @@ export default function CryptoChart() {
         setLandscapeFullscreen(true);
         setFullscreen(true);
       } else {
-        await ScreenOrientation.unlock();
-        setLandscapeFullscreen(false);
-        setFullscreen(false);
+        await exitLandscape();
       }
     } catch (err) {
       console.warn('[CryptoChart] Screen orientation failed:', err);
@@ -180,6 +187,76 @@ export default function CryptoChart() {
   const livePriceINR = livePrice * usdToInr;
   const isDrawingActive = drawingMode !== 'none';
 
+  // Landscape fullscreen: ONLY chart + compact toolbar, nothing else
+  if (landscapeFullscreen) {
+    return (
+      <div className="fixed inset-0 z-[200] bg-background flex flex-col">
+        <div className="flex items-center justify-between px-2 py-1 bg-panel-header border-b border-border">
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedPair}
+              onChange={(e) => setSelectedPair(e.target.value)}
+              className="bg-secondary text-foreground text-[10px] font-mono font-semibold px-1.5 py-1 rounded border border-border min-h-[28px]"
+            >
+              {CRYPTO_PAIRS.map((p) => (
+                <option key={p.symbol} value={p.symbol}>{p.label}</option>
+              ))}
+            </select>
+            {livePrice > 0 && (
+              <span className="font-mono text-[10px] font-bold text-foreground">{formatINR(livePriceINR)}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            <ChartDrawingTools
+              activeMode={drawingMode}
+              onModeChange={setDrawingMode}
+              drawings={drawings}
+              onClearAll={clearAllDrawings}
+              showPatterns={showPatterns}
+              onTogglePatterns={() => setShowPatterns(p => !p)}
+            />
+            <div className="flex items-center gap-0.5">
+              {INTERVALS.map((i) => (
+                <button
+                  key={i.value}
+                  onClick={() => setSelectedInterval(i.value)}
+                  className={`px-1.5 py-0.5 text-[9px] font-mono rounded min-h-[28px] active:scale-95 ${
+                    selectedInterval === i.value
+                      ? 'bg-primary/20 text-primary font-semibold'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                  }`}
+                >
+                  {i.label}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={exitLandscape}
+              className="p-1.5 rounded bg-loss/20 text-loss hover:bg-loss/30 active:scale-90 min-h-[28px] min-w-[28px] flex items-center justify-center ml-1"
+              title="Exit Landscape"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+        <div className="relative flex-1 min-h-0 overflow-hidden">
+          <div ref={chartRef} className="absolute inset-0 bg-chart" style={{ zIndex: 1 }} />
+          <div className="absolute inset-0" style={{ zIndex: isDrawingActive ? 100 : 0, pointerEvents: isDrawingActive ? 'auto' : 'none' }}>
+            <ChartOverlay
+              chart={chartApi}
+              series={seriesApi}
+              drawingMode={drawingMode}
+              drawingModeRef={drawingModeRef}
+              drawings={drawings}
+              onAddDrawing={addDrawing}
+              onFinishDrawing={finishDrawing}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const chartContent = (
     <>
       <div className="px-2 sm:px-4 py-1.5 sm:py-2 bg-panel-header border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-0">
@@ -267,7 +344,7 @@ export default function CryptoChart() {
   if (fullscreen) {
     return (
       <div className="fixed inset-0 z-[200] bg-background flex flex-col safe-area-top">
-        <div className="h-[env(safe-area-inset-top,32px)] min-h-[32px] bg-background flex-shrink-0" />
+        <div className="h-[env(safe-area-inset-top,36px)] min-h-[36px] bg-background flex-shrink-0" />
         {chartContent}
       </div>
     );
