@@ -392,9 +392,9 @@ export default function BacktestPage() {
   ];
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <div className="flex flex-col h-[100dvh] overflow-hidden">
       <TopBar />
-      <div className="flex-1 flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 overflow-auto pb-20 md:pb-3">
+      <div className="flex-1 flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 overflow-y-auto pb-24 md:pb-3 scrollbar-thin">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
