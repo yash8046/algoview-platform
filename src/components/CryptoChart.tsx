@@ -8,7 +8,8 @@ import ChartDrawingTools from '@/components/ChartDrawingTools';
 import ChartOverlay from '@/components/ChartOverlay';
 import { useChartDrawings } from '@/hooks/useChartDrawings';
 import { detectCandlestickPatterns } from '@/lib/candlestickPatterns';
-import { Maximize2, Minimize2 } from 'lucide-react';
+import { Maximize2, Minimize2, Smartphone } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 
 const INTERVALS = [
   { label: '1m', value: '1m' },
