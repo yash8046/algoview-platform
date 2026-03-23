@@ -8,7 +8,8 @@ import ChartDrawingTools from '@/components/ChartDrawingTools';
 import ChartOverlay from '@/components/ChartOverlay';
 import { useChartDrawings } from '@/hooks/useChartDrawings';
 import { detectCandlestickPatterns } from '@/lib/candlestickPatterns';
-import { Maximize2, Minimize2 } from 'lucide-react';
+import { Maximize2, Minimize2, Smartphone } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 
 const INTERVALS = [
   { label: '1m', value: '1m' },
@@ -33,8 +34,28 @@ export default function CryptoChart() {
   const [seriesApi, setSeriesApi] = useState<any>(null);
   const [showPatterns, setShowPatterns] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [landscapeFullscreen, setLandscapeFullscreen] = useState(false);
   const markersRef = useRef<any>(null);
   const formattedCandlesRef = useRef<any[]>([]);
+  const isAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+
+  const toggleLandscapeFullscreen = async () => {
+    try {
+      const { ScreenOrientation } = await import('@capacitor/screen-orientation');
+      if (!landscapeFullscreen) {
+        await ScreenOrientation.lock({ orientation: 'landscape' });
+        setLandscapeFullscreen(true);
+        setFullscreen(true);
+      } else {
+        await ScreenOrientation.unlock();
+        setLandscapeFullscreen(false);
+        setFullscreen(false);
+      }
+    } catch (err) {
+      console.warn('[CryptoChart] Screen orientation failed:', err);
+      setFullscreen(f => !f);
+    }
+  };
 
   const {
     drawingMode, setDrawingMode, drawingModeRef,
@@ -208,6 +229,15 @@ export default function CryptoChart() {
               </button>
             ))}
           </div>
+          {isAndroid && (
+            <button
+              onClick={toggleLandscapeFullscreen}
+              className="p-1.5 rounded hover:bg-accent transition-colors text-primary active:scale-95 min-h-[36px] min-w-[36px] flex items-center justify-center"
+              title="View in Landscape"
+            >
+              <Smartphone className="w-4 h-4 rotate-90" />
+            </button>
+          )}
           <button
             onClick={() => setFullscreen(f => !f)}
             className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
