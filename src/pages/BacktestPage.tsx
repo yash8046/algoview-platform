@@ -8,6 +8,7 @@ import { type OHLCV, type BacktestResult, type BacktestConfig, runBacktest } fro
 import { CRYPTO_PAIRS } from '@/stores/cryptoStore';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart3, TrendingUp, AlertTriangle, Play, Settings, ChevronDown, Info, Search, X, Plus, Save, Trash2, Maximize2, Minimize2 } from 'lucide-react';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 
 interface StockOption { symbol: string; name: string; }
 
