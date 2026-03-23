@@ -18,6 +18,7 @@ import {
   Download, ChevronDown, ChevronRight, Save, RotateCcw, Layers, Target,
   TrendingUp, TrendingDown, BarChart3, AlertTriangle, ArrowUpDown, Copy,
 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 
 // ============ Sub-Components ============
 
@@ -266,16 +267,36 @@ export default function StrategyBuilderPage() {
     }
   };
 
-  const downloadCSV = () => {
+  const downloadCSV = async () => {
     if (!result) return;
     const csv = exportTradesCSV(result.trades);
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${strategy.name.replace(/\s+/g, '_')}_trades.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const filename = `${strategy.name.replace(/\s+/g, '_')}_trades.csv`;
+
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem');
+        await Filesystem.writeFile({
+          path: filename,
+          data: '\uFEFF' + csv,
+          directory: Directory.Documents,
+          encoding: Encoding.UTF8,
+        });
+        const { toast } = await import('sonner');
+        toast.success('CSV saved to Documents folder');
+      } else {
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (err: any) {
+      console.error('CSV export error:', err);
+      const { toast } = await import('sonner');
+      toast.error('CSV export failed: ' + (err.message || 'Unknown error'));
+    }
   };
 
   // Fullscreen overlay
