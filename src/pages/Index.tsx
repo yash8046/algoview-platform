@@ -10,7 +10,7 @@ import AISignals from '@/components/AISignals';
 import { useTradingStore } from '@/stores/tradingStore';
 import { useIsMobile } from '@/hooks/use-mobile';
 import GuidedTour from '@/components/GuidedTour';
-import { PanelRightOpen, PanelRightClose } from 'lucide-react';
+import { PanelRightOpen, PanelRightClose, ChevronDown, ChevronUp } from 'lucide-react';
 
 function useIsLandscape() {
   const [landscape, setLandscape] = useState(
@@ -27,8 +27,32 @@ function useIsLandscape() {
   return landscape;
 }
 
+function CollapsibleSection({ title, count, defaultOpen = false, children }: {
+  title: string; count?: number; defaultOpen?: boolean; children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="bg-card rounded-lg border border-border overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-3 py-2 bg-panel-header border-b border-border active:bg-accent/50 transition-colors"
+        style={{ minHeight: 40 }}
+      >
+        <span className="text-xs font-semibold text-foreground">{title}</span>
+        <div className="flex items-center gap-1.5">
+          {count !== undefined && (
+            <span className="text-[10px] text-muted-foreground">{count}</span>
+          )}
+          {open ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
+        </div>
+      </button>
+      {open && <div className="max-h-40 overflow-y-auto scrollbar-thin">{children}</div>}
+    </div>
+  );
+}
+
 const Index = () => {
-  const { loadFromDB } = useTradingStore();
+  const { loadFromDB, positions, trades } = useTradingStore();
   const isMobile = useIsMobile();
   const isLandscape = useIsLandscape();
   const [showSidePanel, setShowSidePanel] = useState(true);
@@ -37,27 +61,27 @@ const Index = () => {
     loadFromDB();
   }, []);
 
-  // Mobile landscape: chart-focused layout with toggleable side panel
+  // Mobile landscape: chart-focused with collapsible side panel
   if (isMobile && isLandscape) {
     return (
       <div className="flex flex-col h-[100dvh] overflow-hidden safe-area-top">
         <div className="flex-1 flex gap-1 p-1 min-h-0">
-          {/* Chart takes most space */}
           <div className="flex-1 min-w-0" data-tour="chart">
             <TradingChart />
           </div>
-          {/* Toggleable compact side panel */}
           {showSidePanel && (
             <div className="w-52 flex-shrink-0 flex flex-col gap-1 overflow-y-auto scrollbar-thin animate-in slide-in-from-right-5 duration-200">
               <div data-tour="portfolio"><PortfolioSummary /></div>
               <div data-tour="trade-panel"><TradePanel /></div>
               <div data-tour="ai-signals"><AISignals /></div>
-              <div data-tour="watchlist"><Watchlist /></div>
-              <div className="h-40"><Positions /></div>
-              <div className="h-40"><TradeHistory /></div>
+              <CollapsibleSection title="▼ Simulated Positions" count={positions.length} defaultOpen={false}>
+                <Positions />
+              </CollapsibleSection>
+              <CollapsibleSection title="▶ Simulation History" count={trades.length} defaultOpen={false}>
+                <TradeHistory />
+              </CollapsibleSection>
             </div>
           )}
-          {/* Floating toggle button */}
           <button
             onClick={() => setShowSidePanel(p => !p)}
             className="fixed bottom-3 right-3 z-[150] p-2.5 rounded-full bg-primary text-primary-foreground shadow-lg active:scale-90 transition-transform"
@@ -72,7 +96,7 @@ const Index = () => {
     );
   }
 
-  // Mobile portrait
+  // Mobile portrait: simple vertical stack
   if (isMobile) {
     return (
       <div className="flex flex-col h-[100dvh] overflow-hidden">
@@ -86,8 +110,12 @@ const Index = () => {
             <div data-tour="trade-panel"><TradePanel /></div>
             <div data-tour="ai-signals"><AISignals /></div>
             <div data-tour="watchlist"><Watchlist /></div>
-            <div className="h-52"><Positions /></div>
-            <div className="h-52"><TradeHistory /></div>
+            <CollapsibleSection title="▼ Simulated Positions" count={positions.length} defaultOpen={true}>
+              <Positions />
+            </CollapsibleSection>
+            <CollapsibleSection title="▶ Simulation History" count={trades.length} defaultOpen={false}>
+              <TradeHistory />
+            </CollapsibleSection>
           </div>
         </div>
         <GuidedTour />
