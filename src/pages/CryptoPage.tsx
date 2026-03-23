@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import TopBar from '@/components/TopBar';
 import CryptoChart from '@/components/CryptoChart';
 import CryptoTradePanel from '@/components/CryptoTradePanel';
@@ -6,9 +6,23 @@ import CryptoPositions from '@/components/CryptoPositions';
 import CryptoAISignals from '@/components/CryptoAISignals';
 import { useCryptoStore } from '@/stores/cryptoStore';
 import { formatINR } from '@/lib/exchangeRate';
-import { DollarSign, TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, BarChart3, PanelRightOpen, PanelRightClose } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
+function useIsLandscape() {
+  const [landscape, setLandscape] = useState(
+    typeof window !== 'undefined' ? window.innerWidth > window.innerHeight : false
+  );
+  useEffect(() => {
+    const check = () => setLandscape(window.innerWidth > window.innerHeight);
+    window.addEventListener('resize', check);
+    window.addEventListener('orientationchange', () => setTimeout(check, 200));
+    return () => {
+      window.removeEventListener('resize', check);
+    };
+  }, []);
+  return landscape;
+}
 function CryptoSummary() {
   const { balance, initialBalance, positions, trades } = useCryptoStore();
 
