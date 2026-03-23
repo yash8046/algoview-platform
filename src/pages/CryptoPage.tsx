@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import TopBar from '@/components/TopBar';
 import CryptoChart from '@/components/CryptoChart';
 import CryptoTradePanel from '@/components/CryptoTradePanel';
@@ -6,9 +6,23 @@ import CryptoPositions from '@/components/CryptoPositions';
 import CryptoAISignals from '@/components/CryptoAISignals';
 import { useCryptoStore } from '@/stores/cryptoStore';
 import { formatINR } from '@/lib/exchangeRate';
-import { DollarSign, TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, BarChart3, PanelRightOpen, PanelRightClose } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
+function useIsLandscape() {
+  const [landscape, setLandscape] = useState(
+    typeof window !== 'undefined' ? window.innerWidth > window.innerHeight : false
+  );
+  useEffect(() => {
+    const check = () => setLandscape(window.innerWidth > window.innerHeight);
+    window.addEventListener('resize', check);
+    window.addEventListener('orientationchange', () => setTimeout(check, 200));
+    return () => {
+      window.removeEventListener('resize', check);
+    };
+  }, []);
+  return landscape;
+}
 function CryptoSummary() {
   const { balance, initialBalance, positions, trades } = useCryptoStore();
 
@@ -47,25 +61,57 @@ function CryptoSummary() {
 export default function CryptoPage() {
   const { loadExchangeRate, loadFromDB } = useCryptoStore();
   const isMobile = useIsMobile();
+  const isLandscape = useIsLandscape();
+  const [showSidePanel, setShowSidePanel] = useState(true);
 
   useEffect(() => {
     loadExchangeRate();
     loadFromDB();
   }, []);
 
+  // Mobile landscape: chart-focused layout
+  if (isMobile && isLandscape) {
+    return (
+      <div className="flex flex-col h-[100dvh] overflow-hidden safe-area-top">
+        <div className="flex-1 flex gap-1 p-1 min-h-0">
+          <div className="flex-1 min-w-0">
+            <CryptoChart />
+          </div>
+          {showSidePanel && (
+            <div className="w-52 flex-shrink-0 flex flex-col gap-1 overflow-y-auto scrollbar-thin animate-in slide-in-from-right-5 duration-200">
+              <CryptoSummary />
+              <CryptoTradePanel />
+              <CryptoAISignals />
+              <div className="h-40"><CryptoPositions /></div>
+            </div>
+          )}
+          <button
+            onClick={() => setShowSidePanel(p => !p)}
+            className="fixed bottom-3 right-3 z-[150] p-2.5 rounded-full bg-primary text-primary-foreground shadow-lg active:scale-90 transition-transform"
+            style={{ minWidth: 44, minHeight: 44 }}
+            title={showSidePanel ? 'Hide panel' : 'Show panel'}
+          >
+            {showSidePanel ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Mobile portrait
   if (isMobile) {
     return (
-      <div className="flex flex-col h-screen overflow-hidden">
+      <div className="flex flex-col h-[100dvh] overflow-hidden">
         <TopBar />
-        <div className="flex-1 overflow-y-auto scrollbar-thin pb-16">
+        <div className="flex-1 overflow-y-auto scrollbar-thin pb-20">
           <div className="p-2 space-y-2">
             <CryptoSummary />
-            <div className="h-64">
+            <div className="h-[280px]">
               <CryptoChart />
             </div>
             <CryptoTradePanel />
             <CryptoAISignals />
-            <div className="h-48">
+            <div className="h-52">
               <CryptoPositions />
             </div>
           </div>
