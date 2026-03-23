@@ -7,6 +7,7 @@ import TradePanel from '@/components/TradePanel';
 import Positions from '@/components/Positions';
 import TradeHistory from '@/components/TradeHistory';
 import AISignals from '@/components/AISignals';
+import TopPerformers from '@/components/TopPerformers';
 import { useTradingStore } from '@/stores/tradingStore';
 import { useIsMobile } from '@/hooks/use-mobile';
 import GuidedTour from '@/components/GuidedTour';
