@@ -345,9 +345,10 @@ export default function CryptoAISignals() {
               onClick={handlePredict}
               disabled={loading || candles.length < 50}
               className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition-all disabled:opacity-50"
+              style={{ minHeight: 44 }}
             >
               <Brain className="w-4 h-4" />
-              Generate Insight
+              ▶ Watch Ad & Get Insight
             </button>
             <span className="text-[9px] text-muted-foreground/40">
               {candles.length < 50 ? `Loading data... (${candles.length}/50 candles)` : 'Uses AI + technical indicators + sentiment analysis'}
