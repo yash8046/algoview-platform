@@ -8,10 +8,18 @@ export default function TradeHistory() {
   const [saved, setSaved] = useState(false);
 
   const handleExport = async () => {
-    const uri = await exportTradesToCSV(trades);
-    if (uri) {
+    try {
+      const uri = await exportTradesToCSV(trades);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
+      if (uri) {
+        // Native: show toast with file location
+        const { toast } = await import('sonner');
+        toast.success('CSV saved to Documents folder', { duration: 3000 });
+      }
+    } catch (err) {
+      const { toast } = await import('sonner');
+      toast.error('Export failed: ' + (err as Error).message);
     }
   };
 

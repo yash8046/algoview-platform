@@ -208,7 +208,7 @@ export default function TradingChart() {
   if (fullscreen) {
     return (
       <div className="fixed inset-0 z-[200] bg-background flex flex-col safe-area-top">
-        <div className="h-[env(safe-area-inset-top,24px)] min-h-[24px] bg-background flex-shrink-0" />
+        <div className="h-[env(safe-area-inset-top,32px)] min-h-[32px] bg-background flex-shrink-0" />
         {chartContent}
       </div>
     );
