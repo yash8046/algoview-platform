@@ -10,6 +10,7 @@ import AISignals from '@/components/AISignals';
 import { useTradingStore } from '@/stores/tradingStore';
 import { useIsMobile } from '@/hooks/use-mobile';
 import GuidedTour from '@/components/GuidedTour';
+import { PanelRightOpen, PanelRightClose } from 'lucide-react';
 
 function useIsLandscape() {
   const [landscape, setLandscape] = useState(
@@ -30,29 +31,41 @@ const Index = () => {
   const { loadFromDB } = useTradingStore();
   const isMobile = useIsMobile();
   const isLandscape = useIsLandscape();
+  const [showSidePanel, setShowSidePanel] = useState(true);
 
   useEffect(() => {
     loadFromDB();
   }, []);
 
-  // Mobile landscape: chart-focused layout
+  // Mobile landscape: chart-focused layout with toggleable side panel
   if (isMobile && isLandscape) {
     return (
-      <div className="flex flex-col h-[100dvh] overflow-hidden">
+      <div className="flex flex-col h-[100dvh] overflow-hidden safe-area-top">
         <div className="flex-1 flex gap-1 p-1 min-h-0">
           {/* Chart takes most space */}
           <div className="flex-1 min-w-0" data-tour="chart">
             <TradingChart />
           </div>
-          {/* Compact side panel */}
-          <div className="w-52 flex-shrink-0 flex flex-col gap-1 overflow-y-auto scrollbar-thin">
-            <div data-tour="portfolio"><PortfolioSummary /></div>
-            <div data-tour="trade-panel"><TradePanel /></div>
-            <div data-tour="ai-signals"><AISignals /></div>
-            <div data-tour="watchlist"><Watchlist /></div>
-            <div className="h-40"><Positions /></div>
-            <div className="h-40"><TradeHistory /></div>
-          </div>
+          {/* Toggleable compact side panel */}
+          {showSidePanel && (
+            <div className="w-52 flex-shrink-0 flex flex-col gap-1 overflow-y-auto scrollbar-thin animate-in slide-in-from-right-5 duration-200">
+              <div data-tour="portfolio"><PortfolioSummary /></div>
+              <div data-tour="trade-panel"><TradePanel /></div>
+              <div data-tour="ai-signals"><AISignals /></div>
+              <div data-tour="watchlist"><Watchlist /></div>
+              <div className="h-40"><Positions /></div>
+              <div className="h-40"><TradeHistory /></div>
+            </div>
+          )}
+          {/* Floating toggle button */}
+          <button
+            onClick={() => setShowSidePanel(p => !p)}
+            className="fixed bottom-3 right-3 z-[150] p-2.5 rounded-full bg-primary text-primary-foreground shadow-lg active:scale-90 transition-transform"
+            style={{ minWidth: 44, minHeight: 44 }}
+            title={showSidePanel ? 'Hide panel' : 'Show panel'}
+          >
+            {showSidePanel ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
+          </button>
         </div>
         <GuidedTour />
       </div>
