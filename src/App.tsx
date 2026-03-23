@@ -11,6 +11,7 @@ import MobileBottomNav from "./components/MobileBottomNav";
 import Index from "./pages/Index.tsx";
 import Portfolio from "./pages/Portfolio.tsx";
 import CryptoPage from "./pages/CryptoPage.tsx";
+import ChartsPage from "./pages/ChartsPage.tsx";
 import BacktestPage from "./pages/BacktestPage.tsx";
 import StrategyBuilderPage from "./pages/StrategyBuilderPage.tsx";
 import DisclaimerPage from "./pages/DisclaimerPage.tsx";
@@ -40,6 +41,7 @@ const App = () => {
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/portfolio" element={<ProtectedRoute><Portfolio /></ProtectedRoute>} />
             <Route path="/crypto" element={<ProtectedRoute><CryptoPage /></ProtectedRoute>} />
+            <Route path="/charts" element={<ProtectedRoute><ChartsPage /></ProtectedRoute>} />
             <Route path="/backtest" element={<ProtectedRoute><BacktestPage /></ProtectedRoute>} />
             <Route path="/strategy-builder" element={<ProtectedRoute><StrategyBuilderPage /></ProtectedRoute>} />
             <Route path="/more" element={<ProtectedRoute><MorePage /></ProtectedRoute>} />

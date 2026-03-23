@@ -7,6 +7,7 @@ import TradePanel from '@/components/TradePanel';
 import Positions from '@/components/Positions';
 import TradeHistory from '@/components/TradeHistory';
 import AISignals from '@/components/AISignals';
+import TopPerformers from '@/components/TopPerformers';
 import { useTradingStore } from '@/stores/tradingStore';
 import { useIsMobile } from '@/hooks/use-mobile';
 import GuidedTour from '@/components/GuidedTour';
@@ -104,6 +105,7 @@ const Index = () => {
         <div className="flex-1 overflow-y-auto scrollbar-thin pb-20">
           <div className="p-2 space-y-2">
             <div data-tour="portfolio"><PortfolioSummary /></div>
+            <TopPerformers />
             <div className="h-[280px]" data-tour="chart">
               <TradingChart />
             </div>

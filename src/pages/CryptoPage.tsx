@@ -4,6 +4,7 @@ import CryptoChart from '@/components/CryptoChart';
 import CryptoTradePanel from '@/components/CryptoTradePanel';
 import CryptoPositions from '@/components/CryptoPositions';
 import CryptoAISignals from '@/components/CryptoAISignals';
+import CryptoTopMovers from '@/components/CryptoTopMovers';
 import { useCryptoStore } from '@/stores/cryptoStore';
 import { formatINR } from '@/lib/exchangeRate';
 import { DollarSign, TrendingUp, TrendingDown, BarChart3, PanelRightOpen, PanelRightClose, ChevronDown, ChevronUp } from 'lucide-react';
@@ -133,6 +134,7 @@ export default function CryptoPage() {
         <div className="flex-1 overflow-y-auto scrollbar-thin pb-20">
           <div className="p-2 space-y-2">
             <CryptoSummary />
+            <CryptoTopMovers />
             <div className="h-[280px]">
               <CryptoChart />
             </div>
