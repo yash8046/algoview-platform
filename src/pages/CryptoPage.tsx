@@ -134,6 +134,7 @@ export default function CryptoPage() {
         <div className="flex-1 overflow-y-auto scrollbar-thin pb-20">
           <div className="p-2 space-y-2">
             <CryptoSummary />
+            <CryptoTopMovers />
             <div className="h-[280px]">
               <CryptoChart />
             </div>
