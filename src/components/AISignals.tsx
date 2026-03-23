@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react';
 import { Brain, TrendingUp, TrendingDown, Minus, RefreshCw, Target, AlertTriangle, Zap, Shield, Newspaper, Users, BarChart3, AlertOctagon, Clock, Activity, Info } from 'lucide-react';
 import { useTradingStore } from '@/stores/tradingStore';
 import { useStockAIAnalysis } from '@/hooks/useStockAIAnalysis';
 import { useRewardedAd } from '@/hooks/useRewardedAd';
+import { timeAgo } from '@/lib/cacheUtils';
 import type { SentimentData } from '@/hooks/useAIAnalysis';
 
 const signalConfig = {
@@ -129,6 +131,24 @@ function FactorsList({ positive, negative }: { positive: string[]; negative: str
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function UpdatedAgo({ timestamp }: { timestamp: number }) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setTick(t => t + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <div className="pt-2 border-t border-border">
+      <div className="flex items-center gap-1">
+        <Zap className="w-3 h-3 text-muted-foreground/40" />
+        <span className="text-[9px] text-muted-foreground/50 font-mono">
+          Updated {timeAgo(timestamp)} • Market-aware cache • For informational purposes only
+        </span>
+      </div>
     </div>
   );
 }
@@ -339,14 +359,7 @@ export default function AISignals() {
               ))}
             </div>
 
-            <div className="pt-2 border-t border-border">
-              <div className="flex items-center gap-1">
-                <Zap className="w-3 h-3 text-muted-foreground/40" />
-                <span className="text-[9px] text-muted-foreground/50 font-mono">
-                  Updated: {new Date(result.timestamp).toLocaleTimeString()} • Cached 5min • For informational purposes only
-                </span>
-              </div>
-            </div>
+            <UpdatedAgo timestamp={result.timestamp} />
           </div>
         )}
 
