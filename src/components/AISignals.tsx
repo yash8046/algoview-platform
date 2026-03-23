@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react';
 import { Brain, TrendingUp, TrendingDown, Minus, RefreshCw, Target, AlertTriangle, Zap, Shield, Newspaper, Users, BarChart3, AlertOctagon, Clock, Activity, Info } from 'lucide-react';
 import { useTradingStore } from '@/stores/tradingStore';
 import { useStockAIAnalysis } from '@/hooks/useStockAIAnalysis';
 import { useRewardedAd } from '@/hooks/useRewardedAd';
+import { timeAgo } from '@/lib/cacheUtils';
 import type { SentimentData } from '@/hooks/useAIAnalysis';
 
 const signalConfig = {
