@@ -7,7 +7,8 @@ import ChartDrawingTools from '@/components/ChartDrawingTools';
 import ChartOverlay from '@/components/ChartOverlay';
 import { useChartDrawings } from '@/hooks/useChartDrawings';
 import { detectCandlestickPatterns } from '@/lib/candlestickPatterns';
-import { Maximize2, Minimize2 } from 'lucide-react';
+import { Maximize2, Minimize2, Smartphone } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 
 const TIMEFRAMES = ['1m', '5m', '15m', '1H', '4H', '1D', '1W'];
 
