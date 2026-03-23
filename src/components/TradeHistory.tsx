@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { useTradingStore } from '@/stores/tradingStore';
-import { FlaskConical, Download } from 'lucide-react';
+import { FlaskConical, Download, Check } from 'lucide-react';
 import { exportTradesToCSV } from '@/lib/csvExport';
 
 export default function TradeHistory() {
