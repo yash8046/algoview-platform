@@ -4,6 +4,15 @@ import "./index.css";
 import { initAdMob, showAppOpenAd } from "./lib/adService";
 import { Capacitor } from "@capacitor/core";
 
+// Disable console in production on native platforms
+if (import.meta.env.PROD && Capacitor.isNativePlatform()) {
+  const noop = () => {};
+  console.log = noop;
+  console.debug = noop;
+  console.info = noop;
+  // Keep console.warn and console.error for critical debugging
+}
+
 // Hide splash screen once app is ready
 async function hideSplash() {
   if (Capacitor.isNativePlatform()) {

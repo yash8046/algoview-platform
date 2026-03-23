@@ -135,6 +135,24 @@ function FactorsList({ positive, negative }: { positive: string[]; negative: str
   );
 }
 
+function UpdatedAgo({ timestamp }: { timestamp: number }) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setTick(t => t + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <div className="pt-2 border-t border-border">
+      <div className="flex items-center gap-1">
+        <Zap className="w-3 h-3 text-muted-foreground/40" />
+        <span className="text-[9px] text-muted-foreground/50 font-mono">
+          Updated {timeAgo(timestamp)} • Market-aware cache • For informational purposes only
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function AISignals() {
   const { selectedSymbol, selectedTimeframe } = useTradingStore();
   const { result, loading, error, refresh } = useStockAIAnalysis(selectedSymbol, selectedTimeframe);

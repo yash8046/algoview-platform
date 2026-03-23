@@ -3,6 +3,7 @@ import { fetchYahooFinanceData } from '@/lib/yahooFinance';
 import { type OHLCV, generateRuleBasedSignal, predictNextPrice } from '@/lib/technicalIndicators';
 import { supabase } from '@/integrations/supabase/client';
 import type { SentimentData, PriceRange, TimeHorizon } from './useAIAnalysis';
+import { getSmartTTL, isOnCooldown, setCooldown } from '@/lib/cacheUtils';
 
 export interface StockAIResult {
   signal: 'buy' | 'sell' | 'hold';
@@ -44,9 +45,8 @@ const fallbackSentiment: SentimentData = {
   manipulation_warning: null,
 };
 
-// Cache: reuse results within 5 minutes for same symbol+timeframe
+// Smart cache with market-aware TTL
 const cache = new Map<string, { result: StockAIResult; expiry: number }>();
-const CACHE_TTL = 5 * 60 * 1000;
 
 export function useStockAIAnalysis(symbol: string, timeframe: string) {
   const [result, setResult] = useState<StockAIResult | null>(null);
@@ -58,7 +58,6 @@ export function useStockAIAnalysis(symbol: string, timeframe: string) {
   useEffect(() => {
     if (symbol !== lastSymbol.current) {
       lastSymbol.current = symbol;
-      // Check cache for new symbol
       const cacheKey = `${symbol}-${timeframe}`;
       const cached = cache.get(cacheKey);
       if (cached && cached.expiry > Date.now()) {
@@ -72,14 +71,22 @@ export function useStockAIAnalysis(symbol: string, timeframe: string) {
   }, [symbol, timeframe]);
 
   const analyze = useCallback(async () => {
-    // Check cache first
     const cacheKey = `${symbol}-${timeframe}`;
+
+    // Check cooldown to prevent spam
+    if (isOnCooldown(cacheKey)) {
+      setError('Please wait before refreshing again');
+      return;
+    }
+
+    // Check cache first with smart TTL
     const cached = cache.get(cacheKey);
     if (cached && cached.expiry > Date.now()) {
       setResult(cached.result);
       return;
     }
 
+    setCooldown(cacheKey);
     setLoading(true);
     setError(null);
 
@@ -115,6 +122,7 @@ export function useStockAIAnalysis(symbol: string, timeframe: string) {
 
       const ensemble = aiData.ensembleSignal;
       const ai = aiData.aiSignal;
+      const ttl = getSmartTTL('stock');
 
       const newResult: StockAIResult = {
         signal: ensemble.signal as 'buy' | 'sell' | 'hold',
@@ -139,7 +147,7 @@ export function useStockAIAnalysis(symbol: string, timeframe: string) {
         timestamp: Date.now(),
       };
 
-      cache.set(cacheKey, { result: newResult, expiry: Date.now() + CACHE_TTL });
+      cache.set(cacheKey, { result: newResult, expiry: Date.now() + ttl });
       setResult(newResult);
     } catch (e: any) {
       console.error(`Stock AI analysis error (${symbol}):`, e);
@@ -174,7 +182,8 @@ export function useStockAIAnalysis(symbol: string, timeframe: string) {
           timestamp: Date.now(),
         };
 
-        cache.set(cacheKey, { result: fallbackResult, expiry: Date.now() + CACHE_TTL });
+        const ttl = getSmartTTL('stock');
+        cache.set(cacheKey, { result: fallbackResult, expiry: Date.now() + ttl });
         setResult(fallbackResult);
         setError('AI unavailable, using technical analysis');
       } catch {

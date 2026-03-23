@@ -40,7 +40,7 @@ const Index = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <div className="flex flex-col h-[100dvh] overflow-hidden">
       <TopBar />
       <div className="flex-1 flex flex-col gap-2 p-2 overflow-hidden">
         <PortfolioSummary />

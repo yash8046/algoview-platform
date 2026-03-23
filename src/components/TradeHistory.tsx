@@ -1,5 +1,6 @@
 import { useTradingStore } from '@/stores/tradingStore';
-import { FlaskConical } from 'lucide-react';
+import { FlaskConical, Download } from 'lucide-react';
+import { exportTradesToCSV } from '@/lib/csvExport';
 
 export default function TradeHistory() {
   const { trades } = useTradingStore();
@@ -8,7 +9,17 @@ export default function TradeHistory() {
     <div className="flex flex-col bg-card rounded-lg border border-border overflow-hidden">
       <div className="px-4 py-2 bg-panel-header border-b border-border flex items-center gap-1.5">
         <FlaskConical className="w-3 h-3 text-warning" />
-        <h2 className="text-sm font-semibold text-foreground">Simulation History</h2>
+        <h2 className="text-sm font-semibold text-foreground flex-1">Simulation History</h2>
+        {trades.length > 0 && (
+          <button
+            onClick={() => exportTradesToCSV(trades)}
+            className="flex items-center gap-1 px-2 py-1 text-[10px] rounded bg-secondary text-muted-foreground hover:text-foreground hover:bg-accent transition-colors active:scale-95"
+            title="Export to CSV"
+          >
+            <Download className="w-3 h-3" />
+            <span className="hidden sm:inline">CSV</span>
+          </button>
+        )}
       </div>
       <div className="flex-1 overflow-y-auto scrollbar-thin max-h-48">
         {trades.length === 0 ? (
