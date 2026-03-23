@@ -557,8 +557,10 @@ export default function BacktestPage() {
             </button>
 
             <button onClick={() => gateBacktest(runTest)} disabled={running}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[10px] sm:text-xs font-semibold rounded bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] disabled:opacity-50 transition-all">
-              <Play className="w-3.5 h-3.5" />{running ? 'Running...' : 'Run Backtest'}
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[10px] sm:text-xs font-semibold rounded bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] disabled:opacity-50 transition-all"
+              style={{ minHeight: 44 }}
+            >
+              <Play className="w-3.5 h-3.5" />{running ? 'Running...' : '▶ Watch Ad & Run Backtest'}
             </button>
           </div>
 
