@@ -602,26 +602,36 @@ export default function BacktestPage() {
               <MetricCard label="Avg Loss" value={`₹${result.avgLoss.toFixed(0)}`} positive={false} />
             </div>
 
-            {/* Equity Curve — explicit height container */}
-            <div className="bg-card rounded-lg border border-border overflow-hidden">
-              <div className="px-3 sm:px-4 py-2 bg-panel-header border-b border-border flex items-center gap-2">
-                <TrendingUp className="w-3.5 h-3.5 text-primary" />
-                <h3 className="text-xs sm:text-sm font-semibold text-foreground">Equity Curve</h3>
-                <span className="text-[10px] text-muted-foreground font-mono">{result.totalTrades} trades</span>
-              </div>
-              <div className="h-[300px] sm:h-[400px] lg:h-[500px]">
-                <EquityChart result={result} onToggleFullscreen={() => setFullscreenChart(true)} />
-              </div>
-            </div>
+            {/* Collapsible Equity Curve */}
+            <Accordion type="single" collapsible defaultValue="equity">
+              <AccordionItem value="equity" className="bg-card rounded-lg border border-border overflow-hidden">
+                <AccordionTrigger className="px-3 sm:px-4 py-2 bg-panel-header hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                    <span className="text-xs sm:text-sm font-semibold text-foreground">Equity Curve</span>
+                    <span className="text-[10px] text-muted-foreground font-mono">{result.totalTrades} trades</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="p-0">
+                  <div className="h-[300px] sm:h-[400px] lg:h-[500px]">
+                    <EquityChart result={result} onToggleFullscreen={() => setFullscreenChart(true)} />
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
 
-            <div className="bg-card rounded-lg border border-border overflow-hidden">
-              <div className="px-3 sm:px-4 py-2 bg-panel-header border-b border-border flex items-center gap-2">
-                <BarChart3 className="w-3.5 h-3.5 text-primary" />
-                <h3 className="text-xs sm:text-sm font-semibold text-foreground">Trade History</h3>
-                <span className="text-[10px] text-muted-foreground">{result.trades.length} trades</span>
-              </div>
-              <TradesTable trades={result.trades} />
-            </div>
+              <AccordionItem value="trades" className="bg-card rounded-lg border border-border overflow-hidden mt-2">
+                <AccordionTrigger className="px-3 sm:px-4 py-2 bg-panel-header hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="w-3.5 h-3.5 text-primary" />
+                    <span className="text-xs sm:text-sm font-semibold text-foreground">Trade History</span>
+                    <span className="text-[10px] text-muted-foreground">{result.trades.length} trades</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="p-0">
+                  <TradesTable trades={result.trades} />
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </>
         )}
 
