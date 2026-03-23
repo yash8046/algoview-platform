@@ -4,6 +4,7 @@ import CryptoChart from '@/components/CryptoChart';
 import CryptoTradePanel from '@/components/CryptoTradePanel';
 import CryptoPositions from '@/components/CryptoPositions';
 import CryptoAISignals from '@/components/CryptoAISignals';
+import CryptoTopMovers from '@/components/CryptoTopMovers';
 import { useCryptoStore } from '@/stores/cryptoStore';
 import { formatINR } from '@/lib/exchangeRate';
 import { DollarSign, TrendingUp, TrendingDown, BarChart3, PanelRightOpen, PanelRightClose, ChevronDown, ChevronUp } from 'lucide-react';
