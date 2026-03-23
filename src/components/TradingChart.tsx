@@ -107,15 +107,20 @@ export default function TradingChart() {
         setLoading(false);
       });
 
-    const observer = new ResizeObserver(() => {
+    const resizeChart = () => {
       if (chartRef.current) {
         chart.applyOptions({ width: chartRef.current.clientWidth, height: chartRef.current.clientHeight });
       }
-    });
+    };
+
+    const observer = new ResizeObserver(resizeChart);
     observer.observe(chartRef.current);
+
+    window.addEventListener('orientationchange', () => setTimeout(resizeChart, 200));
 
     return () => {
       observer.disconnect();
+      window.removeEventListener('orientationchange', resizeChart);
       chart.remove();
       setChartApi(null);
       setSeriesApi(null);
