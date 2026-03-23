@@ -1,5 +1,5 @@
 /**
- * AdMob Full Ad Service
+ * AdMob Ad Service
  * 
  * Supports: Rewarded, Interstitial, Banner, App Open ads
  * All with graceful fallback — features are NEVER blocked.
@@ -22,7 +22,6 @@ let lastAdShownAt = { rewarded: 0, interstitial: 0, appOpen: 0 };
 let bannerVisible = false;
 
 // ============ Config ============
-// Replace with your REAL ad unit IDs for production
 const AD_UNITS = {
   banner: 'ca-app-pub-3940256099942544/6300978111',
   interstitial: 'ca-app-pub-3940256099942544/1033173712',
@@ -31,9 +30,9 @@ const AD_UNITS = {
 };
 
 const COOLDOWNS = {
-  rewarded: 30_000,      // 30s between rewarded ads
-  interstitial: 60_000,  // 60s between interstitial ads
-  appOpen: 300_000,      // 5min between app open ads
+  rewarded: 30_000,
+  interstitial: 60_000,
+  appOpen: 300_000,
 };
 
 export interface AdResult {
@@ -63,7 +62,7 @@ export async function initAdMob(): Promise<void> {
   try {
     const AdMob = await getAdMob();
     await AdMob.initialize({
-      initializeForTesting: true, // Set false for production
+      initializeForTesting: true,
     });
     isInitialized = true;
     console.log('[AdService] AdMob initialized');
@@ -90,7 +89,6 @@ export async function showBannerAd(position: 'TOP' | 'BOTTOM' = 'BOTTOM'): Promi
       isTesting: true,
     });
     bannerVisible = true;
-    console.log('[AdService] Banner shown');
   } catch (err) {
     console.warn('[AdService] Banner failed:', err);
   }
@@ -126,11 +124,10 @@ async function loadInterstitialAd(): Promise<void> {
     await AdMob.prepareInterstitial({ adId: AD_UNITS.interstitial });
     interstitialAdLoaded = true;
     adLoadAttempts.interstitial = 0;
-    console.log('[AdService] Interstitial loaded');
   } catch (err) {
     interstitialAdLoaded = false;
     adLoadAttempts.interstitial++;
-    console.warn(`[AdService] Interstitial load failed (attempt ${adLoadAttempts.interstitial}):`, err);
+    console.warn(`[AdService] Interstitial load attempt ${adLoadAttempts.interstitial}:`, err);
   }
 }
 
@@ -164,15 +161,15 @@ async function loadRewardedAd(): Promise<void> {
     await AdMob.prepareRewardVideoAd({ adId: AD_UNITS.rewarded });
     rewardedAdLoaded = true;
     adLoadAttempts.rewarded = 0;
-    console.log('[AdService] Rewarded ad loaded');
   } catch (err) {
     rewardedAdLoaded = false;
     adLoadAttempts.rewarded++;
-    console.warn(`[AdService] Rewarded load failed (attempt ${adLoadAttempts.rewarded}):`, err);
+    console.warn(`[AdService] Rewarded load attempt ${adLoadAttempts.rewarded}:`, err);
   }
 }
 
 export async function showRewardedAd(featureName: string = 'Feature'): Promise<AdResult> {
+  // On web or cooldown: grant silently, no toast
   if (!isNative()) return { granted: true, adShown: false, message: '' };
   if (!canShowAd('rewarded')) return { granted: true, adShown: false, message: '' };
 
@@ -183,22 +180,18 @@ export async function showRewardedAd(featureName: string = 'Feature'): Promise<A
       lastAdShownAt.rewarded = Date.now();
       rewardedAdLoaded = false;
       loadRewardedAd();
-      return { granted: true, adShown: true, message: `${featureName} unlocked!` };
+      return { granted: true, adShown: true, message: '' };
     } catch (err) {
       console.warn('[AdService] Show rewarded failed:', err);
       loadRewardedAd();
-      return { granted: true, adShown: false, message: `Ad unavailable — enjoy free ${featureName}!` };
+      // Grant silently — no message/toast
+      return { granted: true, adShown: false, message: '' };
     }
   }
 
+  // Ad not loaded — grant silently
   loadRewardedAd();
-  return {
-    granted: true,
-    adShown: false,
-    message: adLoadAttempts.rewarded > 2
-      ? `Ads loading... Enjoy free ${featureName}!`
-      : `Ad unavailable — enjoy free ${featureName}!`,
-  };
+  return { granted: true, adShown: false, message: '' };
 }
 
 // ============ App Open Ad ============
@@ -218,7 +211,11 @@ export async function showAppOpenAd(): Promise<AdResult> {
   }
 }
 
-// ============ Convenience ============
+// ============ Status ============
+export function isAdReady(): boolean {
+  return rewardedAdLoaded;
+}
+
 export function createAdGate(featureName: string) {
   return async (callback: () => void): Promise<{ adShown: boolean; message: string }> => {
     const result = await showRewardedAd(featureName);
