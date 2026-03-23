@@ -20,7 +20,7 @@ const Index = () => {
 
   if (isMobile) {
     return (
-      <div className="flex flex-col h-screen overflow-hidden">
+      <div className="flex flex-col h-[100dvh] overflow-hidden">
         <TopBar />
         <div className="flex-1 overflow-y-auto scrollbar-thin pb-20">
           <div className="p-2 space-y-2">
