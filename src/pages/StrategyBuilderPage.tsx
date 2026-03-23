@@ -18,6 +18,7 @@ import {
   Download, ChevronDown, ChevronRight, Save, RotateCcw, Layers, Target,
   TrendingUp, TrendingDown, BarChart3, AlertTriangle, ArrowUpDown, Copy,
 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 
 // ============ Sub-Components ============
 
