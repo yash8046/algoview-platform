@@ -6,7 +6,7 @@ import CryptoPositions from '@/components/CryptoPositions';
 import CryptoAISignals from '@/components/CryptoAISignals';
 import { useCryptoStore } from '@/stores/cryptoStore';
 import { formatINR } from '@/lib/exchangeRate';
-import { DollarSign, TrendingUp, TrendingDown, BarChart3, PanelRightOpen, PanelRightClose } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, BarChart3, PanelRightOpen, PanelRightClose, ChevronDown, ChevronUp } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 function useIsLandscape() {
@@ -23,6 +23,31 @@ function useIsLandscape() {
   }, []);
   return landscape;
 }
+
+function CollapsibleSection({ title, count, defaultOpen = false, children }: {
+  title: string; count?: number; defaultOpen?: boolean; children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="bg-card rounded-lg border border-border overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-3 py-2 bg-panel-header border-b border-border active:bg-accent/50 transition-colors"
+        style={{ minHeight: 40 }}
+      >
+        <span className="text-xs font-semibold text-foreground">{title}</span>
+        <div className="flex items-center gap-1.5">
+          {count !== undefined && (
+            <span className="text-[10px] text-muted-foreground">{count}</span>
+          )}
+          {open ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
+        </div>
+      </button>
+      {open && <div className="max-h-40 overflow-y-auto scrollbar-thin">{children}</div>}
+    </div>
+  );
+}
+
 function CryptoSummary() {
   const { balance, initialBalance, positions, trades } = useCryptoStore();
 
@@ -59,7 +84,7 @@ function CryptoSummary() {
 }
 
 export default function CryptoPage() {
-  const { loadExchangeRate, loadFromDB } = useCryptoStore();
+  const { loadExchangeRate, loadFromDB, positions, trades } = useCryptoStore();
   const isMobile = useIsMobile();
   const isLandscape = useIsLandscape();
   const [showSidePanel, setShowSidePanel] = useState(true);
@@ -69,7 +94,7 @@ export default function CryptoPage() {
     loadFromDB();
   }, []);
 
-  // Mobile landscape: chart-focused layout
+  // Mobile landscape: chart-focused with collapsible side panel
   if (isMobile && isLandscape) {
     return (
       <div className="flex flex-col h-[100dvh] overflow-hidden safe-area-top">
@@ -82,7 +107,9 @@ export default function CryptoPage() {
               <CryptoSummary />
               <CryptoTradePanel />
               <CryptoAISignals />
-              <div className="h-40"><CryptoPositions /></div>
+              <CollapsibleSection title="▼ Simulated Positions" count={positions.length} defaultOpen={false}>
+                <CryptoPositions />
+              </CollapsibleSection>
             </div>
           )}
           <button
@@ -98,7 +125,7 @@ export default function CryptoPage() {
     );
   }
 
-  // Mobile portrait
+  // Mobile portrait: simple vertical stack
   if (isMobile) {
     return (
       <div className="flex flex-col h-[100dvh] overflow-hidden">
@@ -111,9 +138,9 @@ export default function CryptoPage() {
             </div>
             <CryptoTradePanel />
             <CryptoAISignals />
-            <div className="h-52">
+            <CollapsibleSection title="▼ Simulated Positions" count={positions.length} defaultOpen={true}>
               <CryptoPositions />
-            </div>
+            </CollapsibleSection>
           </div>
         </div>
       </div>
