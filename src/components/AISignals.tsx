@@ -172,8 +172,12 @@ export default function AISignals() {
         </div>
         {result && (
           <button onClick={() => gateWithAd(refresh)} disabled={loading}
-            className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40">
+            className="flex items-center gap-1 px-2 py-1.5 rounded text-[10px] hover:bg-accent transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40"
+            style={{ minHeight: 44 }}
+            title="Watch ad to refresh insight"
+          >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Refresh</span>
           </button>
         )}
       </div>
@@ -370,12 +374,13 @@ export default function AISignals() {
             <button
               onClick={() => gateWithAd(refresh)}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition-all disabled:opacity-50"
+              style={{ minHeight: 44 }}
             >
               <Brain className="w-4 h-4" />
-              Generate Insight
+              Watch Ad & Generate Insight
             </button>
-            <span className="text-[9px] text-muted-foreground/40">Uses AI + technical indicators + sentiment analysis</span>
+            <span className="text-[9px] text-muted-foreground/40">Watch a short ad to unlock AI analysis</span>
           </div>
         )}
       </div>

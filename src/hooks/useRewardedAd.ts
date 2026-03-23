@@ -3,7 +3,7 @@ import { showRewardedAd, showInterstitialAd } from '@/lib/adService';
 
 /**
  * Hook to gate a feature behind a rewarded ad.
- * If the ad fails, feature is granted anyway.
+ * If the ad fails, feature is granted silently (no toast).
  */
 export function useRewardedAd(featureName: string = 'AI Insight') {
   const pendingRef = useRef(false);
@@ -15,6 +15,7 @@ export function useRewardedAd(featureName: string = 'AI Insight') {
       const result = await showRewardedAd(featureName);
       if (result.granted) callback();
     } catch {
+      // Ad failed — grant silently
       callback();
     } finally {
       pendingRef.current = false;
@@ -26,7 +27,6 @@ export function useRewardedAd(featureName: string = 'AI Insight') {
 
 /**
  * Hook to show an interstitial ad (no gating, fire-and-forget).
- * Use on page transitions or after completing an action.
  */
 export function useInterstitialAd() {
   const pendingRef = useRef(false);
