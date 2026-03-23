@@ -21,8 +21,28 @@ export default function TradingChart() {
   const [seriesApi, setSeriesApi] = useState<any>(null);
   const [showPatterns, setShowPatterns] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [landscapeFullscreen, setLandscapeFullscreen] = useState(false);
   const markersRef = useRef<any>(null);
   const candleDataRef = useRef<any[]>([]);
+  const isAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+
+  const toggleLandscapeFullscreen = async () => {
+    try {
+      const { ScreenOrientation } = await import('@capacitor/screen-orientation');
+      if (!landscapeFullscreen) {
+        await ScreenOrientation.lock({ orientation: 'landscape' });
+        setLandscapeFullscreen(true);
+        setFullscreen(true);
+      } else {
+        await ScreenOrientation.unlock();
+        setLandscapeFullscreen(false);
+        setFullscreen(false);
+      }
+    } catch (err) {
+      console.warn('[Chart] Screen orientation failed:', err);
+      setFullscreen(f => !f);
+    }
+  };
 
   const {
     drawingMode, setDrawingMode, drawingModeRef,
