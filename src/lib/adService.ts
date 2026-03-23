@@ -77,22 +77,33 @@ export async function initAdMob(): Promise<void> {
   try {
     const AdMob = await getAdMob();
 
-    // Register event listeners for debugging
-    AdMob.addListener('onAdLoaded', (info) => {
-      adLog('Event', '✅ Ad Loaded', info);
-    });
-    AdMob.addListener('onAdFailedToLoad', (error) => {
-      adError('Event', '❌ Ad Failed to Load', JSON.stringify(error));
-    });
-    AdMob.addListener('onAdDismissed', () => {
-      adLog('Event', 'Ad Dismissed');
-    });
-    AdMob.addListener('onAdShowed', () => {
-      adLog('Event', 'Ad Showed');
-    });
-    AdMob.addListener('onRewardedVideoAdReward', (reward) => {
-      adLog('Event', '🎁 Reward Granted', reward);
-    });
+    // Register event listeners for debugging using correct plugin events
+    try {
+      const { RewardAdPluginEvents, InterstitialAdPluginEvents } = await import('@capacitor-community/admob');
+      AdMob.addListener(RewardAdPluginEvents.Loaded, (info) => {
+        adLog('Event', '✅ Rewarded Ad Loaded', info);
+      });
+      AdMob.addListener(RewardAdPluginEvents.FailedToLoad, (error) => {
+        adError('Event', '❌ Rewarded Ad Failed to Load', JSON.stringify(error));
+      });
+      AdMob.addListener(RewardAdPluginEvents.Showed, () => {
+        adLog('Event', 'Rewarded Ad Showed');
+      });
+      AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
+        adLog('Event', 'Rewarded Ad Dismissed');
+      });
+      AdMob.addListener(RewardAdPluginEvents.Rewarded, (reward) => {
+        adLog('Event', '🎁 Reward Granted', reward);
+      });
+      AdMob.addListener(InterstitialAdPluginEvents.Loaded, (info) => {
+        adLog('Event', '✅ Interstitial Loaded', info);
+      });
+      AdMob.addListener(InterstitialAdPluginEvents.FailedToLoad, (error) => {
+        adError('Event', '❌ Interstitial Failed to Load', JSON.stringify(error));
+      });
+    } catch (listenerErr) {
+      adWarn('Init', 'Could not register event listeners:', listenerErr);
+    }
 
     await AdMob.initialize({
       initializeForTesting: true,
