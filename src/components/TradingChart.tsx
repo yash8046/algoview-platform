@@ -191,6 +191,10 @@ export default function TradingChart() {
               onModeChange={setDrawingMode}
               drawings={drawings}
               onClearAll={clearAllDrawings}
+              onUndo={undo}
+              onRedo={redo}
+              canUndo={canUndo}
+              canRedo={canRedo}
               showPatterns={showPatterns}
               onTogglePatterns={() => setShowPatterns(p => !p)}
             />
