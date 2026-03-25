@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import TopBar from '@/components/TopBar';
 import TradingChart from '@/components/TradingChart';
 import CryptoChart from '@/components/CryptoChart';
 import { useTradingStore } from '@/stores/tradingStore';
 import { useCryptoStore, CRYPTO_PAIRS } from '@/stores/cryptoStore';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { BarChart3, Bitcoin } from 'lucide-react';
+import { ChevronDown, BarChart3, Bitcoin } from 'lucide-react';
 
 type ChartMode = 'stocks' | 'crypto';
 
@@ -16,79 +15,71 @@ export default function ChartsPage() {
   const isMobile = useIsMobile();
 
   return (
-    <div className="flex flex-col h-[100dvh] overflow-hidden">
-      <TopBar />
-      <div className="flex-1 flex flex-col min-h-0 pb-20">
-        {/* Mode toggle */}
-        <div className="flex items-center gap-1 px-2 pt-2">
-          <button
-            onClick={() => setMode('stocks')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors min-h-[36px] ${
-              mode === 'stocks'
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary text-muted-foreground'
-            }`}
-          >
-            <BarChart3 className="w-3.5 h-3.5" />
-            Stocks
-          </button>
-          <button
-            onClick={() => setMode('crypto')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors min-h-[36px] ${
-              mode === 'crypto'
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary text-muted-foreground'
-            }`}
-          >
-            <Bitcoin className="w-3.5 h-3.5" />
-            Crypto
-          </button>
-        </div>
+    <div className="flex flex-col h-[100dvh] overflow-hidden bg-background">
+      {/* Premium top bar — glassmorphic, thin */}
+      <div className="flex items-center justify-between px-3 py-2 bg-card/80 backdrop-blur-md border-b border-border/30 safe-area-top z-10">
+        <div className="flex items-center gap-2">
+          {/* Mode toggle — minimal pills */}
+          <div className="flex items-center bg-secondary/40 rounded-lg p-0.5">
+            <button
+              onClick={() => setMode('stocks')}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[10px] font-semibold transition-all ${
+                mode === 'stocks'
+                  ? 'bg-primary/15 text-primary shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <BarChart3 className="w-3 h-3" />
+              Stocks
+            </button>
+            <button
+              onClick={() => setMode('crypto')}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[10px] font-semibold transition-all ${
+                mode === 'crypto'
+                  ? 'bg-primary/15 text-primary shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Bitcoin className="w-3 h-3" />
+              Crypto
+            </button>
+          </div>
 
-        {/* Symbol picker */}
-        <div className="px-2 pt-2">
+          {/* Symbol selector — dropdown style */}
           {mode === 'stocks' ? (
-            <div className="flex gap-1.5 overflow-x-auto scrollbar-thin pb-1">
-              {watchlist.length === 0 && (
-                <span className="text-xs text-muted-foreground py-1">Add stocks to watchlist first</span>
-              )}
-              {watchlist.map((item) => (
-                <button
-                  key={item.symbol}
-                  onClick={() => setSelectedSymbol(item.symbol)}
-                  className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-mono font-medium transition-colors min-h-[32px] ${
-                    selectedSymbol === item.symbol
-                      ? 'bg-primary/20 text-primary border border-primary/40'
-                      : 'bg-secondary text-muted-foreground border border-border'
-                  }`}
-                >
-                  {item.symbol}
-                </button>
-              ))}
+            <div className="relative">
+              <select
+                value={selectedSymbol}
+                onChange={e => setSelectedSymbol(e.target.value)}
+                className="appearance-none bg-secondary/30 border border-border/30 rounded-lg px-3 py-1.5 pr-7 text-xs font-mono font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 cursor-pointer min-h-[32px]"
+              >
+                {watchlist.length === 0 && <option value="">Add to watchlist</option>}
+                {watchlist.map(item => (
+                  <option key={item.symbol} value={item.symbol}>{item.symbol}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
             </div>
           ) : (
-            <div className="flex gap-1.5 overflow-x-auto scrollbar-thin pb-1">
-              {CRYPTO_PAIRS.map((pair) => (
-                <button
-                  key={pair.symbol}
-                  onClick={() => setSelectedPair(pair.symbol)}
-                  className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-mono font-medium transition-colors min-h-[32px] ${
-                    selectedPair === pair.symbol
-                      ? 'bg-primary/20 text-primary border border-primary/40'
-                      : 'bg-secondary text-muted-foreground border border-border'
-                  }`}
-                >
-                  {pair.baseAsset}
-                </button>
-              ))}
+            <div className="relative">
+              <select
+                value={selectedPair}
+                onChange={e => setSelectedPair(e.target.value)}
+                className="appearance-none bg-secondary/30 border border-border/30 rounded-lg px-3 py-1.5 pr-7 text-xs font-mono font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 cursor-pointer min-h-[32px]"
+              >
+                {CRYPTO_PAIRS.map(p => (
+                  <option key={p.symbol} value={p.symbol}>{p.label}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
             </div>
           )}
         </div>
+      </div>
 
-        {/* Chart */}
-        <div className="flex-1 min-h-0 p-2">
-          {mode === 'stocks' ? <TradingChart /> : <CryptoChart />}
-        </div>
+      {/* Chart — fills everything, no padding, immersive */}
+      <div className="flex-1 min-h-0 pb-16">
+        {mode === 'stocks' ? <TradingChart /> : <CryptoChart />}
       </div>
     </div>
   );

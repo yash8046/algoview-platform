@@ -5,14 +5,14 @@ import { fetchYahooFinanceData } from '@/lib/yahooFinance';
 import { calculateSMA } from '@/lib/mockData';
 import { calcRSI, calcMACD, calcBollingerBands, calcEMA, calcVWAP, calcSMA as calcSMALib } from '@/lib/technicalIndicators';
 import ChartDrawingTools from '@/components/ChartDrawingTools';
-import ChartIndicatorOverlay from '@/components/ChartIndicatorOverlay';
 import ChartOverlay from '@/components/ChartOverlay';
 import PriceAlertPanel from '@/components/PriceAlertPanel';
+import IndicatorManagerModal from '@/components/IndicatorManagerModal';
 import { useChartDrawings } from '@/hooks/useChartDrawings';
 import { useChartIndicators } from '@/hooks/useChartIndicators';
 import { usePriceAlerts } from '@/hooks/usePriceAlerts';
 import { detectCandlestickPatterns } from '@/lib/candlestickPatterns';
-import { Maximize2, Minimize2, Magnet, X } from 'lucide-react';
+import { Maximize2, Minimize2, Magnet, X, BarChart3 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 
 const TIMEFRAMES = ['1m', '5m', '15m', '1H', '4H', '1D', '1W'];
@@ -67,6 +67,7 @@ export default function TradingChart() {
 
   const { indicators, toggleIndicator, removeIndicator } = useChartIndicators();
   const { alerts, activeAlerts, triggeredAlerts, addAlert, removeAlert, clearTriggered, checkAlerts, requestNotificationPermission } = usePriceAlerts();
+  const [indicatorModalOpen, setIndicatorModalOpen] = useState(false);
   const currentPriceRef = useRef(0);
 
   useEffect(() => {
@@ -104,8 +105,7 @@ export default function TradingChart() {
     });
     volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
-    const sma20Series = chart.addSeries(LineSeries, { color: '#26c6da', lineWidth: 1, title: 'SMA 20' });
-    const sma50Series = chart.addSeries(LineSeries, { color: '#f59e0b', lineWidth: 1, title: 'SMA 50' });
+    // No default indicators — user adds via indicator modal
 
     setChartApi(chart);
     setSeriesApi(candleSeries);
@@ -132,8 +132,7 @@ export default function TradingChart() {
           time: c.time, open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume,
         }));
 
-        if (candleData.length >= 20) sma20Series.setData(calculateSMA(candleData, 20) as any);
-        if (candleData.length >= 50) sma50Series.setData(calculateSMA(candleData, 50) as any);
+        // Indicators managed by indicator system, not hardcoded
 
         chart.timeScale().fitContent();
 
@@ -348,7 +347,24 @@ export default function TradingChart() {
             showPatterns={showPatterns}
             onTogglePatterns={() => setShowPatterns(p => !p)}
           />
-          <ChartIndicatorOverlay
+          <button
+            onClick={() => setIndicatorModalOpen(true)}
+            className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-mono transition-all min-h-[32px] active:scale-95 ${
+              indicators.length > 0
+                ? 'bg-primary/10 text-primary border border-primary/20'
+                : 'text-muted-foreground hover:text-foreground hover:bg-accent/30'
+            }`}
+            title="Indicators"
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Indicators</span>
+            {indicators.length > 0 && (
+              <span className="bg-primary/20 text-primary text-[9px] px-1.5 rounded-full font-semibold">{indicators.length}</span>
+            )}
+          </button>
+          <IndicatorManagerModal
+            open={indicatorModalOpen}
+            onClose={() => setIndicatorModalOpen(false)}
             indicators={indicators}
             onToggle={toggleIndicator}
             onRemove={removeIndicator}

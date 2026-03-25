@@ -1,18 +1,18 @@
-import { useEffect, useRef, useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createChart, CandlestickSeries, HistogramSeries, LineSeries, createSeriesMarkers, type IChartApi } from 'lightweight-charts';
 import { useCryptoData } from '@/hooks/useCryptoData';
 import { useCryptoStore, CRYPTO_PAIRS } from '@/stores/cryptoStore';
 import { formatINR } from '@/lib/exchangeRate';
-import { calcSMA, calcEMA, calcBollingerBands } from '@/lib/technicalIndicators';
+import { calcRSI, calcMACD, calcBollingerBands, calcEMA, calcVWAP, calcSMA as calcSMALib } from '@/lib/technicalIndicators';
 import ChartDrawingTools from '@/components/ChartDrawingTools';
-import ChartIndicatorOverlay from '@/components/ChartIndicatorOverlay';
 import ChartOverlay from '@/components/ChartOverlay';
 import PriceAlertPanel from '@/components/PriceAlertPanel';
+import IndicatorManagerModal from '@/components/IndicatorManagerModal';
 import { useChartDrawings } from '@/hooks/useChartDrawings';
 import { useChartIndicators } from '@/hooks/useChartIndicators';
 import { usePriceAlerts } from '@/hooks/usePriceAlerts';
 import { detectCandlestickPatterns } from '@/lib/candlestickPatterns';
-import { Maximize2, Minimize2, Magnet, X } from 'lucide-react';
+import { Maximize2, Minimize2, Magnet, X, BarChart3 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 
 const INTERVALS = [
@@ -29,11 +29,6 @@ export default function CryptoChart() {
   const chartRef = useRef<HTMLDivElement>(null);
   const candleSeriesRef = useRef<any>(null);
   const volumeSeriesRef = useRef<any>(null);
-  const sma20Ref = useRef<any>(null);
-  const ema12Ref = useRef<any>(null);
-  const ema26Ref = useRef<any>(null);
-  const bbUpperRef = useRef<any>(null);
-  const bbLowerRef = useRef<any>(null);
   const [chartApi, setChartApi] = useState<IChartApi | null>(null);
   const [seriesApi, setSeriesApi] = useState<any>(null);
   const [showPatterns, setShowPatterns] = useState(false);
@@ -46,6 +41,7 @@ export default function CryptoChart() {
 
   const { indicators: overlayIndicators, toggleIndicator, removeIndicator } = useChartIndicators();
   const { alerts, activeAlerts, triggeredAlerts, addAlert, removeAlert, clearTriggered, checkAlerts, requestNotificationPermission } = usePriceAlerts();
+  const [indicatorModalOpen, setIndicatorModalOpen] = useState(false);
 
   const exitLandscape = async () => {
     try {
@@ -115,21 +111,13 @@ export default function CryptoChart() {
     });
     volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
 
-    const sma20Series = chart.addSeries(LineSeries, { color: 'rgba(255, 193, 7, 0.6)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
-    const ema12Series = chart.addSeries(LineSeries, { color: 'rgba(33, 150, 243, 0.6)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
-    const ema26Series = chart.addSeries(LineSeries, { color: 'rgba(156, 39, 176, 0.6)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
-    const bbUpperSeries = chart.addSeries(LineSeries, { color: 'rgba(128, 128, 128, 0.3)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
-    const bbLowerSeries = chart.addSeries(LineSeries, { color: 'rgba(128, 128, 128, 0.3)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
+    // No default indicator lines — user adds via modal
 
     setChartApi(chart);
     setSeriesApi(candleSeries);
     candleSeriesRef.current = candleSeries;
     volumeSeriesRef.current = volumeSeries;
-    sma20Ref.current = sma20Series;
-    ema12Ref.current = ema12Series;
-    ema26Ref.current = ema26Series;
-    bbUpperRef.current = bbUpperSeries;
-    bbLowerRef.current = bbLowerSeries;
+    // Indicator refs no longer needed — managed by indicator system
 
     const observer = new ResizeObserver(() => {
       if (chartRef.current) chart.applyOptions({ width: chartRef.current.clientWidth, height: chartRef.current.clientHeight });
@@ -144,16 +132,67 @@ export default function CryptoChart() {
     };
   }, [selectedPair, selectedInterval, fullscreen]);
 
-  const indicators = useMemo(() => {
-    if (candles.length < 26) return null;
+  // Dynamic indicator series management
+  const indicatorSeriesRef = useRef<Map<string, any>>(new Map());
+
+  useEffect(() => {
+    if (!chartApi || candles.length === 0) return;
     const closes = candles.map(c => c.close * usdToInr);
-    return {
-      sma20: calcSMA(closes, 20),
-      ema12: calcEMA(closes, 12),
-      ema26: calcEMA(closes, 26),
-      bb: calcBollingerBands(closes, 20, 2),
-    };
-  }, [candles, usdToInr]);
+    const candleData = candles.map(c => ({
+      time: c.time, open: c.open * usdToInr, high: c.high * usdToInr,
+      low: c.low * usdToInr, close: c.close * usdToInr, volume: c.volume,
+    }));
+    const activeIds = new Set(overlayIndicators.map(i => i.id));
+
+    indicatorSeriesRef.current.forEach((s, id) => {
+      if (!activeIds.has(id)) {
+        try { chartApi.removeSeries(s); } catch {}
+        indicatorSeriesRef.current.delete(id);
+      }
+    });
+
+    for (const ind of overlayIndicators) {
+      if (indicatorSeriesRef.current.has(ind.id)) continue;
+      try {
+        if (ind.type === 'sma' || ind.type === 'ema') {
+          const vals = ind.type === 'sma' ? calcSMALib(closes, ind.period || 20) : calcEMA(closes, ind.period || 12);
+          const s = chartApi.addSeries(LineSeries, { color: ind.color, lineWidth: 1, title: `${ind.type.toUpperCase()} ${ind.period || ''}` });
+          s.setData(vals.map((v: number, i: number) => ({ time: candles[i].time as any, value: v })).filter((d: any) => !isNaN(d.value)));
+          indicatorSeriesRef.current.set(ind.id, s);
+        } else if (ind.type === 'bollinger') {
+          const bb = calcBollingerBands(closes, ind.period || 20);
+          const sU = chartApi.addSeries(LineSeries, { color: '#3b82f6', lineWidth: 1, title: 'BB Upper' });
+          const sL = chartApi.addSeries(LineSeries, { color: '#3b82f6', lineWidth: 1, title: 'BB Lower' });
+          sU.setData(bb.map((b: any, i: number) => ({ time: candles[i].time as any, value: b.upper })).filter((d: any) => !isNaN(d.value)));
+          sL.setData(bb.map((b: any, i: number) => ({ time: candles[i].time as any, value: b.lower })).filter((d: any) => !isNaN(d.value)));
+          indicatorSeriesRef.current.set(ind.id, sU);
+          indicatorSeriesRef.current.set(ind.id + '_lower', sL);
+        } else if (ind.type === 'vwap') {
+          const vwap = calcVWAP(candleData);
+          const s = chartApi.addSeries(LineSeries, { color: ind.color, lineWidth: 1, title: 'VWAP' });
+          s.setData(vwap.map((v: number, i: number) => ({ time: candles[i].time as any, value: v })).filter((d: any) => !isNaN(d.value)));
+          indicatorSeriesRef.current.set(ind.id, s);
+        } else if (ind.type === 'rsi') {
+          const rsi = calcRSI(closes, 14);
+          const s = chartApi.addSeries(LineSeries, { color: ind.color, lineWidth: 1, title: 'RSI', priceScaleId: 'rsi' });
+          s.priceScale().applyOptions({ scaleMargins: { top: 0.7, bottom: 0.05 } });
+          s.setData(rsi.map((v: number, i: number) => ({ time: candles[i].time as any, value: v })).filter((d: any) => !isNaN(d.value)));
+          indicatorSeriesRef.current.set(ind.id, s);
+        } else if (ind.type === 'macd') {
+          const macd = calcMACD(closes);
+          const s = chartApi.addSeries(LineSeries, { color: '#22c55e', lineWidth: 1, title: 'MACD', priceScaleId: 'macd' });
+          s.priceScale().applyOptions({ scaleMargins: { top: 0.75, bottom: 0.02 } });
+          const sSignal = chartApi.addSeries(LineSeries, { color: '#ef4444', lineWidth: 1, title: 'Signal', priceScaleId: 'macd' });
+          s.setData(macd.map((m: any, i: number) => ({ time: candles[i].time as any, value: m.macd })).filter((d: any) => !isNaN(d.value)));
+          sSignal.setData(macd.map((m: any, i: number) => ({ time: candles[i].time as any, value: m.signal })).filter((d: any) => !isNaN(d.value)));
+          indicatorSeriesRef.current.set(ind.id, s);
+          indicatorSeriesRef.current.set(ind.id + '_signal', sSignal);
+        }
+      } catch (err) {
+        console.error('Crypto indicator error:', ind.type, err);
+      }
+    }
+  }, [overlayIndicators, chartApi, candles, usdToInr]);
 
   useEffect(() => {
     if (!candleSeriesRef.current || candles.length === 0) return;
@@ -172,15 +211,7 @@ export default function CryptoChart() {
     volumeSeriesRef.current.setData(volumes);
     formattedCandlesRef.current = formatted;
 
-    if (indicators) {
-      const toLine = (arr: number[]) =>
-        arr.map((v, i) => ({ time: candles[i].time as any, value: v })).filter(d => !isNaN(d.value));
-      sma20Ref.current?.setData(toLine(indicators.sma20));
-      ema12Ref.current?.setData(toLine(indicators.ema12));
-      ema26Ref.current?.setData(toLine(indicators.ema26));
-      bbUpperRef.current?.setData(toLine(indicators.bb.map(b => b.upper)));
-      bbLowerRef.current?.setData(toLine(indicators.bb.map(b => b.lower)));
-    }
+    // Indicators managed by overlay system, not hardcoded
 
     if (markersRef.current) {
       markersRef.current.detach();
@@ -194,7 +225,7 @@ export default function CryptoChart() {
     }
 
     chartApi?.timeScale().fitContent();
-  }, [candles, usdToInr, indicators, showPatterns, chartApi]);
+  }, [candles, usdToInr, showPatterns, chartApi]);
 
   const livePriceINR = livePrice * usdToInr;
   const isDrawingActive = drawingMode !== 'none';
@@ -314,7 +345,24 @@ export default function CryptoChart() {
             showPatterns={showPatterns}
             onTogglePatterns={() => setShowPatterns(p => !p)}
           />
-          <ChartIndicatorOverlay
+           <button
+            onClick={() => setIndicatorModalOpen(true)}
+            className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-mono transition-all min-h-[32px] active:scale-95 ${
+              overlayIndicators.length > 0
+                ? 'bg-primary/10 text-primary border border-primary/20'
+                : 'text-muted-foreground hover:text-foreground hover:bg-accent/30'
+            }`}
+            title="Indicators"
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Indicators</span>
+            {overlayIndicators.length > 0 && (
+              <span className="bg-primary/20 text-primary text-[9px] px-1.5 rounded-full font-semibold">{overlayIndicators.length}</span>
+            )}
+          </button>
+          <IndicatorManagerModal
+            open={indicatorModalOpen}
+            onClose={() => setIndicatorModalOpen(false)}
             indicators={overlayIndicators}
             onToggle={toggleIndicator}
             onRemove={removeIndicator}
