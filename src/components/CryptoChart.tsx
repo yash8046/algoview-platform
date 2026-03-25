@@ -42,6 +42,10 @@ export default function CryptoChart() {
   const markersRef = useRef<any>(null);
   const formattedCandlesRef = useRef<any[]>([]);
   const isAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+  const [magnetMode, setMagnetMode] = useState(false);
+
+  const { indicators: overlayIndicators, toggleIndicator, removeIndicator } = useChartIndicators();
+  const { alerts, activeAlerts, triggeredAlerts, addAlert, removeAlert, clearTriggered, checkAlerts, requestNotificationPermission } = usePriceAlerts();
 
   const exitLandscape = async () => {
     try {
