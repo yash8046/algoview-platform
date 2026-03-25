@@ -66,6 +66,8 @@ export default function TradingChart() {
   } = useChartDrawings(selectedSymbol);
 
   const { indicators, toggleIndicator, removeIndicator } = useChartIndicators();
+  const { alerts, activeAlerts, triggeredAlerts, addAlert, removeAlert, clearTriggered, checkAlerts, requestNotificationPermission } = usePriceAlerts();
+  const currentPriceRef = useRef(0);
 
   useEffect(() => {
     if (!chartRef.current) return;
