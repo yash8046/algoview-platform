@@ -48,6 +48,27 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     return { time, price, x, y };
   }, [chart, series]);
 
+  // Magnet: snap price to nearest OHLC of the closest candle
+  const snapToOHLC = useCallback((time: any, price: number): { time: any; price: number } => {
+    if (!magnetMode || candleData.length === 0) return { time, price };
+    // Find nearest candle by time
+    let nearest = candleData[0];
+    let minDist = Math.abs(Number(candleData[0].time) - Number(time));
+    for (const c of candleData) {
+      const d = Math.abs(Number(c.time) - Number(time));
+      if (d < minDist) { minDist = d; nearest = c; }
+    }
+    // Snap to nearest OHLC value
+    const ohlc = [nearest.open, nearest.high, nearest.low, nearest.close];
+    let snapPrice = ohlc[0];
+    let snapDist = Math.abs(price - ohlc[0]);
+    for (const p of ohlc) {
+      const d = Math.abs(price - p);
+      if (d < snapDist) { snapDist = d; snapPrice = p; }
+    }
+    return { time: nearest.time, price: snapPrice };
+  }, [magnetMode, candleData]);
+
   // === RENDERERS ===
 
   const renderHLine = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine, w: number) => {
