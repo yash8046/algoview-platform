@@ -433,8 +433,7 @@ export default function CryptoChart() {
 
   if (fullscreen) {
     return (
-      <div className="fixed inset-0 z-[200] bg-background flex flex-col safe-area-top">
-        <div className="h-[env(safe-area-inset-top,36px)] min-h-[36px] bg-background flex-shrink-0" />
+      <div className="fixed inset-0 z-[200] bg-background flex flex-col">
         {chartContent}
       </div>
     );
