@@ -1463,6 +1463,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     'price_range', 'date_range', 'bars_pattern', 'risk_reward',
     'long_position', 'short_position',
     'arc',
+    'gann_fan', 'gann_box', 'gann_square',
   ];
 
   const defaultColors: Record<string, string> = {
