@@ -367,15 +367,17 @@ export default function CryptoChart() {
         <div ref={chartRef} className="absolute inset-0 bg-chart" style={{ zIndex: 1 }} />
         <div className="absolute inset-0" style={{ zIndex: isDrawingActive ? 100 : 0, pointerEvents: isDrawingActive ? 'auto' : 'none' }}>
           <ChartOverlay
-            chart={chartApi}
-            series={seriesApi}
-            drawingMode={drawingMode}
-            drawingModeRef={drawingModeRef}
-            drawings={drawings}
-            onAddDrawing={addDrawing}
-            onRemoveDrawing={removeDrawing}
-            onFinishDrawing={finishDrawing}
-          />
+              chart={chartApi}
+              series={seriesApi}
+              drawingMode={drawingMode}
+              drawingModeRef={drawingModeRef}
+              drawings={drawings}
+              onAddDrawing={addDrawing}
+              onRemoveDrawing={removeDrawing}
+              onFinishDrawing={finishDrawing}
+              magnetMode={magnetMode}
+              candleData={formattedCandlesRef.current}
+            />
         </div>
       </div>
     </>
