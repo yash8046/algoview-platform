@@ -8,7 +8,7 @@ import CryptoAISignals from '@/components/CryptoAISignals';
 import CryptoTopMovers from '@/components/CryptoTopMovers';
 import { useCryptoStore } from '@/stores/cryptoStore';
 import { formatINR } from '@/lib/exchangeRate';
-import { DollarSign, TrendingUp, TrendingDown, BarChart3, PanelRightOpen, PanelRightClose, ChevronDown, ChevronUp } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, BarChart3, ChevronDown, ChevronUp } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 function useIsLandscape() {

@@ -11,7 +11,7 @@ import TopPerformers from '@/components/TopPerformers';
 import { useTradingStore } from '@/stores/tradingStore';
 import { useIsMobile } from '@/hooks/use-mobile';
 import GuidedTour from '@/components/GuidedTour';
-import { PanelRightOpen, PanelRightClose, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 function useIsLandscape() {
   const [landscape, setLandscape] = useState(
