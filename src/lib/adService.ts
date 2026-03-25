@@ -195,7 +195,8 @@ export async function showRewardedAd(featureName: string = 'Feature'): Promise<A
       return { granted: true, adShown: true, message: '' };
     } catch (err: any) {
       console.warn('[AdService] Show rewarded failed:', err);
-      toast.error(`Ad failed: ${err?.message || 'Unknown error'}. Access granted for free.`, { duration: 3000 });
+      const errCode = err?.code || 'UNKNOWN';
+      toast.error(`Ad show failed [${errCode}]: ${err?.message || 'Unknown error'}. Access granted for free.`, { duration: 4000 });
       loadRewardedAd();
       return { granted: true, adShown: false, message: '' };
     }
