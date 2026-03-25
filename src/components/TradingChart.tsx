@@ -105,8 +105,7 @@ export default function TradingChart() {
     });
     volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
-    const sma20Series = chart.addSeries(LineSeries, { color: '#26c6da', lineWidth: 1, title: 'SMA 20' });
-    const sma50Series = chart.addSeries(LineSeries, { color: '#f59e0b', lineWidth: 1, title: 'SMA 50' });
+    // No default indicators — user adds via indicator modal
 
     setChartApi(chart);
     setSeriesApi(candleSeries);
