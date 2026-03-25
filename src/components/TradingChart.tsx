@@ -12,7 +12,7 @@ import { useChartDrawings } from '@/hooks/useChartDrawings';
 import { useChartIndicators } from '@/hooks/useChartIndicators';
 import { usePriceAlerts } from '@/hooks/usePriceAlerts';
 import { detectCandlestickPatterns } from '@/lib/candlestickPatterns';
-import { Maximize2, Minimize2, Magnet, X } from 'lucide-react';
+import { Maximize2, Minimize2, Magnet, X, BarChart3 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 
 const TIMEFRAMES = ['1m', '5m', '15m', '1H', '4H', '1D', '1W'];
