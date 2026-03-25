@@ -79,8 +79,11 @@ export default function CryptoChart() {
   } = useChartDrawings(selectedPair);
 
   useEffect(() => {
-    if (livePrice > 0) updatePositionPrice(selectedPair, livePrice);
-  }, [livePrice, selectedPair]);
+    if (livePrice > 0) {
+      updatePositionPrice(selectedPair, livePrice);
+      checkAlerts(selectedPair, livePrice * usdToInr);
+    }
+  }, [livePrice, selectedPair, usdToInr]);
 
   useEffect(() => {
     if (!chartRef.current) return;
