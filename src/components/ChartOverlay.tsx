@@ -15,6 +15,8 @@ interface ChartOverlayProps {
   onAddDrawing: (drawing: DrawingLine) => void;
   onFinishDrawing: () => void;
   onRemoveDrawing?: (id: string) => void;
+  magnetMode?: boolean;
+  candleData?: { time: any; open: number; high: number; low: number; close: number }[];
 }
 
 export default function ChartOverlay({ chart, series, drawingMode, drawingModeRef, drawings, onAddDrawing, onFinishDrawing, onRemoveDrawing }: ChartOverlayProps) {
