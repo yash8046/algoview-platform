@@ -132,7 +132,67 @@ export default function CryptoChart() {
     };
   }, [selectedPair, selectedInterval, fullscreen]);
 
-  // Indicators managed dynamically via indicator system
+  // Dynamic indicator series management
+  const indicatorSeriesRef = useRef<Map<string, any>>(new Map());
+
+  useEffect(() => {
+    if (!chartApi || candles.length === 0) return;
+    const closes = candles.map(c => c.close * usdToInr);
+    const candleData = candles.map(c => ({
+      time: c.time, open: c.open * usdToInr, high: c.high * usdToInr,
+      low: c.low * usdToInr, close: c.close * usdToInr, volume: c.volume,
+    }));
+    const activeIds = new Set(overlayIndicators.map(i => i.id));
+
+    indicatorSeriesRef.current.forEach((s, id) => {
+      if (!activeIds.has(id)) {
+        try { chartApi.removeSeries(s); } catch {}
+        indicatorSeriesRef.current.delete(id);
+      }
+    });
+
+    for (const ind of overlayIndicators) {
+      if (indicatorSeriesRef.current.has(ind.id)) continue;
+      try {
+        if (ind.type === 'sma' || ind.type === 'ema') {
+          const vals = ind.type === 'sma' ? calcSMALib(closes, ind.period || 20) : calcEMA(closes, ind.period || 12);
+          const s = chartApi.addSeries(LineSeries, { color: ind.color, lineWidth: 1, title: `${ind.type.toUpperCase()} ${ind.period || ''}` });
+          s.setData(vals.map((v: number, i: number) => ({ time: candles[i].time as any, value: v })).filter((d: any) => !isNaN(d.value)));
+          indicatorSeriesRef.current.set(ind.id, s);
+        } else if (ind.type === 'bollinger') {
+          const bb = calcBollingerBands(closes, ind.period || 20);
+          const sU = chartApi.addSeries(LineSeries, { color: '#3b82f6', lineWidth: 1, title: 'BB Upper' });
+          const sL = chartApi.addSeries(LineSeries, { color: '#3b82f6', lineWidth: 1, title: 'BB Lower' });
+          sU.setData(bb.map((b: any, i: number) => ({ time: candles[i].time as any, value: b.upper })).filter((d: any) => !isNaN(d.value)));
+          sL.setData(bb.map((b: any, i: number) => ({ time: candles[i].time as any, value: b.lower })).filter((d: any) => !isNaN(d.value)));
+          indicatorSeriesRef.current.set(ind.id, sU);
+          indicatorSeriesRef.current.set(ind.id + '_lower', sL);
+        } else if (ind.type === 'vwap') {
+          const vwap = calcVWAP(candleData);
+          const s = chartApi.addSeries(LineSeries, { color: ind.color, lineWidth: 1, title: 'VWAP' });
+          s.setData(vwap.map((v: number, i: number) => ({ time: candles[i].time as any, value: v })).filter((d: any) => !isNaN(d.value)));
+          indicatorSeriesRef.current.set(ind.id, s);
+        } else if (ind.type === 'rsi') {
+          const rsi = calcRSI(closes, 14);
+          const s = chartApi.addSeries(LineSeries, { color: ind.color, lineWidth: 1, title: 'RSI', priceScaleId: 'rsi' });
+          s.priceScale().applyOptions({ scaleMargins: { top: 0.7, bottom: 0.05 } });
+          s.setData(rsi.map((v: number, i: number) => ({ time: candles[i].time as any, value: v })).filter((d: any) => !isNaN(d.value)));
+          indicatorSeriesRef.current.set(ind.id, s);
+        } else if (ind.type === 'macd') {
+          const macd = calcMACD(closes);
+          const s = chartApi.addSeries(LineSeries, { color: '#22c55e', lineWidth: 1, title: 'MACD', priceScaleId: 'macd' });
+          s.priceScale().applyOptions({ scaleMargins: { top: 0.75, bottom: 0.02 } });
+          const sSignal = chartApi.addSeries(LineSeries, { color: '#ef4444', lineWidth: 1, title: 'Signal', priceScaleId: 'macd' });
+          s.setData(macd.map((m: any, i: number) => ({ time: candles[i].time as any, value: m.macd })).filter((d: any) => !isNaN(d.value)));
+          sSignal.setData(macd.map((m: any, i: number) => ({ time: candles[i].time as any, value: m.signal })).filter((d: any) => !isNaN(d.value)));
+          indicatorSeriesRef.current.set(ind.id, s);
+          indicatorSeriesRef.current.set(ind.id + '_signal', sSignal);
+        }
+      } catch (err) {
+        console.error('Crypto indicator error:', ind.type, err);
+      }
+    }
+  }, [overlayIndicators, chartApi, candles, usdToInr]);
 
   useEffect(() => {
     if (!candleSeriesRef.current || candles.length === 0) return;
