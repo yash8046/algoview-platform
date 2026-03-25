@@ -3,6 +3,7 @@ import { useCryptoStore } from '@/stores/cryptoStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
 import { fetchYahooFinanceData } from '@/lib/yahooFinance';
+import { supabase } from '@/integrations/supabase/client';
 import {
   TrendingUp, TrendingDown, DollarSign, BarChart3, Bitcoin, LineChart,
   FlaskConical, RefreshCw, ArrowUpRight, ArrowDownRight, ChevronDown, ChevronUp,
