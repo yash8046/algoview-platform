@@ -27,6 +27,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const penCoords = useRef<{ time: Time; price: number }[]>([]);
   const laserPixels = useRef<{ x: number; y: number; t: number }[]>([]);
   const laserRaf = useRef<number>(0);
+  const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null);
 
   const toPixel = useCallback((time: Time, price: number) => {
     if (!chart || !series) return null;
