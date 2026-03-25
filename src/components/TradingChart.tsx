@@ -7,8 +7,10 @@ import { calcRSI, calcMACD, calcBollingerBands, calcEMA, calcVWAP, calcSMA as ca
 import ChartDrawingTools from '@/components/ChartDrawingTools';
 import ChartIndicatorOverlay from '@/components/ChartIndicatorOverlay';
 import ChartOverlay from '@/components/ChartOverlay';
+import PriceAlertPanel from '@/components/PriceAlertPanel';
 import { useChartDrawings } from '@/hooks/useChartDrawings';
 import { useChartIndicators } from '@/hooks/useChartIndicators';
+import { usePriceAlerts } from '@/hooks/usePriceAlerts';
 import { detectCandlestickPatterns } from '@/lib/candlestickPatterns';
 import { Maximize2, Minimize2, Magnet, X } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
