@@ -14,6 +14,7 @@ import { usePriceAlerts } from '@/hooks/usePriceAlerts';
 import { detectCandlestickPatterns } from '@/lib/candlestickPatterns';
 import { Maximize2, Minimize2, Magnet, X, BarChart3, Smartphone } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
+import { useNavigate } from 'react-router-dom';
 
 const INTERVALS = [
   { label: '1m', value: '1m' },
@@ -23,7 +24,7 @@ const INTERVALS = [
   { label: '1D', value: '1d' },
 ];
 
-export default function CryptoChart() {
+export default function CryptoChart({ minimal = false }: { minimal?: boolean }) {
   const { selectedPair, selectedInterval, setSelectedPair, setSelectedInterval, updatePositionPrice, usdToInr } = useCryptoStore();
   const { candles, livePrice, loading, error } = useCryptoData(selectedPair, selectedInterval);
   const chartRef = useRef<HTMLDivElement>(null);

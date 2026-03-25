@@ -14,10 +14,11 @@ import { usePriceAlerts } from '@/hooks/usePriceAlerts';
 import { detectCandlestickPatterns } from '@/lib/candlestickPatterns';
 import { Maximize2, Minimize2, Magnet, X, BarChart3, Smartphone } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
+import { useNavigate } from 'react-router-dom';
 
 const TIMEFRAMES = ['1m', '5m', '15m', '1H', '4H', '1D', '1W'];
 
-export default function TradingChart() {
+export default function TradingChart({ minimal = false }: { minimal?: boolean }) {
   const chartRef = useRef<HTMLDivElement>(null);
   const { selectedSymbol, selectedTimeframe, setSelectedTimeframe, updatePrice } = useTradingStore();
   const [loading, setLoading] = useState(false);
