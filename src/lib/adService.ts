@@ -173,8 +173,8 @@ async function loadRewardedAd(): Promise<void> {
     const errMsg = err?.message || String(err);
     const errorCode = err?.code || 'UNKNOWN';
     console.warn(`[AdService] Rewarded load attempt ${adLoadAttempts.rewarded}: [${errorCode}] ${errMsg}`);
-    if (adLoadAttempts.rewarded <= 2) {
-      toast.error(`Ad not available (${errorCode}). Features unlocked for free.`, { duration: 3000 });
+    if (adLoadAttempts.rewarded <= 3) {
+      toast.error(`Ad load failed [${errorCode}]: ${errMsg}. Features unlocked for free.`, { duration: 4000 });
     }
   }
 }
