@@ -1322,6 +1322,9 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
           case 'long_position':
           case 'short_position': renderLongShort(ctx, d); break;
           case 'arc': renderFibArc(ctx, d); break;
+          case 'gann_fan': renderGannFan(ctx, d, rect.width, rect.height); break;
+          case 'gann_box': renderGannBox(ctx, d); break;
+          case 'gann_square': renderGannSquare(ctx, d); break;
         }
       } catch (err) {
         console.error('Drawing render error:', d.type, err);
