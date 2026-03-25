@@ -1,13 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { createChart, ColorType, IChartApi, CandlestickSeries, HistogramSeries, LineSeries, createSeriesMarkers } from 'lightweight-charts';
 import { useTradingStore } from '@/stores/tradingStore';
 import { fetchYahooFinanceData } from '@/lib/yahooFinance';
 import { calculateSMA } from '@/lib/mockData';
+import { calcRSI, calcMACD, calcBollingerBands, calcEMA, calcVWAP, calcSMA as calcSMALib } from '@/lib/technicalIndicators';
 import ChartDrawingTools from '@/components/ChartDrawingTools';
+import ChartIndicatorOverlay from '@/components/ChartIndicatorOverlay';
 import ChartOverlay from '@/components/ChartOverlay';
 import { useChartDrawings } from '@/hooks/useChartDrawings';
+import { useChartIndicators } from '@/hooks/useChartIndicators';
 import { detectCandlestickPatterns } from '@/lib/candlestickPatterns';
-import { Maximize2, Minimize2, Smartphone, X } from 'lucide-react';
+import { Maximize2, Minimize2, Magnet, X } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 
 const TIMEFRAMES = ['1m', '5m', '15m', '1H', '4H', '1D', '1W'];
