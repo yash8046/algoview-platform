@@ -139,9 +139,13 @@ export default function TradingChart() {
 
         if (resp.regularMarketPrice) {
           updatePrice(selectedSymbol, resp.regularMarketPrice, resp.previousClose || resp.regularMarketPrice);
+          currentPriceRef.current = resp.regularMarketPrice;
+          checkAlerts(selectedSymbol, resp.regularMarketPrice);
         } else if (candleData.length > 0) {
           const last = candleData[candleData.length - 1];
           updatePrice(selectedSymbol, last.close, resp.previousClose || last.open);
+          currentPriceRef.current = last.close;
+          checkAlerts(selectedSymbol, last.close);
         }
         setLoading(false);
       })
