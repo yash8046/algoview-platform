@@ -32,6 +32,8 @@ export type DrawingMode =
   // Measure
   | 'price_range' | 'date_range' | 'long_position' | 'short_position'
   | 'bars_pattern' | 'risk_reward'
+  // Gann
+  | 'gann_fan' | 'gann_box' | 'gann_square'
   ;
 
 export interface DrawingLine {
