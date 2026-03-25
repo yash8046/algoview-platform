@@ -46,6 +46,7 @@ export default function CryptoChart() {
 
   const { indicators: overlayIndicators, toggleIndicator, removeIndicator } = useChartIndicators();
   const { alerts, activeAlerts, triggeredAlerts, addAlert, removeAlert, clearTriggered, checkAlerts, requestNotificationPermission } = usePriceAlerts();
+  const [indicatorModalOpen, setIndicatorModalOpen] = useState(false);
 
   const exitLandscape = async () => {
     try {
