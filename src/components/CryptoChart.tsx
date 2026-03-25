@@ -3,7 +3,7 @@ import { createChart, CandlestickSeries, HistogramSeries, LineSeries, createSeri
 import { useCryptoData } from '@/hooks/useCryptoData';
 import { useCryptoStore, CRYPTO_PAIRS } from '@/stores/cryptoStore';
 import { formatINR } from '@/lib/exchangeRate';
-import { calcSMA, calcEMA, calcBollingerBands } from '@/lib/technicalIndicators';
+import { calcRSI, calcMACD, calcBollingerBands, calcEMA, calcVWAP, calcSMA as calcSMALib } from '@/lib/technicalIndicators';
 import ChartDrawingTools from '@/components/ChartDrawingTools';
 import ChartOverlay from '@/components/ChartOverlay';
 import PriceAlertPanel from '@/components/PriceAlertPanel';
