@@ -402,6 +402,15 @@ export default function CryptoChart() {
               </button>
             ))}
           </div>
+          {isAndroid && (
+            <button
+              onClick={toggleLandscapeFullscreen}
+              className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground min-h-[32px] active:scale-95"
+              title="Landscape Mode"
+            >
+              <Smartphone className="w-4 h-4 rotate-90" />
+            </button>
+          )}
           <button
             onClick={() => setFullscreen(f => !f)}
             className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
