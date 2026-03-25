@@ -4,7 +4,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 
 const tabs = [
-  { to: '/', label: 'Analysis', icon: Activity },
+  { to: '/', label: 'Stock', icon: Activity },
   { to: '/crypto', label: 'Crypto', icon: Bitcoin },
   { to: '/charts', label: 'Charts', icon: CandlestickChart },
   { to: '/strategy-builder', label: 'Strategy', icon: Blocks },
