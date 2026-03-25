@@ -163,6 +163,7 @@ export default function CryptoPage() {
       <TopBar />
       <div className="flex-1 flex flex-col gap-2 p-2 overflow-hidden">
         <CryptoSummary />
+        <CryptoTopMovers />
         <div className="flex-1 flex gap-2 min-h-0">
           <div className="flex-1 flex flex-col gap-2 min-w-0">
             <div className="flex-1 min-h-0">

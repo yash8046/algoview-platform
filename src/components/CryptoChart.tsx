@@ -229,12 +229,15 @@ export default function CryptoChart() {
 
   const livePriceINR = livePrice * usdToInr;
   const isDrawingActive = drawingMode !== 'none';
+  const fullscreenToolbarInsetStyle = isAndroid && (fullscreen || landscapeFullscreen)
+    ? { paddingTop: 'max(env(safe-area-inset-top, 0px), 0.5rem)' }
+    : undefined;
 
   // Landscape fullscreen: ONLY chart + compact toolbar, nothing else
   if (landscapeFullscreen) {
     return (
-      <div className="fixed inset-0 z-[200] bg-background flex flex-col">
-        <div className="flex items-center justify-between px-2 py-1 bg-panel-header border-b border-border">
+      <div className="fixed inset-0 z-[200] bg-background flex flex-col overflow-hidden">
+        <div style={fullscreenToolbarInsetStyle} className="flex shrink-0 items-center justify-between px-2 py-1 bg-panel-header border-b border-border">
           <div className="flex items-center gap-2">
             <select
               value={selectedPair}
@@ -309,7 +312,7 @@ export default function CryptoChart() {
 
   const chartContent = (
     <>
-      <div className="px-2 sm:px-4 py-1.5 sm:py-2 bg-panel-header border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-0">
+      <div style={fullscreenToolbarInsetStyle} className="px-2 sm:px-4 py-1.5 sm:py-2 bg-panel-header border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-0">
         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <select
             value={selectedPair}
@@ -442,7 +445,7 @@ export default function CryptoChart() {
 
   if (fullscreen) {
     return (
-      <div className="fixed inset-0 z-[200] bg-background flex flex-col">
+      <div className="fixed inset-0 z-[200] bg-background flex flex-col overflow-hidden">
         {chartContent}
       </div>
     );

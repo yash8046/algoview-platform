@@ -21,6 +21,13 @@ let interstitialAdLoaded = false;
 let adLoadAttempts = { rewarded: 0, interstitial: 0 };
 let lastAdShownAt = { rewarded: 0, interstitial: 0, appOpen: 0 };
 let bannerVisible = false;
+let lastAdError: {
+  rewarded: { code: string; message: string } | null;
+  interstitial: { code: string; message: string } | null;
+} = {
+  rewarded: null,
+  interstitial: null,
+};
 
 // ============ Config ============
 const AD_UNITS = {
@@ -54,6 +61,13 @@ function isNative(): boolean {
 
 function canShowAd(type: keyof typeof COOLDOWNS): boolean {
   return Date.now() - lastAdShownAt[type] >= COOLDOWNS[type];
+}
+
+function getAdErrorDetails(err: any): { code: string; message: string } {
+  return {
+    code: err?.code || err?.errorCode || 'UNKNOWN',
+    message: err?.message || err?.errorMessage || 'Unknown AdMob error',
+  };
 }
 
 // ============ Initialize ============
@@ -126,11 +140,13 @@ async function loadInterstitialAd(): Promise<void> {
     const AdMob = await getAdMob();
     await AdMob.prepareInterstitial({ adId: AD_UNITS.interstitial });
     interstitialAdLoaded = true;
+    lastAdError.interstitial = null;
     adLoadAttempts.interstitial = 0;
     console.log('[AdService] Interstitial ad ready');
   } catch (err: any) {
     interstitialAdLoaded = false;
     adLoadAttempts.interstitial++;
+    lastAdError.interstitial = getAdErrorDetails(err);
     console.warn(`[AdService] Interstitial load attempt ${adLoadAttempts.interstitial}:`, err);
   }
 }
@@ -164,14 +180,15 @@ async function loadRewardedAd(): Promise<void> {
     const AdMob = await getAdMob();
     await AdMob.prepareRewardVideoAd({ adId: AD_UNITS.rewarded });
     rewardedAdLoaded = true;
+    lastAdError.rewarded = null;
     adLoadAttempts.rewarded = 0;
     console.log('[AdService] Rewarded ad ready');
     toast.success('Ad ready — watch to unlock features', { duration: 2000 });
   } catch (err: any) {
     rewardedAdLoaded = false;
     adLoadAttempts.rewarded++;
-    const errMsg = err?.message || String(err);
-    const errorCode = err?.code || 'UNKNOWN';
+    const { code: errorCode, message: errMsg } = getAdErrorDetails(err);
+    lastAdError.rewarded = { code: errorCode, message: errMsg };
     console.warn(`[AdService] Rewarded load attempt ${adLoadAttempts.rewarded}: [${errorCode}] ${errMsg}`);
     if (adLoadAttempts.rewarded <= 3) {
       toast.error(`Ad load failed [${errorCode}]: ${errMsg}. Features unlocked for free.`, { duration: 4000 });
@@ -204,9 +221,11 @@ export async function showRewardedAd(featureName: string = 'Feature'): Promise<A
 
   // Ad not loaded — show detailed status
   const lastErr = adLoadAttempts.rewarded;
-  toast.info(`No ad available (attempts: ${lastErr}, status: NOT_LOADED). Feature unlocked for free.`, { duration: 3000 });
+  const fallbackCode = lastAdError.rewarded?.code || (lastErr > 0 ? 'LOAD_PENDING' : 'NOT_REQUESTED');
+  const fallbackMessage = lastAdError.rewarded?.message || 'The ad is still loading or no inventory is available yet';
+  toast.info(`No ad available [${fallbackCode}] after ${lastErr} attempt${lastErr === 1 ? '' : 's'}: ${fallbackMessage}. Feature unlocked for free.`, { duration: 4000 });
   loadRewardedAd();
-  return { granted: true, adShown: false, message: `Ad not loaded after ${lastErr} attempts` };
+  return { granted: true, adShown: false, message: `Ad unavailable [${fallbackCode}] after ${lastErr} attempts: ${fallbackMessage}` };
 }
 
 // ============ App Open Ad ============

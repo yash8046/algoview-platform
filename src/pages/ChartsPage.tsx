@@ -1,43 +1,20 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import TradingChart from '@/components/TradingChart';
 import CryptoChart from '@/components/CryptoChart';
 import { useTradingStore } from '@/stores/tradingStore';
 import { useCryptoStore, CRYPTO_PAIRS } from '@/stores/cryptoStore';
-import { useIsMobile } from '@/hooks/use-mobile';
 import {
-  ChevronDown, Search, BarChart3, Bitcoin, Settings,
-  MousePointer, Crosshair, TrendingUp, PenTool, Square,
-  Type, Activity, Ruler, ZoomIn, Magnet, Lock, Eye,
-  EyeOff, Trash2, ChevronRight
+  ChevronDown, Search, BarChart3, Bitcoin,
 } from 'lucide-react';
 
 type ChartMode = 'stocks' | 'crypto';
-
-// Left sidebar tool items matching TradingView order
-const SIDEBAR_TOOLS = [
-  { id: 'cursor', icon: MousePointer, label: 'Cursor' },
-  { id: 'crosshair', icon: Crosshair, label: 'Crosshair' },
-  { id: 'trendline', icon: TrendingUp, label: 'Trend Line' },
-  { id: 'brush', icon: PenTool, label: 'Brush' },
-  { id: 'rectangle', icon: Square, label: 'Rectangle' },
-  { id: 'text', icon: Type, label: 'Text' },
-  { id: 'fibonacci', icon: Activity, label: 'Fibonacci' },
-  { id: 'measure', icon: Ruler, label: 'Measure' },
-  { id: 'zoom', icon: ZoomIn, label: 'Zoom' },
-  { id: 'magnet', icon: Magnet, label: 'Magnet' },
-  { id: 'lock', icon: Lock, label: 'Lock' },
-  { id: 'visibility', icon: Eye, label: 'Show/Hide' },
-  { id: 'delete', icon: Trash2, label: 'Delete' },
-];
 
 export default function ChartsPage() {
   const [mode, setMode] = useState<ChartMode>('stocks');
   const { watchlist, selectedSymbol, setSelectedSymbol } = useTradingStore();
   const { selectedPair, setSelectedPair } = useCryptoStore();
-  const isMobile = useIsMobile();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeSidebarTool, setActiveSidebarTool] = useState('cursor');
 
   const currentSymbol = mode === 'stocks'
     ? (selectedSymbol === 'NIFTY 50' ? 'NIFTY 50' : `${selectedSymbol}.NS`)
@@ -175,38 +152,8 @@ export default function ChartsPage() {
         </div>
       </div>
 
-      {/* ═══ MAIN CONTENT — Left sidebar + Chart ═══ */}
-      <div className="flex-1 flex min-h-0 overflow-hidden">
-        {/* Left vertical toolbar — desktop only, 48px wide */}
-        {!isMobile && (
-          <div className="w-12 flex-shrink-0 bg-card border-r border-border/30 flex flex-col items-center py-1 gap-0.5 overflow-y-auto scrollbar-thin">
-            {SIDEBAR_TOOLS.map((tool) => {
-              const Icon = tool.icon;
-              const isActive = activeSidebarTool === tool.id;
-              return (
-                <button
-                  key={tool.id}
-                  onClick={() => setActiveSidebarTool(tool.id)}
-                  className={`w-10 h-10 flex items-center justify-center rounded transition-all group relative ${
-                    isActive
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-accent/30'
-                  }`}
-                  title={tool.label}
-                >
-                  <Icon className="w-4 h-4" />
-                  {/* Tooltip on hover */}
-                  <div className="absolute left-full ml-2 px-2 py-1 bg-popover border border-border rounded text-[10px] font-mono text-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-lg">
-                    {tool.label}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Chart area — fills remaining space */}
-        <div className="flex-1 min-w-0 min-h-0 relative">
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="h-full w-full min-w-0 min-h-0 relative">
           {mode === 'stocks' ? <TradingChart /> : <CryptoChart />}
         </div>
       </div>
