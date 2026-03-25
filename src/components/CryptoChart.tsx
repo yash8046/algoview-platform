@@ -14,6 +14,7 @@ import { usePriceAlerts } from '@/hooks/usePriceAlerts';
 import { detectCandlestickPatterns } from '@/lib/candlestickPatterns';
 import { Maximize2, Minimize2, Magnet, X, BarChart3, Smartphone } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
+import { useNavigate } from 'react-router-dom';
 
 const INTERVALS = [
   { label: '1m', value: '1m' },
@@ -23,7 +24,8 @@ const INTERVALS = [
   { label: '1D', value: '1d' },
 ];
 
-export default function CryptoChart() {
+export default function CryptoChart({ minimal = false }: { minimal?: boolean }) {
+  const navigate = useNavigate();
   const { selectedPair, selectedInterval, setSelectedPair, setSelectedInterval, updatePositionPrice, usdToInr } = useCryptoStore();
   const { candles, livePrice, loading, error } = useCryptoData(selectedPair, selectedInterval);
   const chartRef = useRef<HTMLDivElement>(null);
@@ -326,70 +328,69 @@ export default function CryptoChart() {
           {livePrice > 0 && (
             <span className="font-mono text-xs sm:text-sm font-bold text-foreground">{formatINR(livePriceINR)}</span>
           )}
-          {livePrice > 0 && (
-            <span className="font-mono text-[9px] sm:text-[10px] text-muted-foreground hidden sm:inline">
-              (${livePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
-            </span>
-          )}
           {loading && <span className="text-[10px] text-muted-foreground animate-pulse">Loading...</span>}
           {error && <span className="text-[10px] text-loss">{error}</span>}
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto justify-between sm:justify-end">
-          <ChartDrawingTools
-            activeMode={drawingMode}
-            onModeChange={setDrawingMode}
-            drawings={drawings}
-            onClearAll={clearAllDrawings}
-            onUndo={undo}
-            onRedo={redo}
-            canUndo={canUndo}
-            canRedo={canRedo}
-            showPatterns={showPatterns}
-            onTogglePatterns={() => setShowPatterns(p => !p)}
-          />
-           <button
-            onClick={() => setIndicatorModalOpen(true)}
-            className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-mono transition-all min-h-[32px] active:scale-95 ${
-              overlayIndicators.length > 0
-                ? 'bg-primary/10 text-primary border border-primary/20'
-                : 'text-muted-foreground hover:text-foreground hover:bg-accent/30'
-            }`}
-            title="Indicators"
-          >
-            <BarChart3 className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Indicators</span>
-            {overlayIndicators.length > 0 && (
-              <span className="bg-primary/20 text-primary text-[9px] px-1.5 rounded-full font-semibold">{overlayIndicators.length}</span>
-            )}
-          </button>
-          <IndicatorManagerModal
-            open={indicatorModalOpen}
-            onClose={() => setIndicatorModalOpen(false)}
-            indicators={overlayIndicators}
-            onToggle={toggleIndicator}
-            onRemove={removeIndicator}
-          />
-          <PriceAlertPanel
-            alerts={alerts}
-            activeAlerts={activeAlerts}
-            triggeredAlerts={triggeredAlerts}
-            currentSymbol={selectedPair}
-            currentPrice={livePriceINR}
-            onAdd={addAlert}
-            onRemove={removeAlert}
-            onClearTriggered={clearTriggered}
-            onRequestPermission={requestNotificationPermission}
-          />
-          <button
-            onClick={() => setMagnetMode(m => !m)}
-            className={`p-1.5 rounded transition-colors min-h-[32px] active:scale-95 ${
-              magnetMode ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-            }`}
-            title="Magnet Mode (snap to OHLC)"
-          >
-            <Magnet className="w-3.5 h-3.5" />
-          </button>
+          {!minimal && (
+            <>
+              <ChartDrawingTools
+                activeMode={drawingMode}
+                onModeChange={setDrawingMode}
+                drawings={drawings}
+                onClearAll={clearAllDrawings}
+                onUndo={undo}
+                onRedo={redo}
+                canUndo={canUndo}
+                canRedo={canRedo}
+                showPatterns={showPatterns}
+                onTogglePatterns={() => setShowPatterns(p => !p)}
+              />
+              <button
+                onClick={() => setIndicatorModalOpen(true)}
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-mono transition-all min-h-[32px] active:scale-95 ${
+                  overlayIndicators.length > 0
+                    ? 'bg-primary/10 text-primary border border-primary/20'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/30'
+                }`}
+                title="Indicators"
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Indicators</span>
+                {overlayIndicators.length > 0 && (
+                  <span className="bg-primary/20 text-primary text-[9px] px-1.5 rounded-full font-semibold">{overlayIndicators.length}</span>
+                )}
+              </button>
+              <IndicatorManagerModal
+                open={indicatorModalOpen}
+                onClose={() => setIndicatorModalOpen(false)}
+                indicators={overlayIndicators}
+                onToggle={toggleIndicator}
+                onRemove={removeIndicator}
+              />
+              <PriceAlertPanel
+                alerts={alerts}
+                activeAlerts={activeAlerts}
+                triggeredAlerts={triggeredAlerts}
+                currentSymbol={selectedPair}
+                currentPrice={livePriceINR}
+                onAdd={addAlert}
+                onRemove={removeAlert}
+                onClearTriggered={clearTriggered}
+                onRequestPermission={requestNotificationPermission}
+              />
+              <button
+                onClick={() => setMagnetMode(m => !m)}
+                className={`p-1.5 rounded transition-colors min-h-[32px] active:scale-95 ${
+                  magnetMode ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                }`}
+                title="Magnet Mode (snap to OHLC)"
+              >
+                <Magnet className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
           <div className="flex gap-0.5 overflow-x-auto scrollbar-thin max-w-[100px] sm:max-w-none flex-shrink-0">
             {INTERVALS.map((i) => (
               <button
@@ -405,7 +406,7 @@ export default function CryptoChart() {
               </button>
             ))}
           </div>
-          {isAndroid && (
+          {!minimal && isAndroid && (
             <button
               onClick={toggleLandscapeFullscreen}
               className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground min-h-[32px] active:scale-95"
@@ -415,9 +416,9 @@ export default function CryptoChart() {
             </button>
           )}
           <button
-            onClick={() => setFullscreen(f => !f)}
+            onClick={() => minimal ? navigate('/charts') : setFullscreen(f => !f)}
             className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
-            title={fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            title={minimal ? 'Open Full Chart' : fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
             {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
@@ -425,8 +426,9 @@ export default function CryptoChart() {
       </div>
       <div className="relative flex-1 min-h-0 overflow-hidden">
         <div ref={chartRef} className="absolute inset-0 bg-chart" style={{ zIndex: 1 }} />
-        <div className="absolute inset-0" style={{ zIndex: isDrawingActive ? 100 : 0, pointerEvents: isDrawingActive ? 'auto' : 'none' }}>
-          <ChartOverlay
+        {!minimal && (
+          <div className="absolute inset-0" style={{ zIndex: isDrawingActive ? 100 : 0, pointerEvents: isDrawingActive ? 'auto' : 'none' }}>
+            <ChartOverlay
               chart={chartApi}
               series={seriesApi}
               drawingMode={drawingMode}
@@ -438,12 +440,13 @@ export default function CryptoChart() {
               magnetMode={magnetMode}
               candleData={formattedCandlesRef.current}
             />
-        </div>
+          </div>
+        )}
       </div>
     </>
   );
 
-  if (fullscreen) {
+  if (fullscreen && !minimal) {
     return (
       <div className="fixed inset-0 z-[200] bg-background flex flex-col overflow-hidden">
         {chartContent}

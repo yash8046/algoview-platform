@@ -14,10 +14,12 @@ import { usePriceAlerts } from '@/hooks/usePriceAlerts';
 import { detectCandlestickPatterns } from '@/lib/candlestickPatterns';
 import { Maximize2, Minimize2, Magnet, X, BarChart3, Smartphone } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
+import { useNavigate } from 'react-router-dom';
 
 const TIMEFRAMES = ['1m', '5m', '15m', '1H', '4H', '1D', '1W'];
 
-export default function TradingChart() {
+export default function TradingChart({ minimal = false }: { minimal?: boolean }) {
+  const navigate = useNavigate();
   const chartRef = useRef<HTMLDivElement>(null);
   const { selectedSymbol, selectedTimeframe, setSelectedTimeframe, updatePrice } = useTradingStore();
   const [loading, setLoading] = useState(false);
@@ -333,65 +335,68 @@ export default function TradingChart() {
           <h2 className="font-mono text-xs sm:text-sm font-semibold text-foreground truncate">
             {selectedSymbol === 'NIFTY 50' ? 'NIFTY 50' : `${selectedSymbol}.NS`}
           </h2>
-          <span className="text-[10px] text-muted-foreground hidden sm:inline">NSE</span>
           {loading && <span className="text-[10px] text-primary animate-pulse">Loading...</span>}
           {error && <span className="text-[10px] text-loss truncate max-w-[100px]">Error</span>}
         </div>
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-          <ChartDrawingTools
-            activeMode={drawingMode}
-            onModeChange={setDrawingMode}
-            drawings={drawings}
-            onClearAll={clearAllDrawings}
-            onUndo={undo}
-            onRedo={redo}
-            canUndo={canUndo}
-            canRedo={canRedo}
-            showPatterns={showPatterns}
-            onTogglePatterns={() => setShowPatterns(p => !p)}
-          />
-          <button
-            onClick={() => setIndicatorModalOpen(true)}
-            className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-mono transition-all min-h-[32px] active:scale-95 ${
-              indicators.length > 0
-                ? 'bg-primary/10 text-primary border border-primary/20'
-                : 'text-muted-foreground hover:text-foreground hover:bg-accent/30'
-            }`}
-            title="Indicators"
-          >
-            <BarChart3 className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Indicators</span>
-            {indicators.length > 0 && (
-              <span className="bg-primary/20 text-primary text-[9px] px-1.5 rounded-full font-semibold">{indicators.length}</span>
-            )}
-          </button>
-          <IndicatorManagerModal
-            open={indicatorModalOpen}
-            onClose={() => setIndicatorModalOpen(false)}
-            indicators={indicators}
-            onToggle={toggleIndicator}
-            onRemove={removeIndicator}
-          />
-          <PriceAlertPanel
-            alerts={alerts}
-            activeAlerts={activeAlerts}
-            triggeredAlerts={triggeredAlerts}
-            currentSymbol={selectedSymbol}
-            currentPrice={currentPriceRef.current}
-            onAdd={addAlert}
-            onRemove={removeAlert}
-            onClearTriggered={clearTriggered}
-            onRequestPermission={requestNotificationPermission}
-          />
-          <button
-            onClick={() => setMagnetMode(m => !m)}
-            className={`p-1.5 rounded transition-colors min-h-[32px] active:scale-95 ${
-              magnetMode ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-            }`}
-            title="Magnet Mode (snap to OHLC)"
-          >
-            <Magnet className="w-3.5 h-3.5" />
-          </button>
+          {!minimal && (
+            <>
+              <ChartDrawingTools
+                activeMode={drawingMode}
+                onModeChange={setDrawingMode}
+                drawings={drawings}
+                onClearAll={clearAllDrawings}
+                onUndo={undo}
+                onRedo={redo}
+                canUndo={canUndo}
+                canRedo={canRedo}
+                showPatterns={showPatterns}
+                onTogglePatterns={() => setShowPatterns(p => !p)}
+              />
+              <button
+                onClick={() => setIndicatorModalOpen(true)}
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-mono transition-all min-h-[32px] active:scale-95 ${
+                  indicators.length > 0
+                    ? 'bg-primary/10 text-primary border border-primary/20'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/30'
+                }`}
+                title="Indicators"
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Indicators</span>
+                {indicators.length > 0 && (
+                  <span className="bg-primary/20 text-primary text-[9px] px-1.5 rounded-full font-semibold">{indicators.length}</span>
+                )}
+              </button>
+              <IndicatorManagerModal
+                open={indicatorModalOpen}
+                onClose={() => setIndicatorModalOpen(false)}
+                indicators={indicators}
+                onToggle={toggleIndicator}
+                onRemove={removeIndicator}
+              />
+              <PriceAlertPanel
+                alerts={alerts}
+                activeAlerts={activeAlerts}
+                triggeredAlerts={triggeredAlerts}
+                currentSymbol={selectedSymbol}
+                currentPrice={currentPriceRef.current}
+                onAdd={addAlert}
+                onRemove={removeAlert}
+                onClearTriggered={clearTriggered}
+                onRequestPermission={requestNotificationPermission}
+              />
+              <button
+                onClick={() => setMagnetMode(m => !m)}
+                className={`p-1.5 rounded transition-colors min-h-[32px] active:scale-95 ${
+                  magnetMode ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                }`}
+                title="Magnet Mode (snap to OHLC)"
+              >
+                <Magnet className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
           <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-thin max-w-[120px] sm:max-w-none flex-shrink-0">
             {TIMEFRAMES.map(tf => (
               <button
@@ -407,7 +412,7 @@ export default function TradingChart() {
               </button>
             ))}
           </div>
-          {isAndroid && (
+          {!minimal && isAndroid && (
             <button
               onClick={toggleLandscapeFullscreen}
               className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground min-h-[32px] active:scale-95"
@@ -417,9 +422,9 @@ export default function TradingChart() {
             </button>
           )}
           <button
-            onClick={() => setFullscreen(f => !f)}
+            onClick={() => minimal ? navigate('/charts') : setFullscreen(f => !f)}
             className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
-            title={fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            title={minimal ? 'Open Full Chart' : fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
             {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
@@ -427,25 +432,27 @@ export default function TradingChart() {
       </div>
       <div className="relative flex-1 min-h-0 overflow-hidden">
         <div ref={chartRef} className="absolute inset-0 bg-chart" style={{ zIndex: 1 }} />
-        <div className="absolute inset-0" style={{ zIndex: isDrawingActive ? 100 : 0, pointerEvents: isDrawingActive ? 'auto' : 'none' }}>
-          <ChartOverlay
-            chart={chartApi}
-            series={seriesApi}
-            drawingMode={drawingMode}
-            drawingModeRef={drawingModeRef}
-            drawings={drawings}
-            onAddDrawing={addDrawing}
-            onRemoveDrawing={removeDrawing}
+        {!minimal && (
+          <div className="absolute inset-0" style={{ zIndex: isDrawingActive ? 100 : 0, pointerEvents: isDrawingActive ? 'auto' : 'none' }}>
+            <ChartOverlay
+              chart={chartApi}
+              series={seriesApi}
+              drawingMode={drawingMode}
+              drawingModeRef={drawingModeRef}
+              drawings={drawings}
+              onAddDrawing={addDrawing}
+              onRemoveDrawing={removeDrawing}
               onFinishDrawing={finishDrawing}
               magnetMode={magnetMode}
               candleData={candleDataRef.current}
             />
-        </div>
+          </div>
+        )}
       </div>
     </>
   );
 
-  if (fullscreen) {
+  if (fullscreen && !minimal) {
     return (
       <div className="fixed inset-0 z-[200] bg-background flex flex-col overflow-hidden">
         {chartContent}

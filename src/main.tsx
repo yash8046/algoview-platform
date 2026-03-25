@@ -10,15 +10,6 @@ if (import.meta.env.PROD && Capacitor.isNativePlatform()) {
   console.log = noop;
   console.debug = noop;
   console.info = noop;
-  // Keep console.warn and console.error for critical debugging
-}
-
-// Hide splash screen once app is ready
-async function hideSplash() {
-  if (Capacitor.isNativePlatform()) {
-    const { SplashScreen } = await import("@capacitor/splash-screen");
-    await SplashScreen.hide();
-  }
 }
 
 // Initialize AdMob and show app-open ad on native platforms
@@ -27,6 +18,3 @@ initAdMob().then(() => {
 });
 
 createRoot(document.getElementById("root")!).render(<App />);
-
-// Hide splash after a short delay to let first paint finish
-setTimeout(() => hideSplash(), 1500);

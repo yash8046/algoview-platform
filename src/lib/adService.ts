@@ -81,11 +81,10 @@ export async function initAdMob(): Promise<void> {
     });
     isInitialized = true;
     console.log('[AdService] AdMob initialized');
-    toast.success('AdMob initialized successfully', { duration: 2000 });
+    toast.success('AdMob initialized', { duration: 2000 });
 
-    // Pre-load ads
-    loadRewardedAd();
-    loadInterstitialAd();
+    // Pre-load ads immediately after init
+    await Promise.allSettled([loadRewardedAd(), loadInterstitialAd()]);
   } catch (err: any) {
     console.warn('[AdService] AdMob init failed:', err);
     toast.error(`AdMob init failed: ${err?.message || err}`, { duration: 4000 });
@@ -197,9 +196,22 @@ async function loadRewardedAd(): Promise<void> {
 }
 
 export async function showRewardedAd(featureName: string = 'Feature'): Promise<AdResult> {
-  // On web or cooldown: grant silently
-  if (!isNative()) return { granted: true, adShown: false, message: '' };
-  if (!canShowAd('rewarded')) return { granted: true, adShown: false, message: '' };
+  // On web: grant silently (test ads only work on native)
+  if (!isNative()) return { granted: true, adShown: false, message: 'Web — no ads' };
+  if (!canShowAd('rewarded')) return { granted: true, adShown: false, message: 'Cooldown active' };
+
+  // If not initialized yet, try init first
+  if (!isInitialized) {
+    await initAdMob();
+  }
+
+  // If ad not loaded, try loading and waiting
+  if (!rewardedAdLoaded) {
+    toast.info('Loading ad…', { duration: 2000 });
+    await loadRewardedAd();
+    // Give it a moment
+    await new Promise(r => setTimeout(r, 1500));
+  }
 
   if (rewardedAdLoaded) {
     try {
@@ -208,24 +220,22 @@ export async function showRewardedAd(featureName: string = 'Feature'): Promise<A
       lastAdShownAt.rewarded = Date.now();
       rewardedAdLoaded = false;
       toast.success(`${featureName} unlocked! 🎉`, { duration: 2000 });
-      loadRewardedAd();
+      loadRewardedAd(); // pre-load next
       return { granted: true, adShown: true, message: '' };
     } catch (err: any) {
       console.warn('[AdService] Show rewarded failed:', err);
-      const errCode = err?.code || 'UNKNOWN';
-      toast.error(`Ad show failed [${errCode}]: ${err?.message || 'Unknown error'}. Access granted for free.`, { duration: 4000 });
+      const details = getAdErrorDetails(err);
+      toast.error(`Ad failed [${details.code}]: ${details.message}`, { duration: 4000 });
       loadRewardedAd();
-      return { granted: true, adShown: false, message: '' };
+      return { granted: true, adShown: false, message: details.message };
     }
   }
 
-  // Ad not loaded — show detailed status
-  const lastErr = adLoadAttempts.rewarded;
-  const fallbackCode = lastAdError.rewarded?.code || (lastErr > 0 ? 'LOAD_PENDING' : 'NOT_REQUESTED');
-  const fallbackMessage = lastAdError.rewarded?.message || 'The ad is still loading or no inventory is available yet';
-  toast.info(`No ad available [${fallbackCode}] after ${lastErr} attempt${lastErr === 1 ? '' : 's'}: ${fallbackMessage}. Feature unlocked for free.`, { duration: 4000 });
-  loadRewardedAd();
-  return { granted: true, adShown: false, message: `Ad unavailable [${fallbackCode}] after ${lastErr} attempts: ${fallbackMessage}` };
+  // Still not loaded after retry
+  const details = lastAdError.rewarded;
+  const msg = details ? `[${details.code}] ${details.message}` : 'Ad not available';
+  toast.warning(`${msg} — feature unlocked free`, { duration: 3000 });
+  return { granted: true, adShown: false, message: msg };
 }
 
 // ============ App Open Ad ============

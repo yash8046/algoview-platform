@@ -38,11 +38,31 @@ const BACKTEST_INTERVAL_MAP: Record<string, { interval: string; range: string }>
   '1W': { interval: '1wk', range: '10y' },
 };
 
+// In-memory cache for fast reloads
+const dataCache = new Map<string, { data: YahooResponse; ts: number }>();
+const CACHE_TTL: Record<string, number> = {
+  '1m': 30_000,
+  '5m': 60_000,
+  '15m': 2 * 60_000,
+  '1H': 5 * 60_000,
+  '4H': 10 * 60_000,
+  '1D': 15 * 60_000,
+  '1W': 30 * 60_000,
+};
+
 export async function fetchYahooFinanceData(
   symbol: string,
   timeframe: string = '1D',
   backtest: boolean = false
 ): Promise<YahooResponse> {
+  const cacheKey = `${symbol}-${timeframe}-${backtest}`;
+  const cached = dataCache.get(cacheKey);
+  const ttl = CACHE_TTL[timeframe] || 60_000;
+
+  if (cached && Date.now() - cached.ts < ttl) {
+    return cached.data;
+  }
+
   const map = backtest ? BACKTEST_INTERVAL_MAP : INTERVAL_MAP;
   const params = map[timeframe] || map['1D'];
 
@@ -52,5 +72,8 @@ export async function fetchYahooFinanceData(
 
   if (error) throw new Error(error.message || 'Failed to fetch market data');
   if (data.error) throw new Error(data.error);
-  return data as YahooResponse;
+
+  const result = data as YahooResponse;
+  dataCache.set(cacheKey, { data: result, ts: Date.now() });
+  return result;
 }
