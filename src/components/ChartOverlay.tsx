@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import type { IChartApi, Time } from 'lightweight-charts';
 import type { DrawingMode, DrawingLine } from './ChartDrawingTools';
 
@@ -15,9 +15,11 @@ interface ChartOverlayProps {
   onAddDrawing: (drawing: DrawingLine) => void;
   onFinishDrawing: () => void;
   onRemoveDrawing?: (id: string) => void;
+  magnetMode?: boolean;
+  candleData?: { time: any; open: number; high: number; low: number; close: number }[];
 }
 
-export default function ChartOverlay({ chart, series, drawingMode, drawingModeRef, drawings, onAddDrawing, onFinishDrawing, onRemoveDrawing }: ChartOverlayProps) {
+export default function ChartOverlay({ chart, series, drawingMode, drawingModeRef, drawings, onAddDrawing, onFinishDrawing, onRemoveDrawing, magnetMode = false, candleData = [] }: ChartOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawing = useRef(false);
   const startCoord = useRef<{ time: Time; price: number } | null>(null);
@@ -25,6 +27,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const penCoords = useRef<{ time: Time; price: number }[]>([]);
   const laserPixels = useRef<{ x: number; y: number; t: number }[]>([]);
   const laserRaf = useRef<number>(0);
+  const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null);
 
   const toPixel = useCallback((time: Time, price: number) => {
     if (!chart || !series) return null;
@@ -45,6 +48,27 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     if (time === null || price === null) return null;
     return { time, price, x, y };
   }, [chart, series]);
+
+  // Magnet: snap price to nearest OHLC of the closest candle
+  const snapToOHLC = useCallback((time: any, price: number): { time: any; price: number } => {
+    if (!magnetMode || candleData.length === 0) return { time, price };
+    // Find nearest candle by time
+    let nearest = candleData[0];
+    let minDist = Math.abs(Number(candleData[0].time) - Number(time));
+    for (const c of candleData) {
+      const d = Math.abs(Number(c.time) - Number(time));
+      if (d < minDist) { minDist = d; nearest = c; }
+    }
+    // Snap to nearest OHLC value
+    const ohlc = [nearest.open, nearest.high, nearest.low, nearest.close];
+    let snapPrice = ohlc[0];
+    let snapDist = Math.abs(price - ohlc[0]);
+    for (const p of ohlc) {
+      const d = Math.abs(price - p);
+      if (d < snapDist) { snapDist = d; snapPrice = p; }
+    }
+    return { time: nearest.time, price: snapPrice };
+  }, [magnetMode, candleData]);
 
   // === RENDERERS ===
 
@@ -1154,6 +1178,98 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.fillText(`Target: ${target.toFixed(2)}`, right + 8, entryY + 32);
   }, [toPixel, series]);
 
+  // === GANN RENDERERS ===
+
+  const renderGannFan = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine, w: number, h: number) => {
+    if (!d.points || d.points.length < 2) return;
+    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    if (!p1 || !p2) return;
+    const angles = [
+      { ratio: '1x1', slope: 1 }, { ratio: '1x2', slope: 0.5 }, { ratio: '2x1', slope: 2 },
+      { ratio: '1x3', slope: 1/3 }, { ratio: '3x1', slope: 3 },
+      { ratio: '1x4', slope: 0.25 }, { ratio: '4x1', slope: 4 },
+      { ratio: '1x8', slope: 0.125 }, { ratio: '8x1', slope: 8 },
+    ];
+    const colors = ['#f59e0b', '#22c55e', '#22c55e', '#3b82f6', '#3b82f6', '#6b7a99', '#6b7a99', '#6b7a99', '#6b7a99'];
+    const baseSlope = (p2.y - p1.y) / (p2.x - p1.x || 1);
+    angles.forEach((a, idx) => {
+      const dy = baseSlope * a.slope;
+      const endX = w * 2;
+      const endY = p1.y + dy * (endX - p1.x);
+      ctx.beginPath();
+      ctx.strokeStyle = colors[idx];
+      ctx.lineWidth = a.ratio === '1x1' ? 1.5 : 0.8;
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+      if (idx < 5) {
+        ctx.fillStyle = colors[idx];
+        ctx.font = '8px "JetBrains Mono", monospace';
+        ctx.fillText(a.ratio, Math.min(p1.x + 60 + idx * 30, w - 30), p1.y + dy * (60 + idx * 30) - 3);
+      }
+    });
+  }, [toPixel]);
+
+  const renderGannBox = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
+    if (!d.points || d.points.length < 2) return;
+    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    if (!p1 || !p2) return;
+    const left = Math.min(p1.x, p2.x); const right = Math.max(p1.x, p2.x);
+    const top = Math.min(p1.y, p2.y); const bottom = Math.max(p1.y, p2.y);
+    const w = right - left; const h = bottom - top;
+    // Outer box
+    ctx.strokeStyle = d.color; ctx.lineWidth = 1.5;
+    ctx.strokeRect(left, top, w, h);
+    // Grid lines
+    const divisions = [0.25, 0.382, 0.5, 0.618, 0.75];
+    ctx.lineWidth = 0.6; ctx.setLineDash([3, 3]);
+    divisions.forEach(div => {
+      const x = left + w * div; const y = top + h * div;
+      ctx.beginPath(); ctx.strokeStyle = '#6b7a99';
+      ctx.moveTo(x, top); ctx.lineTo(x, bottom); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    // Diagonal lines
+    ctx.beginPath(); ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 0.8;
+    ctx.moveTo(left, top); ctx.lineTo(right, bottom); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(right, top); ctx.lineTo(left, bottom); ctx.stroke();
+    // Fill
+    ctx.globalAlpha = 0.03; ctx.fillStyle = d.color;
+    ctx.fillRect(left, top, w, h); ctx.globalAlpha = 1;
+  }, [toPixel]);
+
+  const renderGannSquare = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
+    if (!d.points || d.points.length < 2) return;
+    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    if (!p1 || !p2) return;
+    const size = Math.max(Math.abs(p2.x - p1.x), Math.abs(p2.y - p1.y));
+    const cx = p1.x; const cy = p1.y;
+    // Square
+    ctx.strokeStyle = d.color; ctx.lineWidth = 1.5;
+    ctx.strokeRect(cx - size/2, cy - size/2, size, size);
+    // Circle inscribed
+    ctx.beginPath(); ctx.strokeStyle = d.color; ctx.lineWidth = 0.8;
+    ctx.arc(cx, cy, size/2, 0, Math.PI * 2); ctx.stroke();
+    // Diagonals and cross
+    ctx.beginPath(); ctx.lineWidth = 0.6; ctx.setLineDash([3,3]);
+    ctx.moveTo(cx - size/2, cy - size/2); ctx.lineTo(cx + size/2, cy + size/2);
+    ctx.moveTo(cx + size/2, cy - size/2); ctx.lineTo(cx - size/2, cy + size/2);
+    ctx.moveTo(cx, cy - size/2); ctx.lineTo(cx, cy + size/2);
+    ctx.moveTo(cx - size/2, cy); ctx.lineTo(cx + size/2, cy);
+    ctx.stroke(); ctx.setLineDash([]);
+    // Divisions
+    [0.25, 0.5, 0.75].forEach(f => {
+      ctx.beginPath(); ctx.strokeStyle = '#6b7a99'; ctx.lineWidth = 0.4;
+      ctx.arc(cx, cy, size/2 * f, 0, Math.PI * 2); ctx.stroke();
+    });
+  }, [toPixel]);
+
   // === MAIN RENDER ===
 
   const render = useCallback(() => {
@@ -1230,13 +1346,45 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
           case 'long_position':
           case 'short_position': renderLongShort(ctx, d); break;
           case 'arc': renderFibArc(ctx, d); break;
+          case 'gann_fan': renderGannFan(ctx, d, rect.width, rect.height); break;
+          case 'gann_box': renderGannBox(ctx, d); break;
+          case 'gann_square': renderGannSquare(ctx, d); break;
         }
       } catch (err) {
         console.error('Drawing render error:', d.type, err);
       }
     }
 
-    // In-progress preview
+    // Render selection handles for selected drawing
+    if (selectedDrawingId) {
+      const selD = drawings.find(d => d.id === selectedDrawingId);
+      if (selD && selD.points) {
+        for (const pt of selD.points) {
+          const px = toPixel(pt.time as unknown as Time, pt.price);
+          if (px) {
+            ctx.beginPath();
+            ctx.strokeStyle = '#22c55e';
+            ctx.lineWidth = 2;
+            ctx.fillStyle = 'rgba(34,197,94,0.3)';
+            ctx.rect(px.x - 5, px.y - 5, 10, 10);
+            ctx.fill();
+            ctx.stroke();
+          }
+        }
+      } else if (selD && selD.price != null && series) {
+        const y = series.priceToCoordinate(selD.price);
+        if (y !== null) {
+          ctx.beginPath();
+          ctx.strokeStyle = '#22c55e';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([4, 4]);
+          ctx.moveTo(0, y); ctx.lineTo(rect.width, y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      }
+    }
+
     if (isDrawing.current && startCoord.current && currentPixel.current) {
       const sp = toPixel(startCoord.current.time, startCoord.current.price);
       if (sp) {
@@ -1344,7 +1492,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     renderPitchfork, renderSchiffPitchfork, renderPen, renderBrush, renderHighlighter,
     renderText, renderAnchoredText, renderNoteBox, renderCallout, renderArrowMarker,
     renderFlag, renderPriceLabel, renderPriceRange, renderDateRange, renderBarsPattern,
-    renderRiskReward, renderLongShort]);
+    renderRiskReward, renderLongShort, renderGannFan, renderGannBox, renderGannSquare]);
 
   // === INPUT HANDLING ===
 
@@ -1368,6 +1516,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     'price_range', 'date_range', 'bars_pattern', 'risk_reward',
     'long_position', 'short_position',
     'arc',
+    'gann_fan', 'gann_box', 'gann_square',
   ];
 
   const defaultColors: Record<string, string> = {
@@ -1391,6 +1540,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     risk_reward: '#f59e0b',
     long_position: '#22c55e', short_position: '#ef4444',
     arc: '#3b82f6',
+    gann_fan: '#f59e0b', gann_box: '#f59e0b', gann_square: '#f59e0b',
   };
 
   // Find nearest drawing for eraser
@@ -1415,7 +1565,15 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     const mode = drawingModeRef.current;
-    if (mode === 'none') return;
+    if (mode === 'none') {
+      // Selection mode: tap near a drawing to select it
+      const coord = fromPixel(e.clientX, e.clientY);
+      if (!coord) { setSelectedDrawingId(null); return; }
+      const id = findNearestDrawing(coord.x, coord.y);
+      setSelectedDrawingId(id);
+      render();
+      return;
+    }
     const coord = fromPixel(e.clientX, e.clientY);
     if (!coord) return;
 
@@ -1445,8 +1603,9 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
     if (singleClickModes.includes(mode)) {
       const color = defaultColors[mode] || '#ffffff';
+      const snapped = snapToOHLC(coord.time, coord.price);
       if (mode === 'hline') {
-        onAddDrawing({ id: `${mode}_${Date.now()}`, type: mode, price: coord.price, color });
+        onAddDrawing({ id: `${mode}_${Date.now()}`, type: mode, price: snapped.price, color });
       } else {
         const textModes: DrawingMode[] = ['text', 'anchored_text', 'note_box', 'callout'];
         let text: string | undefined;
@@ -1455,7 +1614,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         }
         onAddDrawing({
           id: `${mode}_${Date.now()}`, type: mode,
-          points: [{ time: coord.time as number, price: coord.price }],
+          points: [{ time: snapped.time as number, price: snapped.price }],
           color, text,
         });
       }
@@ -1465,11 +1624,12 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
     if (twoPointModes.includes(mode)) {
       isDrawing.current = true;
-      startCoord.current = { time: coord.time, price: coord.price };
+      const snapped = snapToOHLC(coord.time, coord.price);
+      startCoord.current = { time: snapped.time, price: snapped.price };
       currentPixel.current = { x: coord.x, y: coord.y };
       return;
     }
-  }, [fromPixel, onAddDrawing, onFinishDrawing, onRemoveDrawing, render, drawingModeRef, findNearestDrawing]);
+  }, [fromPixel, onAddDrawing, onFinishDrawing, onRemoveDrawing, render, drawingModeRef, findNearestDrawing, snapToOHLC]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     const mode = drawingModeRef.current;
@@ -1526,19 +1686,20 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     const coord = fromPixel(e.clientX, e.clientY);
     if (!coord) { startCoord.current = null; return; }
 
+    const snapped = snapToOHLC(coord.time, coord.price);
     const color = defaultColors[mode] || '#ffffff';
     onAddDrawing({
       id: `${mode}_${Date.now()}`, type: mode as any,
       points: [
         { time: startCoord.current.time as number, price: startCoord.current.price },
-        { time: coord.time as number, price: coord.price },
+        { time: snapped.time as number, price: snapped.price },
       ],
       color,
     });
     startCoord.current = null;
     currentPixel.current = null;
     onFinishDrawing(); render();
-  }, [fromPixel, onAddDrawing, onFinishDrawing, render, drawingModeRef]);
+  }, [fromPixel, onAddDrawing, onFinishDrawing, render, drawingModeRef, snapToOHLC]);
 
   useEffect(() => {
     if (!chart) return;
@@ -1551,15 +1712,67 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   useEffect(() => () => { cancelAnimationFrame(laserRaf.current); }, []);
 
   const isActive = drawingMode !== 'none';
+  const hasDrawings = drawings.length > 0;
+
+  // Get selected drawing pixel position for floating toolbar
+  const selectedDrawing = selectedDrawingId ? drawings.find(d => d.id === selectedDrawingId) : null;
+  const selectedPos = (() => {
+    if (!selectedDrawing || !canvasRef.current) return null;
+    if (selectedDrawing.points && selectedDrawing.points.length > 0) {
+      const p = toPixel(selectedDrawing.points[0].time as unknown as Time, selectedDrawing.points[0].price);
+      if (p) return { x: p.x, y: p.y };
+    }
+    if (selectedDrawing.price != null && series) {
+      const y = series.priceToCoordinate(selectedDrawing.price);
+      if (y !== null) return { x: 60, y };
+    }
+    return null;
+  })();
 
   return (
-    <canvas
-      ref={canvasRef}
-      className={`w-full h-full ${isActive ? (drawingMode === 'eraser' ? 'cursor-not-allowed' : 'cursor-crosshair') : ''}`}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      style={{ touchAction: isActive ? 'none' : 'auto' }}
-    />
+    <div className="relative w-full h-full">
+      <canvas
+        ref={canvasRef}
+        className={`w-full h-full ${isActive ? (drawingMode === 'eraser' ? 'cursor-not-allowed' : 'cursor-crosshair') : (hasDrawings ? 'cursor-pointer' : '')}`}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        style={{ touchAction: isActive ? 'none' : 'auto' }}
+      />
+      {/* Floating selection toolbar */}
+      {selectedDrawingId && selectedPos && (
+        <div
+          className="absolute z-50 flex items-center gap-1 bg-card border border-border rounded-lg shadow-lg px-2 py-1"
+          style={{ left: Math.max(4, selectedPos.x - 60), top: Math.max(4, selectedPos.y - 40) }}
+        >
+          <button
+            onClick={() => {
+              if (onRemoveDrawing) onRemoveDrawing(selectedDrawingId);
+              setSelectedDrawingId(null);
+            }}
+            className="px-2 py-1 text-[10px] font-mono text-loss hover:bg-loss/10 rounded active:scale-95"
+          >
+            Delete
+          </button>
+          <button
+            onClick={() => {
+              if (selectedDrawing) {
+                onAddDrawing({ ...selectedDrawing, id: `${selectedDrawing.type}_clone_${Date.now()}` });
+              }
+              setSelectedDrawingId(null);
+            }}
+            className="px-2 py-1 text-[10px] font-mono text-muted-foreground hover:bg-accent rounded active:scale-95"
+          >
+            Clone
+          </button>
+          <button
+            onClick={() => setSelectedDrawingId(null)}
+            className="px-1 py-1 text-[10px] font-mono text-muted-foreground hover:bg-accent rounded active:scale-95"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

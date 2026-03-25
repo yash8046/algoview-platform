@@ -32,6 +32,8 @@ export type DrawingMode =
   // Measure
   | 'price_range' | 'date_range' | 'long_position' | 'short_position'
   | 'bars_pattern' | 'risk_reward'
+  // Gann
+  | 'gann_fan' | 'gann_box' | 'gann_square'
   ;
 
 export interface DrawingLine {
@@ -90,6 +92,15 @@ const categories: ToolCategory[] = [
       { mode: 'pitchfork', icon: Waves, label: 'Pitchfork' },
       { mode: 'schiff_pitchfork', icon: Waves, label: 'Schiff Pitchfork' },
       { mode: 'inside_pitchfork', icon: Waves, label: 'Inside Pitchfork' },
+    ],
+  },
+  {
+    name: 'Gann',
+    icon: Compass,
+    tools: [
+      { mode: 'gann_fan', icon: Compass, label: 'Gann Fan' },
+      { mode: 'gann_box', icon: Square, label: 'Gann Box' },
+      { mode: 'gann_square', icon: Square, label: 'Gann Square' },
     ],
   },
   {

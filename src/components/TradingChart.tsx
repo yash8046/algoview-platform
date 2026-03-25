@@ -1,13 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { createChart, ColorType, IChartApi, CandlestickSeries, HistogramSeries, LineSeries, createSeriesMarkers } from 'lightweight-charts';
 import { useTradingStore } from '@/stores/tradingStore';
 import { fetchYahooFinanceData } from '@/lib/yahooFinance';
 import { calculateSMA } from '@/lib/mockData';
+import { calcRSI, calcMACD, calcBollingerBands, calcEMA, calcVWAP, calcSMA as calcSMALib } from '@/lib/technicalIndicators';
 import ChartDrawingTools from '@/components/ChartDrawingTools';
+import ChartIndicatorOverlay from '@/components/ChartIndicatorOverlay';
 import ChartOverlay from '@/components/ChartOverlay';
 import { useChartDrawings } from '@/hooks/useChartDrawings';
+import { useChartIndicators } from '@/hooks/useChartIndicators';
 import { detectCandlestickPatterns } from '@/lib/candlestickPatterns';
-import { Maximize2, Minimize2, Smartphone, X } from 'lucide-react';
+import { Maximize2, Minimize2, Magnet, X } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 
 const TIMEFRAMES = ['1m', '5m', '15m', '1H', '4H', '1D', '1W'];
@@ -24,7 +27,10 @@ export default function TradingChart() {
   const [landscapeFullscreen, setLandscapeFullscreen] = useState(false);
   const markersRef = useRef<any>(null);
   const candleDataRef = useRef<any[]>([]);
+  const rawCandlesRef = useRef<any[]>([]);
+  const indicatorSeriesRef = useRef<Map<string, any>>(new Map());
   const isAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+  const [magnetMode, setMagnetMode] = useState(false);
 
   const exitLandscape = async () => {
     try {
@@ -56,6 +62,8 @@ export default function TradingChart() {
     drawings, addDrawing, removeDrawing, clearAllDrawings, finishDrawing,
     undo, redo, canUndo, canRedo,
   } = useChartDrawings(selectedSymbol);
+
+  const { indicators, toggleIndicator, removeIndicator } = useChartIndicators();
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -116,6 +124,9 @@ export default function TradingChart() {
         candleSeries.setData(candleData);
         volumeSeries.setData(volData);
         candleDataRef.current = candleData;
+        rawCandlesRef.current = resp.candles.map(c => ({
+          time: c.time, open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume,
+        }));
 
         if (candleData.length >= 20) sma20Series.setData(calculateSMA(candleData, 20) as any);
         if (candleData.length >= 50) sma50Series.setData(calculateSMA(candleData, 50) as any);
@@ -170,6 +181,67 @@ export default function TradingChart() {
       }
     }
   }, [showPatterns, seriesApi]);
+
+  // Manage indicator series
+  useEffect(() => {
+    if (!chartApi || rawCandlesRef.current.length === 0) return;
+    const candles = rawCandlesRef.current;
+    const closes = candles.map((c: any) => c.close);
+    const activeIds = new Set(indicators.map(i => i.id));
+
+    // Remove old series
+    indicatorSeriesRef.current.forEach((s, id) => {
+      if (!activeIds.has(id)) {
+        try { chartApi.removeSeries(s); } catch {}
+        indicatorSeriesRef.current.delete(id);
+      }
+    });
+
+    // Add/update indicator series
+    for (const ind of indicators) {
+      if (indicatorSeriesRef.current.has(ind.id)) continue;
+      try {
+        if (ind.type === 'sma' || ind.type === 'ema') {
+          const vals = ind.type === 'sma' ? calcSMALib(closes, ind.period || 20) : calcEMA(closes, ind.period || 12);
+          const s = chartApi.addSeries(LineSeries, { color: ind.color, lineWidth: 1, title: `${ind.type.toUpperCase()} ${ind.period || ''}` });
+          const data = vals.map((v, i) => ({ time: candles[i].time as any, value: v })).filter(d => !isNaN(d.value));
+          s.setData(data);
+          indicatorSeriesRef.current.set(ind.id, s);
+        } else if (ind.type === 'bollinger') {
+          const bb = calcBollingerBands(closes, ind.period || 20);
+          const sU = chartApi.addSeries(LineSeries, { color: '#3b82f6', lineWidth: 1, title: 'BB Upper' });
+          const sL = chartApi.addSeries(LineSeries, { color: '#3b82f6', lineWidth: 1, title: 'BB Lower' });
+          sU.setData(bb.map((b, i) => ({ time: candles[i].time as any, value: b.upper })).filter(d => !isNaN(d.value)));
+          sL.setData(bb.map((b, i) => ({ time: candles[i].time as any, value: b.lower })).filter(d => !isNaN(d.value)));
+          indicatorSeriesRef.current.set(ind.id, sU);
+          indicatorSeriesRef.current.set(ind.id + '_lower', sL);
+        } else if (ind.type === 'vwap') {
+          const vwap = calcVWAP(candles);
+          const s = chartApi.addSeries(LineSeries, { color: ind.color, lineWidth: 1, title: 'VWAP' });
+          s.setData(vwap.map((v, i) => ({ time: candles[i].time as any, value: v })).filter(d => !isNaN(d.value)));
+          indicatorSeriesRef.current.set(ind.id, s);
+        } else if (ind.type === 'rsi') {
+          // RSI rendered as separate pane via price scale
+          const rsi = calcRSI(closes, 14);
+          const s = chartApi.addSeries(LineSeries, { color: ind.color, lineWidth: 1, title: 'RSI', priceScaleId: 'rsi' });
+          s.priceScale().applyOptions({ scaleMargins: { top: 0.7, bottom: 0.05 } });
+          s.setData(rsi.map((v, i) => ({ time: candles[i].time as any, value: v })).filter(d => !isNaN(d.value)));
+          indicatorSeriesRef.current.set(ind.id, s);
+        } else if (ind.type === 'macd') {
+          const macd = calcMACD(closes);
+          const s = chartApi.addSeries(LineSeries, { color: '#22c55e', lineWidth: 1, title: 'MACD', priceScaleId: 'macd' });
+          s.priceScale().applyOptions({ scaleMargins: { top: 0.75, bottom: 0.02 } });
+          const sSignal = chartApi.addSeries(LineSeries, { color: '#ef4444', lineWidth: 1, title: 'Signal', priceScaleId: 'macd' });
+          s.setData(macd.map((m, i) => ({ time: candles[i].time as any, value: m.macd })).filter(d => !isNaN(d.value)));
+          sSignal.setData(macd.map((m, i) => ({ time: candles[i].time as any, value: m.signal })).filter(d => !isNaN(d.value)));
+          indicatorSeriesRef.current.set(ind.id, s);
+          indicatorSeriesRef.current.set(ind.id + '_signal', sSignal);
+        }
+      } catch (err) {
+        console.error('Indicator error:', ind.type, err);
+      }
+    }
+  }, [indicators, chartApi]);
 
   const isDrawingActive = drawingMode !== 'none';
 
@@ -235,6 +307,8 @@ export default function TradingChart() {
               onAddDrawing={addDrawing}
               onRemoveDrawing={removeDrawing}
               onFinishDrawing={finishDrawing}
+              magnetMode={magnetMode}
+              candleData={candleDataRef.current}
             />
           </div>
         </div>
@@ -266,6 +340,20 @@ export default function TradingChart() {
             showPatterns={showPatterns}
             onTogglePatterns={() => setShowPatterns(p => !p)}
           />
+          <ChartIndicatorOverlay
+            indicators={indicators}
+            onToggle={toggleIndicator}
+            onRemove={removeIndicator}
+          />
+          <button
+            onClick={() => setMagnetMode(m => !m)}
+            className={`p-1.5 rounded transition-colors min-h-[32px] active:scale-95 ${
+              magnetMode ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+            }`}
+            title="Magnet Mode (snap to OHLC)"
+          >
+            <Magnet className="w-3.5 h-3.5" />
+          </button>
           <div className="flex items-center gap-0.5">
             {TIMEFRAMES.map(tf => (
               <button
@@ -301,8 +389,10 @@ export default function TradingChart() {
             drawings={drawings}
             onAddDrawing={addDrawing}
             onRemoveDrawing={removeDrawing}
-            onFinishDrawing={finishDrawing}
-          />
+              onFinishDrawing={finishDrawing}
+              magnetMode={magnetMode}
+              candleData={candleDataRef.current}
+            />
         </div>
       </div>
     </>
