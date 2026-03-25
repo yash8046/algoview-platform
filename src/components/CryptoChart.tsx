@@ -116,11 +116,7 @@ export default function CryptoChart() {
     });
     volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
 
-    const sma20Series = chart.addSeries(LineSeries, { color: 'rgba(255, 193, 7, 0.6)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
-    const ema12Series = chart.addSeries(LineSeries, { color: 'rgba(33, 150, 243, 0.6)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
-    const ema26Series = chart.addSeries(LineSeries, { color: 'rgba(156, 39, 176, 0.6)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
-    const bbUpperSeries = chart.addSeries(LineSeries, { color: 'rgba(128, 128, 128, 0.3)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
-    const bbLowerSeries = chart.addSeries(LineSeries, { color: 'rgba(128, 128, 128, 0.3)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
+    // No default indicator lines — user adds via modal
 
     setChartApi(chart);
     setSeriesApi(candleSeries);
