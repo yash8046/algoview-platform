@@ -389,12 +389,12 @@ export default function TradingChart() {
           >
             <Magnet className="w-3.5 h-3.5" />
           </button>
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-thin max-w-[120px] sm:max-w-none flex-shrink-0">
             {TIMEFRAMES.map(tf => (
               <button
                 key={tf}
                 onClick={() => setSelectedTimeframe(tf)}
-                className={`px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs font-mono rounded transition-colors min-h-[32px] active:scale-95 ${
+                className={`px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs font-mono rounded transition-colors min-h-[32px] whitespace-nowrap flex-shrink-0 active:scale-95 ${
                   selectedTimeframe === tf
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent'

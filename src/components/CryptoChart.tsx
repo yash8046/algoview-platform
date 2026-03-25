@@ -387,12 +387,12 @@ export default function CryptoChart() {
           >
             <Magnet className="w-3.5 h-3.5" />
           </button>
-          <div className="flex gap-0.5">
+          <div className="flex gap-0.5 overflow-x-auto scrollbar-thin max-w-[100px] sm:max-w-none flex-shrink-0">
             {INTERVALS.map((i) => (
               <button
                 key={i.value}
                 onClick={() => setSelectedInterval(i.value)}
-                className={`px-1.5 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-mono rounded transition-colors min-h-[32px] active:scale-95 ${
+                className={`px-1.5 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-mono rounded transition-colors min-h-[32px] whitespace-nowrap flex-shrink-0 active:scale-95 ${
                   selectedInterval === i.value
                     ? 'bg-primary/20 text-primary font-semibold'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent'

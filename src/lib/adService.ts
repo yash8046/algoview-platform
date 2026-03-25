@@ -173,8 +173,8 @@ async function loadRewardedAd(): Promise<void> {
     const errMsg = err?.message || String(err);
     const errorCode = err?.code || 'UNKNOWN';
     console.warn(`[AdService] Rewarded load attempt ${adLoadAttempts.rewarded}: [${errorCode}] ${errMsg}`);
-    if (adLoadAttempts.rewarded <= 2) {
-      toast.error(`Ad not available (${errorCode}). Features unlocked for free.`, { duration: 3000 });
+    if (adLoadAttempts.rewarded <= 3) {
+      toast.error(`Ad load failed [${errorCode}]: ${errMsg}. Features unlocked for free.`, { duration: 4000 });
     }
   }
 }
@@ -195,16 +195,18 @@ export async function showRewardedAd(featureName: string = 'Feature'): Promise<A
       return { granted: true, adShown: true, message: '' };
     } catch (err: any) {
       console.warn('[AdService] Show rewarded failed:', err);
-      toast.error(`Ad failed: ${err?.message || 'Unknown error'}. Access granted for free.`, { duration: 3000 });
+      const errCode = err?.code || 'UNKNOWN';
+      toast.error(`Ad show failed [${errCode}]: ${err?.message || 'Unknown error'}. Access granted for free.`, { duration: 4000 });
       loadRewardedAd();
       return { granted: true, adShown: false, message: '' };
     }
   }
 
-  // Ad not loaded — grant silently with toast
-  toast.info('No ad available — feature unlocked for free', { duration: 2000 });
+  // Ad not loaded — show detailed status
+  const lastErr = adLoadAttempts.rewarded;
+  toast.info(`No ad available (attempts: ${lastErr}, status: NOT_LOADED). Feature unlocked for free.`, { duration: 3000 });
   loadRewardedAd();
-  return { granted: true, adShown: false, message: '' };
+  return { granted: true, adShown: false, message: `Ad not loaded after ${lastErr} attempts` };
 }
 
 // ============ App Open Ad ============

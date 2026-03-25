@@ -97,11 +97,13 @@ const Index = () => {
     );
   }
 
-  // Mobile portrait: simple vertical stack
+  // Mobile portrait: TopBar + disclaimer sticky, content scrolls
   if (isMobile) {
     return (
       <div className="flex flex-col h-[100dvh] overflow-hidden">
-        <TopBar />
+        <div className="flex-shrink-0 sticky top-0 z-30">
+          <TopBar />
+        </div>
         <div className="flex-1 overflow-y-auto scrollbar-thin pb-20">
           <div className="p-2 space-y-2">
             <div data-tour="portfolio"><PortfolioSummary /></div>
