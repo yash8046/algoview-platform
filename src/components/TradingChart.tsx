@@ -353,6 +353,17 @@ export default function TradingChart() {
             onToggle={toggleIndicator}
             onRemove={removeIndicator}
           />
+          <PriceAlertPanel
+            alerts={alerts}
+            activeAlerts={activeAlerts}
+            triggeredAlerts={triggeredAlerts}
+            currentSymbol={selectedSymbol}
+            currentPrice={currentPriceRef.current}
+            onAdd={addAlert}
+            onRemove={removeAlert}
+            onClearTriggered={clearTriggered}
+            onRequestPermission={requestNotificationPermission}
+          />
           <button
             onClick={() => setMagnetMode(m => !m)}
             className={`p-1.5 rounded transition-colors min-h-[32px] active:scale-95 ${
