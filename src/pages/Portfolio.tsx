@@ -107,12 +107,18 @@ export default function Portfolio() {
   }, [user]);
 
   useEffect(() => {
+    const positionsRef = positions;
     const refresh = async () => {
-      for (const pos of positions) {
+      for (const pos of positionsRef) {
         try {
           const data = await fetchYahooFinanceData(pos.symbol, '1D');
-          if (data.regularMarketPrice) {
-            updatePrice(pos.symbol, data.regularMarketPrice, data.previousClose || data.regularMarketPrice);
+          const livePrice = data.regularMarketPrice || (data.candles?.length ? data.candles[data.candles.length - 1].close : null);
+          if (livePrice && livePrice > 0) {
+            updatePrice(pos.symbol, livePrice, data.previousClose || pos.entryPrice);
+            // Persist updated price to DB
+            supabase.from('paper_positions').update({ current_price: livePrice }).eq('id', pos.id).then(({ error }) => {
+              if (error) console.warn(`Failed to persist price for ${pos.symbol}`, error);
+            });
           }
         } catch (e) {
           console.warn(`Failed to refresh ${pos.symbol}`, e);
@@ -120,10 +126,12 @@ export default function Portfolio() {
       }
       setLastUpdated(new Date());
     };
-    refresh();
-    const interval = setInterval(refresh, 30000);
-    return () => clearInterval(interval);
-  }, [positions.length]);
+    if (positionsRef.length > 0) {
+      refresh();
+      const interval = setInterval(refresh, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [positions.length, positions.map(p => p.id).join(',')]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
