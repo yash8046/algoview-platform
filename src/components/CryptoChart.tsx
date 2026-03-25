@@ -122,11 +122,7 @@ export default function CryptoChart() {
     setSeriesApi(candleSeries);
     candleSeriesRef.current = candleSeries;
     volumeSeriesRef.current = volumeSeries;
-    sma20Ref.current = sma20Series;
-    ema12Ref.current = ema12Series;
-    ema26Ref.current = ema26Series;
-    bbUpperRef.current = bbUpperSeries;
-    bbLowerRef.current = bbLowerSeries;
+    // Indicator refs no longer needed — managed by indicator system
 
     const observer = new ResizeObserver(() => {
       if (chartRef.current) chart.applyOptions({ width: chartRef.current.clientWidth, height: chartRef.current.clientHeight });
