@@ -132,16 +132,7 @@ export default function CryptoChart() {
     };
   }, [selectedPair, selectedInterval, fullscreen]);
 
-  const indicators = useMemo(() => {
-    if (candles.length < 26) return null;
-    const closes = candles.map(c => c.close * usdToInr);
-    return {
-      sma20: calcSMA(closes, 20),
-      ema12: calcEMA(closes, 12),
-      ema26: calcEMA(closes, 26),
-      bb: calcBollingerBands(closes, 20, 2),
-    };
-  }, [candles, usdToInr]);
+  // Indicators managed dynamically via indicator system
 
   useEffect(() => {
     if (!candleSeriesRef.current || candles.length === 0) return;
