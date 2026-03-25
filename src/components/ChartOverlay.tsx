@@ -1565,8 +1565,9 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
     if (singleClickModes.includes(mode)) {
       const color = defaultColors[mode] || '#ffffff';
+      const snapped = snapToOHLC(coord.time, coord.price);
       if (mode === 'hline') {
-        onAddDrawing({ id: `${mode}_${Date.now()}`, type: mode, price: coord.price, color });
+        onAddDrawing({ id: `${mode}_${Date.now()}`, type: mode, price: snapped.price, color });
       } else {
         const textModes: DrawingMode[] = ['text', 'anchored_text', 'note_box', 'callout'];
         let text: string | undefined;
@@ -1575,7 +1576,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         }
         onAddDrawing({
           id: `${mode}_${Date.now()}`, type: mode,
-          points: [{ time: coord.time as number, price: coord.price }],
+          points: [{ time: snapped.time as number, price: snapped.price }],
           color, text,
         });
       }
@@ -1585,11 +1586,12 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
     if (twoPointModes.includes(mode)) {
       isDrawing.current = true;
-      startCoord.current = { time: coord.time, price: coord.price };
+      const snapped = snapToOHLC(coord.time, coord.price);
+      startCoord.current = { time: snapped.time, price: snapped.price };
       currentPixel.current = { x: coord.x, y: coord.y };
       return;
     }
-  }, [fromPixel, onAddDrawing, onFinishDrawing, onRemoveDrawing, render, drawingModeRef, findNearestDrawing]);
+  }, [fromPixel, onAddDrawing, onFinishDrawing, onRemoveDrawing, render, drawingModeRef, findNearestDrawing, snapToOHLC]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     const mode = drawingModeRef.current;
