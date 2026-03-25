@@ -1439,7 +1439,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     renderPitchfork, renderSchiffPitchfork, renderPen, renderBrush, renderHighlighter,
     renderText, renderAnchoredText, renderNoteBox, renderCallout, renderArrowMarker,
     renderFlag, renderPriceLabel, renderPriceRange, renderDateRange, renderBarsPattern,
-    renderRiskReward, renderLongShort]);
+    renderRiskReward, renderLongShort, renderGannFan, renderGannBox, renderGannSquare]);
 
   // === INPUT HANDLING ===
 
