@@ -267,6 +267,8 @@ export default function CryptoChart() {
               onAddDrawing={addDrawing}
               onRemoveDrawing={removeDrawing}
               onFinishDrawing={finishDrawing}
+              magnetMode={magnetMode}
+              candleData={formattedCandlesRef.current}
             />
           </div>
         </div>
