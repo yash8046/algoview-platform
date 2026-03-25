@@ -14,19 +14,24 @@ export type DrawingMode =
   // Lines
   | 'hline' | 'vline' | 'trendline' | 'ray' | 'extended_line' | 'arrow_line'
   | 'cross_line' | 'h_ray' | 'info_line'
+  | 'v_ray' | 'h_segment' | 'trend_angle' | 'arrow_marker_standalone'
   // Channels
   | 'parallel_channel' | 'disjoint_channel' | 'pitchfork'
+  | 'regression_channel' | 'flat_channel' | 'schiff_pitchfork' | 'inside_pitchfork'
   // Fibonacci
   | 'fib_retracement' | 'fib_extension' | 'fib_fan' | 'fib_arc' | 'fib_time_zones' | 'fib_channel'
+  | 'fib_trend_based' | 'fib_speed_resistance' | 'fib_spiral' | 'fib_wedge'
   // Shapes
   | 'rectangle' | 'circle' | 'ellipse' | 'triangle' | 'polyline' | 'arc'
+  | 'rotated_rectangle' | 'bezier_curve' | 'path_tool'
   // Draw
-  | 'pen' | 'brush' | 'highlighter' | 'laser'
+  | 'pen' | 'brush' | 'highlighter' | 'laser' | 'eraser'
   // Annotations
   | 'text' | 'callout' | 'arrow_marker_up' | 'arrow_marker_down' | 'flag' | 'price_label'
+  | 'anchored_text' | 'note_box'
   // Measure
   | 'price_range' | 'date_range' | 'long_position' | 'short_position'
-  // Control (not actual drawing modes, but toolbar actions)
+  | 'bars_pattern' | 'risk_reward'
   ;
 
 export interface DrawingLine {
