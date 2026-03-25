@@ -1154,6 +1154,98 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.fillText(`Target: ${target.toFixed(2)}`, right + 8, entryY + 32);
   }, [toPixel, series]);
 
+  // === GANN RENDERERS ===
+
+  const renderGannFan = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine, w: number, h: number) => {
+    if (!d.points || d.points.length < 2) return;
+    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    if (!p1 || !p2) return;
+    const angles = [
+      { ratio: '1x1', slope: 1 }, { ratio: '1x2', slope: 0.5 }, { ratio: '2x1', slope: 2 },
+      { ratio: '1x3', slope: 1/3 }, { ratio: '3x1', slope: 3 },
+      { ratio: '1x4', slope: 0.25 }, { ratio: '4x1', slope: 4 },
+      { ratio: '1x8', slope: 0.125 }, { ratio: '8x1', slope: 8 },
+    ];
+    const colors = ['#f59e0b', '#22c55e', '#22c55e', '#3b82f6', '#3b82f6', '#6b7a99', '#6b7a99', '#6b7a99', '#6b7a99'];
+    const baseSlope = (p2.y - p1.y) / (p2.x - p1.x || 1);
+    angles.forEach((a, idx) => {
+      const dy = baseSlope * a.slope;
+      const endX = w * 2;
+      const endY = p1.y + dy * (endX - p1.x);
+      ctx.beginPath();
+      ctx.strokeStyle = colors[idx];
+      ctx.lineWidth = a.ratio === '1x1' ? 1.5 : 0.8;
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+      if (idx < 5) {
+        ctx.fillStyle = colors[idx];
+        ctx.font = '8px "JetBrains Mono", monospace';
+        ctx.fillText(a.ratio, Math.min(p1.x + 60 + idx * 30, w - 30), p1.y + dy * (60 + idx * 30) - 3);
+      }
+    });
+  }, [toPixel]);
+
+  const renderGannBox = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
+    if (!d.points || d.points.length < 2) return;
+    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    if (!p1 || !p2) return;
+    const left = Math.min(p1.x, p2.x); const right = Math.max(p1.x, p2.x);
+    const top = Math.min(p1.y, p2.y); const bottom = Math.max(p1.y, p2.y);
+    const w = right - left; const h = bottom - top;
+    // Outer box
+    ctx.strokeStyle = d.color; ctx.lineWidth = 1.5;
+    ctx.strokeRect(left, top, w, h);
+    // Grid lines
+    const divisions = [0.25, 0.382, 0.5, 0.618, 0.75];
+    ctx.lineWidth = 0.6; ctx.setLineDash([3, 3]);
+    divisions.forEach(div => {
+      const x = left + w * div; const y = top + h * div;
+      ctx.beginPath(); ctx.strokeStyle = '#6b7a99';
+      ctx.moveTo(x, top); ctx.lineTo(x, bottom); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    // Diagonal lines
+    ctx.beginPath(); ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 0.8;
+    ctx.moveTo(left, top); ctx.lineTo(right, bottom); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(right, top); ctx.lineTo(left, bottom); ctx.stroke();
+    // Fill
+    ctx.globalAlpha = 0.03; ctx.fillStyle = d.color;
+    ctx.fillRect(left, top, w, h); ctx.globalAlpha = 1;
+  }, [toPixel]);
+
+  const renderGannSquare = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
+    if (!d.points || d.points.length < 2) return;
+    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    if (!p1 || !p2) return;
+    const size = Math.max(Math.abs(p2.x - p1.x), Math.abs(p2.y - p1.y));
+    const cx = p1.x; const cy = p1.y;
+    // Square
+    ctx.strokeStyle = d.color; ctx.lineWidth = 1.5;
+    ctx.strokeRect(cx - size/2, cy - size/2, size, size);
+    // Circle inscribed
+    ctx.beginPath(); ctx.strokeStyle = d.color; ctx.lineWidth = 0.8;
+    ctx.arc(cx, cy, size/2, 0, Math.PI * 2); ctx.stroke();
+    // Diagonals and cross
+    ctx.beginPath(); ctx.lineWidth = 0.6; ctx.setLineDash([3,3]);
+    ctx.moveTo(cx - size/2, cy - size/2); ctx.lineTo(cx + size/2, cy + size/2);
+    ctx.moveTo(cx + size/2, cy - size/2); ctx.lineTo(cx - size/2, cy + size/2);
+    ctx.moveTo(cx, cy - size/2); ctx.lineTo(cx, cy + size/2);
+    ctx.moveTo(cx - size/2, cy); ctx.lineTo(cx + size/2, cy);
+    ctx.stroke(); ctx.setLineDash([]);
+    // Divisions
+    [0.25, 0.5, 0.75].forEach(f => {
+      ctx.beginPath(); ctx.strokeStyle = '#6b7a99'; ctx.lineWidth = 0.4;
+      ctx.arc(cx, cy, size/2 * f, 0, Math.PI * 2); ctx.stroke();
+    });
+  }, [toPixel]);
+
   // === MAIN RENDER ===
 
   const render = useCallback(() => {
