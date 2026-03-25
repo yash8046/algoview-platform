@@ -1,10 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
-import { BarChart3, Bitcoin, CandlestickChart, FlaskConical, Blocks } from 'lucide-react';
+import { Activity, BarChart3, Bitcoin, CandlestickChart, FlaskConical, Blocks } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 
 const tabs = [
-  { to: '/', label: 'Stocks', icon: BarChart3 },
+  { to: '/', label: 'Analysis', icon: Activity },
   { to: '/crypto', label: 'Crypto', icon: Bitcoin },
   { to: '/charts', label: 'Charts', icon: CandlestickChart },
   { to: '/strategy-builder', label: 'Strategy', icon: Blocks },
