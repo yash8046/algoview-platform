@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import type { IChartApi, Time } from 'lightweight-charts';
 import type { DrawingMode, DrawingLine } from './ChartDrawingTools';
 
