@@ -338,6 +338,20 @@ export default function TradingChart() {
             showPatterns={showPatterns}
             onTogglePatterns={() => setShowPatterns(p => !p)}
           />
+          <ChartIndicatorOverlay
+            indicators={indicators}
+            onToggle={toggleIndicator}
+            onRemove={removeIndicator}
+          />
+          <button
+            onClick={() => setMagnetMode(m => !m)}
+            className={`p-1.5 rounded transition-colors min-h-[32px] active:scale-95 ${
+              magnetMode ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+            }`}
+            title="Magnet Mode (snap to OHLC)"
+          >
+            <Magnet className="w-3.5 h-3.5" />
+          </button>
           <div className="flex items-center gap-0.5">
             {TIMEFRAMES.map(tf => (
               <button
