@@ -81,11 +81,10 @@ export async function initAdMob(): Promise<void> {
     });
     isInitialized = true;
     console.log('[AdService] AdMob initialized');
-    toast.success('AdMob initialized successfully', { duration: 2000 });
+    toast.success('AdMob initialized', { duration: 2000 });
 
-    // Pre-load ads
-    loadRewardedAd();
-    loadInterstitialAd();
+    // Pre-load ads immediately after init
+    await Promise.allSettled([loadRewardedAd(), loadInterstitialAd()]);
   } catch (err: any) {
     console.warn('[AdService] AdMob init failed:', err);
     toast.error(`AdMob init failed: ${err?.message || err}`, { duration: 4000 });
