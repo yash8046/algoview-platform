@@ -182,6 +182,67 @@ export default function TradingChart() {
     }
   }, [showPatterns, seriesApi]);
 
+  // Manage indicator series
+  useEffect(() => {
+    if (!chartApi || rawCandlesRef.current.length === 0) return;
+    const candles = rawCandlesRef.current;
+    const closes = candles.map((c: any) => c.close);
+    const activeIds = new Set(indicators.map(i => i.id));
+
+    // Remove old series
+    indicatorSeriesRef.current.forEach((s, id) => {
+      if (!activeIds.has(id)) {
+        try { chartApi.removeSeries(s); } catch {}
+        indicatorSeriesRef.current.delete(id);
+      }
+    });
+
+    // Add/update indicator series
+    for (const ind of indicators) {
+      if (indicatorSeriesRef.current.has(ind.id)) continue;
+      try {
+        if (ind.type === 'sma' || ind.type === 'ema') {
+          const vals = ind.type === 'sma' ? calcSMALib(closes, ind.period || 20) : calcEMA(closes, ind.period || 12);
+          const s = chartApi.addSeries(LineSeries, { color: ind.color, lineWidth: 1, title: `${ind.type.toUpperCase()} ${ind.period || ''}` });
+          const data = vals.map((v, i) => ({ time: candles[i].time as any, value: v })).filter(d => !isNaN(d.value));
+          s.setData(data);
+          indicatorSeriesRef.current.set(ind.id, s);
+        } else if (ind.type === 'bollinger') {
+          const bb = calcBollingerBands(closes, ind.period || 20);
+          const sU = chartApi.addSeries(LineSeries, { color: '#3b82f6', lineWidth: 1, title: 'BB Upper' });
+          const sL = chartApi.addSeries(LineSeries, { color: '#3b82f6', lineWidth: 1, title: 'BB Lower' });
+          sU.setData(bb.map((b, i) => ({ time: candles[i].time as any, value: b.upper })).filter(d => !isNaN(d.value)));
+          sL.setData(bb.map((b, i) => ({ time: candles[i].time as any, value: b.lower })).filter(d => !isNaN(d.value)));
+          indicatorSeriesRef.current.set(ind.id, sU);
+          indicatorSeriesRef.current.set(ind.id + '_lower', sL);
+        } else if (ind.type === 'vwap') {
+          const vwap = calcVWAP(candles);
+          const s = chartApi.addSeries(LineSeries, { color: ind.color, lineWidth: 1, title: 'VWAP' });
+          s.setData(vwap.map((v, i) => ({ time: candles[i].time as any, value: v })).filter(d => !isNaN(d.value)));
+          indicatorSeriesRef.current.set(ind.id, s);
+        } else if (ind.type === 'rsi') {
+          // RSI rendered as separate pane via price scale
+          const rsi = calcRSI(closes, 14);
+          const s = chartApi.addSeries(LineSeries, { color: ind.color, lineWidth: 1, title: 'RSI', priceScaleId: 'rsi' });
+          s.priceScale().applyOptions({ scaleMargins: { top: 0.7, bottom: 0.05 } });
+          s.setData(rsi.map((v, i) => ({ time: candles[i].time as any, value: v })).filter(d => !isNaN(d.value)));
+          indicatorSeriesRef.current.set(ind.id, s);
+        } else if (ind.type === 'macd') {
+          const macd = calcMACD(closes);
+          const s = chartApi.addSeries(LineSeries, { color: '#22c55e', lineWidth: 1, title: 'MACD', priceScaleId: 'macd' });
+          s.priceScale().applyOptions({ scaleMargins: { top: 0.75, bottom: 0.02 } });
+          const sSignal = chartApi.addSeries(LineSeries, { color: '#ef4444', lineWidth: 1, title: 'Signal', priceScaleId: 'macd' });
+          s.setData(macd.map((m, i) => ({ time: candles[i].time as any, value: m.macd })).filter(d => !isNaN(d.value)));
+          sSignal.setData(macd.map((m, i) => ({ time: candles[i].time as any, value: m.signal })).filter(d => !isNaN(d.value)));
+          indicatorSeriesRef.current.set(ind.id, s);
+          indicatorSeriesRef.current.set(ind.id + '_signal', sSignal);
+        }
+      } catch (err) {
+        console.error('Indicator error:', ind.type, err);
+      }
+    }
+  }, [indicators, chartApi]);
+
   const isDrawingActive = drawingMode !== 'none';
 
   // Landscape fullscreen: minimal toolbar, chart fills entire screen
