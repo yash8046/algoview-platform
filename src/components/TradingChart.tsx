@@ -251,13 +251,16 @@ export default function TradingChart() {
   }, [indicators, chartApi]);
 
   const isDrawingActive = drawingMode !== 'none';
+  const fullscreenToolbarInsetStyle = isAndroid && (fullscreen || landscapeFullscreen)
+    ? { paddingTop: 'max(env(safe-area-inset-top, 0px), 0.5rem)' }
+    : undefined;
 
   // Landscape fullscreen: minimal toolbar, chart fills entire screen
   if (landscapeFullscreen) {
     return (
-      <div className="fixed inset-0 z-[200] bg-background flex flex-col">
+      <div className="fixed inset-0 z-[200] bg-background flex flex-col overflow-hidden">
         {/* Compact landscape toolbar */}
-        <div className="flex items-center justify-between px-2 py-1 bg-panel-header border-b border-border">
+        <div style={fullscreenToolbarInsetStyle} className="flex shrink-0 items-center justify-between px-2 py-1 bg-panel-header border-b border-border">
           <div className="flex items-center gap-2">
             <h2 className="font-mono text-[10px] font-semibold text-foreground">
               {selectedSymbol === 'NIFTY 50' ? 'NIFTY 50' : `${selectedSymbol}.NS`}
@@ -325,7 +328,7 @@ export default function TradingChart() {
 
   const chartContent = (
     <>
-      <div className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2 bg-panel-header border-b border-border gap-2">
+      <div style={fullscreenToolbarInsetStyle} className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2 bg-panel-header border-b border-border gap-2">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <h2 className="font-mono text-xs sm:text-sm font-semibold text-foreground truncate">
             {selectedSymbol === 'NIFTY 50' ? 'NIFTY 50' : `${selectedSymbol}.NS`}
@@ -444,7 +447,7 @@ export default function TradingChart() {
 
   if (fullscreen) {
     return (
-      <div className="fixed inset-0 z-[200] bg-background flex flex-col">
+      <div className="fixed inset-0 z-[200] bg-background flex flex-col overflow-hidden">
         {chartContent}
       </div>
     );
