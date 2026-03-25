@@ -1,33 +1,22 @@
 /**
- * AdMob Ad Service
- * 
- * Supports: Rewarded, Interstitial, Banner, App Open ads
- * All with graceful fallback — features are NEVER blocked.
- * 
- * Test Ad Unit IDs (Google official):
- * - Banner:       ca-app-pub-3940256099942544/6300978111
- * - Interstitial: ca-app-pub-3940256099942544/1033173712
- * - Rewarded:     ca-app-pub-3940256099942544/5224354917
- * - App Open:     ca-app-pub-3940256099942544/9257395921
+ * AdMob Ad Service (FINAL STABLE FIX)
  */
 
 import { Capacitor } from '@capacitor/core';
 import { toast } from 'sonner';
+import {
+  AdMob,
+  BannerAdSize,
+  BannerAdPosition
+} from '@capacitor-community/admob';
 
 // ============ State ============
 let isInitialized = false;
 let rewardedAdLoaded = false;
 let interstitialAdLoaded = false;
-let adLoadAttempts = { rewarded: 0, interstitial: 0 };
-let lastAdShownAt = { rewarded: 0, interstitial: 0, appOpen: 0 };
 let bannerVisible = false;
-let lastAdError: {
-  rewarded: { code: string; message: string } | null;
-  interstitial: { code: string; message: string } | null;
-} = {
-  rewarded: null,
-  interstitial: null,
-};
+
+let lastAdShownAt = { rewarded: 0, interstitial: 0, appOpen: 0 };
 
 // ============ Config ============
 const AD_UNITS = {
@@ -37,233 +26,195 @@ const AD_UNITS = {
   appOpen: 'ca-app-pub-3940256099942544/9257395921',
 };
 
-const COOLDOWNS = {
-  rewarded: 30_000,
-  interstitial: 60_000,
-  appOpen: 300_000,
-};
-
 export interface AdResult {
   granted: boolean;
   adShown: boolean;
-  message: string;
+  message?: string;
 }
 
 // ============ Helpers ============
-async function getAdMob() {
-  const { AdMob } = await import('@capacitor-community/admob');
-  return AdMob;
-}
-
-function isNative(): boolean {
+function isNative() {
   return Capacitor.isNativePlatform();
 }
 
-function canShowAd(type: keyof typeof COOLDOWNS): boolean {
-  return Date.now() - lastAdShownAt[type] >= COOLDOWNS[type];
+function errMsg(err: any) {
+  return `[${err?.code || 'UNKNOWN'}] ${err?.message || 'Unknown error'}`;
 }
 
-function getAdErrorDetails(err: any): { code: string; message: string } {
-  return {
-    code: err?.code || err?.errorCode || 'UNKNOWN',
-    message: err?.message || err?.errorMessage || 'Unknown AdMob error',
-  };
-}
-
-// ============ Initialize ============
+// ============ INIT ============
 export async function initAdMob(): Promise<void> {
   if (!isNative() || isInitialized) return;
 
   try {
-    const AdMob = await getAdMob();
     await AdMob.initialize({
       initializeForTesting: true,
     });
-    isInitialized = true;
-    console.log('[AdService] AdMob initialized');
-    toast.success('AdMob initialized', { duration: 2000 });
 
-    // Pre-load ads immediately after init
-    await Promise.allSettled([loadRewardedAd(), loadInterstitialAd()]);
+    isInitialized = true;
+    toast.success('AdMob initialized');
+
+    // preload ads
+    loadRewardedAd();
+    loadInterstitialAd();
   } catch (err: any) {
-    console.warn('[AdService] AdMob init failed:', err);
-    toast.error(`AdMob init failed: ${err?.message || err}`, { duration: 4000 });
+    toast.error('Init failed ' + errMsg(err));
   }
 }
 
-// ============ Banner Ad ============
-export async function showBannerAd(position: 'TOP' | 'BOTTOM' = 'BOTTOM'): Promise<void> {
+// ============ BANNER ============
+export async function showBannerAd(): Promise<void> {
   if (!isNative() || bannerVisible) return;
 
   try {
-    const AdMob = await getAdMob();
-    const { BannerAdSize, BannerAdPosition } = await import('@capacitor-community/admob');
     await AdMob.showBanner({
       adId: AD_UNITS.banner,
-      adSize: BannerAdSize.ADAPTIVE_BANNER,
-      position: position === 'TOP' ? BannerAdPosition.TOP_CENTER : BannerAdPosition.BOTTOM_CENTER,
+      adSize: BannerAdSize.BANNER,
+      position: BannerAdPosition.BOTTOM_CENTER,
+      margin: 0,
       isTesting: true,
     });
+
     bannerVisible = true;
-  } catch (err) {
-    console.warn('[AdService] Banner failed:', err);
+  } catch (err: any) {
+    toast.error('Banner error ' + errMsg(err));
   }
 }
 
 export async function hideBannerAd(): Promise<void> {
   if (!isNative() || !bannerVisible) return;
+
   try {
-    const AdMob = await getAdMob();
     await AdMob.hideBanner();
     bannerVisible = false;
-  } catch (err) {
-    console.warn('[AdService] Hide banner failed:', err);
+  } catch (err: any) {
+    toast.error('Banner hide ' + errMsg(err));
   }
 }
 
 export async function removeBannerAd(): Promise<void> {
   if (!isNative() || !bannerVisible) return;
+
   try {
-    const AdMob = await getAdMob();
     await AdMob.removeBanner();
     bannerVisible = false;
-  } catch (err) {
+  } catch (err: any) {
     console.warn('[AdService] Remove banner failed:', err);
   }
 }
 
-// ============ Interstitial Ad ============
+// ============ INTERSTITIAL ============
 async function loadInterstitialAd(): Promise<void> {
   if (!isNative()) return;
+
   try {
-    const AdMob = await getAdMob();
-    await AdMob.prepareInterstitial({ adId: AD_UNITS.interstitial });
+    await AdMob.prepareInterstitial({
+      adId: AD_UNITS.interstitial,
+      isTesting: true,
+    });
+
     interstitialAdLoaded = true;
-    lastAdError.interstitial = null;
-    adLoadAttempts.interstitial = 0;
-    console.log('[AdService] Interstitial ad ready');
   } catch (err: any) {
     interstitialAdLoaded = false;
-    adLoadAttempts.interstitial++;
-    lastAdError.interstitial = getAdErrorDetails(err);
-    console.warn(`[AdService] Interstitial load attempt ${adLoadAttempts.interstitial}:`, err);
+    toast.error('Interstitial load ' + errMsg(err));
   }
 }
 
 export async function showInterstitialAd(): Promise<AdResult> {
-  if (!isNative()) return { granted: true, adShown: false, message: '' };
-  if (!canShowAd('interstitial')) return { granted: true, adShown: false, message: '' };
+  if (!isNative()) return { granted: true, adShown: false };
 
-  if (interstitialAdLoaded) {
-    try {
-      const AdMob = await getAdMob();
-      await AdMob.showInterstitial();
-      lastAdShownAt.interstitial = Date.now();
-      interstitialAdLoaded = false;
-      loadInterstitialAd();
-      return { granted: true, adShown: true, message: '' };
-    } catch (err) {
-      console.warn('[AdService] Show interstitial failed:', err);
-      loadInterstitialAd();
+  try {
+    if (!interstitialAdLoaded) {
+      await loadInterstitialAd();
+      return { granted: true, adShown: false };
     }
-  } else {
+
+    await AdMob.showInterstitial();
+
+    interstitialAdLoaded = false;
+    lastAdShownAt.interstitial = Date.now();
+
     loadInterstitialAd();
+
+    return { granted: true, adShown: true };
+  } catch (err: any) {
+    toast.error('Interstitial show ' + errMsg(err));
+    loadInterstitialAd();
+
+    return { granted: true, adShown: false };
   }
-  return { granted: true, adShown: false, message: '' };
 }
 
-// ============ Rewarded Ad ============
+// ============ REWARDED ============
 async function loadRewardedAd(): Promise<void> {
   if (!isNative()) return;
+
   try {
-    const AdMob = await getAdMob();
-    await AdMob.prepareRewardVideoAd({ adId: AD_UNITS.rewarded });
+    await AdMob.prepareRewardVideoAd({
+      adId: AD_UNITS.rewarded,
+      isTesting: true,
+    });
+
     rewardedAdLoaded = true;
-    lastAdError.rewarded = null;
-    adLoadAttempts.rewarded = 0;
-    console.log('[AdService] Rewarded ad ready');
-    toast.success('Ad ready — watch to unlock features', { duration: 2000 });
   } catch (err: any) {
     rewardedAdLoaded = false;
-    adLoadAttempts.rewarded++;
-    const { code: errorCode, message: errMsg } = getAdErrorDetails(err);
-    lastAdError.rewarded = { code: errorCode, message: errMsg };
-    console.warn(`[AdService] Rewarded load attempt ${adLoadAttempts.rewarded}: [${errorCode}] ${errMsg}`);
-    if (adLoadAttempts.rewarded <= 3) {
-      toast.error(`Ad load failed [${errorCode}]: ${errMsg}. Features unlocked for free.`, { duration: 4000 });
-    }
+    toast.error('Rewarded load ' + errMsg(err));
   }
 }
 
-export async function showRewardedAd(featureName: string = 'Feature'): Promise<AdResult> {
-  // On web: grant silently (test ads only work on native)
-  if (!isNative()) return { granted: true, adShown: false, message: 'Web — no ads' };
-  if (!canShowAd('rewarded')) return { granted: true, adShown: false, message: 'Cooldown active' };
-
-  // If not initialized yet, try init first
-  if (!isInitialized) {
-    await initAdMob();
-  }
-
-  // If ad not loaded, try loading and waiting
-  if (!rewardedAdLoaded) {
-    toast.info('Loading ad…', { duration: 2000 });
-    await loadRewardedAd();
-    // Give it a moment
-    await new Promise(r => setTimeout(r, 1500));
-  }
-
-  if (rewardedAdLoaded) {
-    try {
-      const AdMob = await getAdMob();
-      await AdMob.showRewardVideoAd();
-      lastAdShownAt.rewarded = Date.now();
-      rewardedAdLoaded = false;
-      toast.success(`${featureName} unlocked! 🎉`, { duration: 2000 });
-      loadRewardedAd(); // pre-load next
-      return { granted: true, adShown: true, message: '' };
-    } catch (err: any) {
-      console.warn('[AdService] Show rewarded failed:', err);
-      const details = getAdErrorDetails(err);
-      toast.error(`Ad failed [${details.code}]: ${details.message}`, { duration: 4000 });
-      loadRewardedAd();
-      return { granted: true, adShown: false, message: details.message };
-    }
-  }
-
-  // Still not loaded after retry
-  const details = lastAdError.rewarded;
-  const msg = details ? `[${details.code}] ${details.message}` : 'Ad not available';
-  toast.warning(`${msg} — feature unlocked free`, { duration: 3000 });
-  return { granted: true, adShown: false, message: msg };
-}
-
-// ============ App Open Ad ============
-export async function showAppOpenAd(): Promise<AdResult> {
-  if (!isNative()) return { granted: true, adShown: false, message: '' };
-  if (!canShowAd('appOpen')) return { granted: true, adShown: false, message: '' };
+export async function showRewardedAd(feature = 'Feature'): Promise<AdResult> {
+  if (!isNative()) return { granted: true, adShown: false };
 
   try {
-    const AdMob = await getAdMob();
-    await AdMob.prepareInterstitial({ adId: AD_UNITS.appOpen });
-    await AdMob.showInterstitial();
-    lastAdShownAt.appOpen = Date.now();
-    return { granted: true, adShown: true, message: '' };
-  } catch (err) {
-    console.warn('[AdService] App open ad failed:', err);
-    return { granted: true, adShown: false, message: '' };
+    if (!rewardedAdLoaded) {
+      toast.info('Ad not ready, continuing...');
+      loadRewardedAd();
+
+      return { granted: true, adShown: false };
+    }
+
+    await AdMob.showRewardVideoAd();
+
+    rewardedAdLoaded = false;
+    lastAdShownAt.rewarded = Date.now();
+
+    toast.success(`${feature} unlocked`);
+
+    loadRewardedAd();
+
+    return { granted: true, adShown: true };
+  } catch (err: any) {
+    toast.error('Rewarded show ' + errMsg(err));
+    loadRewardedAd();
+
+    return { granted: true, adShown: false };
   }
 }
 
-// ============ Status ============
+// ============ APP OPEN ============
+export async function showAppOpenAd(): Promise<void> {
+  if (!isNative()) return;
+
+  try {
+    await AdMob.prepareInterstitial({
+      adId: AD_UNITS.appOpen,
+      isTesting: true,
+    });
+
+    await AdMob.showInterstitial();
+  } catch (err: any) {
+    toast.info('App open unavailable ' + errMsg(err));
+  }
+}
+
+// ============ STATUS ============
 export function isAdReady(): boolean {
   return rewardedAdLoaded;
 }
 
-export function createAdGate(featureName: string) {
-  return async (callback: () => void): Promise<{ adShown: boolean; message: string }> => {
-    const result = await showRewardedAd(featureName);
-    if (result.granted) callback();
-    return { adShown: result.adShown, message: result.message };
+// ============ GATE ============
+export function createAdGate(feature: string) {
+  return async (cb: () => void) => {
+    await showRewardedAd(feature);
+    cb(); // NEVER block user
   };
 }
