@@ -103,15 +103,15 @@
   }
 
   .glow-primary {
-    box-shadow: 0 0 20px hsl(var(--glow-primary) / 0.15);
+    box-shadow: 0 0 20px hsl(var(--glow-primary) / 0.15), 0 0 60px hsl(var(--glow-primary) / 0.05);
   }
 
   .glow-gain {
-    box-shadow: 0 0 12px hsl(var(--glow-gain) / 0.2);
+    box-shadow: 0 0 15px hsl(var(--glow-gain) / 0.25), 0 4px 12px hsl(var(--glow-gain) / 0.1);
   }
 
   .glow-loss {
-    box-shadow: 0 0 12px hsl(var(--glow-loss) / 0.2);
+    box-shadow: 0 0 15px hsl(var(--glow-loss) / 0.25), 0 4px 12px hsl(var(--glow-loss) / 0.1);
   }
 
   .scrollbar-thin {
