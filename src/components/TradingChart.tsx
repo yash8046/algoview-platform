@@ -307,6 +307,8 @@ export default function TradingChart() {
               onAddDrawing={addDrawing}
               onRemoveDrawing={removeDrawing}
               onFinishDrawing={finishDrawing}
+              magnetMode={magnetMode}
+              candleData={candleDataRef.current}
             />
           </div>
         </div>
