@@ -32,16 +32,28 @@ function ConfidenceBar({ value, label }: { value: number; label: string }) {
   );
 }
 
+function sentimentToPercent(s: number): number {
+  return Math.round(((s + 1) / 2) * 100);
+}
+
+function sentimentLabel(pct: number): string {
+  if (pct >= 70) return 'Bullish';
+  if (pct >= 55) return 'Slightly Bullish';
+  if (pct >= 45) return 'Neutral';
+  if (pct >= 30) return 'Slightly Bearish';
+  return 'Bearish';
+}
+
 function SentimentScore({ score, label }: { score: number | undefined | null; label: string }) {
   const s = typeof score === 'number' ? score : 0;
-  const color = s > 0.1 ? 'text-gain' : s < -0.1 ? 'text-loss' : 'text-warning';
-  const bg = s > 0.1 ? 'bg-gain' : s < -0.1 ? 'bg-loss' : 'bg-warning';
-  const pct = Math.round(((s + 1) / 2) * 100);
+  const pct = sentimentToPercent(s);
+  const color = pct >= 55 ? 'text-gain' : pct <= 45 ? 'text-loss' : 'text-warning';
+  const bg = pct >= 55 ? 'bg-gain' : pct <= 45 ? 'bg-loss' : 'bg-warning';
   return (
     <div className="space-y-0.5">
       <div className="flex justify-between text-[10px]">
         <span className="text-muted-foreground">{label}</span>
-        <span className={`font-mono font-semibold ${color}`}>{s > 0 ? '+' : ''}{s.toFixed(2)}</span>
+        <span className={`font-mono font-semibold ${color}`}>{pct}% {sentimentLabel(pct)}</span>
       </div>
       <div className="h-1 bg-secondary rounded-full overflow-hidden">
         <div className={`h-full ${bg} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
@@ -79,10 +91,12 @@ function SentimentPanel({ sentiment }: { sentiment: Partial<SentimentData> }) {
 
       <div className="pt-1.5 border-t border-border/50">
         <div className="flex justify-between text-[10px]">
-          <span className="text-muted-foreground font-medium">Weighted Final Score</span>
-          <span className={`font-mono font-bold ${finalScore > 0.1 ? 'text-gain' : finalScore < -0.1 ? 'text-loss' : 'text-warning'}`}>
-            {finalScore > 0 ? '+' : ''}{finalScore.toFixed(3)}
-          </span>
+          <span className="text-muted-foreground font-medium">Overall Sentiment</span>
+          {(() => {
+            const pct = sentimentToPercent(finalScore);
+            const color = pct >= 55 ? 'text-gain' : pct <= 45 ? 'text-loss' : 'text-warning';
+            return <span className={`font-mono font-bold ${color}`}>{pct}% {sentimentLabel(pct)}</span>;
+          })()}
         </div>
       </div>
 

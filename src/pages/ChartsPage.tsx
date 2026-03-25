@@ -30,7 +30,7 @@ export default function ChartsPage() {
   );
 
   return (
-    <div className="flex flex-col h-[100dvh] overflow-hidden bg-[hsl(var(--chart-bg))]">
+    <div className="flex flex-col h-[100dvh] overflow-hidden bg-[hsl(var(--chart-bg))] pb-[60px]">
       {/* ═══ TOP HEADER — 48px, TradingView-style thin bar ═══ */}
       <div className="h-12 flex-shrink-0 flex items-center bg-card border-b border-border/40 px-0 safe-area-top z-20">
         {/* Symbol selector */}
