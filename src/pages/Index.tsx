@@ -106,7 +106,7 @@ const Index = () => {
           <div className="p-2 space-y-2">
             <div data-tour="portfolio"><PortfolioSummary /></div>
             <TopPerformers />
-            <div className="h-[280px]" data-tour="chart">
+            <div className="h-[55vh] min-h-[300px]" data-tour="chart">
               <TradingChart />
             </div>
             <div data-tour="trade-panel"><TradePanel /></div>
