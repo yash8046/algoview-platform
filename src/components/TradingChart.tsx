@@ -124,6 +124,9 @@ export default function TradingChart() {
         candleSeries.setData(candleData);
         volumeSeries.setData(volData);
         candleDataRef.current = candleData;
+        rawCandlesRef.current = resp.candles.map(c => ({
+          time: c.time, open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume,
+        }));
 
         if (candleData.length >= 20) sma20Series.setData(calculateSMA(candleData, 20) as any);
         if (candleData.length >= 50) sma50Series.setData(calculateSMA(candleData, 50) as any);
