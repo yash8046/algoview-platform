@@ -53,13 +53,13 @@ export default function CryptoTradePanel() {
             className={`flex-1 text-[10px] font-bold py-1.5 rounded-md transition-all tracking-wider flex items-center justify-center gap-1 ${
               side === 'buy' ? 'bg-gain/15 text-gain shadow-sm' : 'text-muted-foreground hover:text-foreground'
             }`}>
-            <TrendingUp className="w-3 h-3" /> BUY
+            <TrendingUp className="w-3 h-3" /> LONG
           </button>
           <button onClick={() => setSide('sell')}
             className={`flex-1 text-[10px] font-bold py-1.5 rounded-md transition-all tracking-wider flex items-center justify-center gap-1 ${
               side === 'sell' ? 'bg-loss/15 text-loss shadow-sm' : 'text-muted-foreground hover:text-foreground'
             }`}>
-            <TrendingDown className="w-3 h-3" /> SELL
+            <TrendingDown className="w-3 h-3" /> SHORT
           </button>
         </div>
 
@@ -105,7 +105,7 @@ export default function CryptoTradePanel() {
               : 'bg-loss hover:brightness-110 text-destructive-foreground disabled:opacity-30 disabled:cursor-not-allowed glow-loss'
           }`}>
           {side === 'buy' ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-          {side === 'buy' ? 'BUY' : 'SELL'} {pairInfo?.baseAsset}
+          {side === 'buy' ? 'LONG' : 'SHORT'} {pairInfo?.baseAsset}
         </button>
 
       </div>

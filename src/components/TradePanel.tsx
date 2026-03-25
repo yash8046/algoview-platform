@@ -136,12 +136,12 @@ export default function TradePanel() {
           <button onClick={() => handleTrade('buy')} disabled={!canBuy}
             className="flex-1 py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 bg-gain text-primary-foreground hover:brightness-110 transition-all disabled:opacity-30 disabled:cursor-not-allowed glow-gain">
             <TrendingUp className="w-3.5 h-3.5" />
-            BUY
+            LONG
           </button>
           <button onClick={() => handleTrade('sell')} disabled={!canSell}
             className="flex-1 py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 bg-loss text-destructive-foreground hover:brightness-110 transition-all disabled:opacity-30 disabled:cursor-not-allowed glow-loss">
             <TrendingDown className="w-3.5 h-3.5" />
-            SELL
+            SHORT
           </button>
         </div>
 
