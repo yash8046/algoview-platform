@@ -14,9 +14,10 @@ interface ChartOverlayProps {
   drawings: DrawingLine[];
   onAddDrawing: (drawing: DrawingLine) => void;
   onFinishDrawing: () => void;
+  onRemoveDrawing?: (id: string) => void;
 }
 
-export default function ChartOverlay({ chart, series, drawingMode, drawingModeRef, drawings, onAddDrawing, onFinishDrawing }: ChartOverlayProps) {
+export default function ChartOverlay({ chart, series, drawingMode, drawingModeRef, drawings, onAddDrawing, onFinishDrawing, onRemoveDrawing }: ChartOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawing = useRef(false);
   const startCoord = useRef<{ time: Time; price: number } | null>(null);
@@ -707,6 +708,452 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.fillText(`${isLong ? 'Long' : 'Short'} ${pct}%`, p2.x + 8, p2.y + 4);
   }, [toPixel]);
 
+  // === NEW RENDERERS ===
+
+  const renderVRay = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine, h: number) => {
+    if (!d.points?.[0] || !chart || !series) return;
+    const x = chart.timeScale().timeToCoordinate(d.points[0].time as unknown as Time);
+    const y = series.priceToCoordinate(d.points[0].price);
+    if (x === null || y === null) return;
+    ctx.beginPath();
+    ctx.strokeStyle = d.color;
+    ctx.lineWidth = d.lineWidth || 1;
+    ctx.setLineDash([6, 3]);
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, h);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }, [chart, series]);
+
+  const renderHSegment = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
+    if (!d.points || d.points.length < 2) return;
+    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    if (!p1 || !p2) return;
+    const y = p1.y;
+    ctx.beginPath();
+    ctx.strokeStyle = d.color;
+    ctx.lineWidth = d.lineWidth || 1.5;
+    ctx.moveTo(p1.x, y);
+    ctx.lineTo(p2.x, y);
+    ctx.stroke();
+    // End caps
+    [p1.x, p2.x].forEach(x => {
+      ctx.beginPath();
+      ctx.moveTo(x, y - 4); ctx.lineTo(x, y + 4);
+      ctx.stroke();
+    });
+    ctx.fillStyle = d.color;
+    ctx.font = '9px "JetBrains Mono", monospace';
+    ctx.fillText(d.points[0].price.toFixed(2), p1.x + 4, y - 6);
+  }, [toPixel]);
+
+  const renderTrendAngle = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
+    if (!d.points || d.points.length < 2) return;
+    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    if (!p1 || !p2) return;
+    ctx.beginPath();
+    ctx.strokeStyle = d.color;
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.stroke();
+    // Angle arc
+    const angle = Math.atan2(-(p2.y - p1.y), p2.x - p1.x);
+    const angleDeg = (angle * 180 / Math.PI).toFixed(1);
+    ctx.beginPath();
+    ctx.strokeStyle = d.color;
+    ctx.lineWidth = 1;
+    ctx.arc(p1.x, p1.y, 20, 0, -angle, angle > 0);
+    ctx.stroke();
+    // Horizontal reference
+    ctx.beginPath();
+    ctx.setLineDash([3, 3]);
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p1.x + 30, p1.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Label
+    ctx.fillStyle = d.color;
+    ctx.font = '10px "JetBrains Mono", monospace';
+    ctx.fillText(`${angleDeg}°`, p1.x + 24, p1.y - 8);
+  }, [toPixel]);
+
+  const renderArrowMarkerStandalone = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
+    if (!d.points?.[0]) return;
+    const p = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    if (!p) return;
+    ctx.fillStyle = d.color;
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    ctx.lineTo(p.x - 8, p.y + 14);
+    ctx.lineTo(p.x - 3, p.y + 10);
+    ctx.lineTo(p.x - 3, p.y + 22);
+    ctx.lineTo(p.x + 3, p.y + 22);
+    ctx.lineTo(p.x + 3, p.y + 10);
+    ctx.lineTo(p.x + 8, p.y + 14);
+    ctx.closePath();
+    ctx.fill();
+  }, [toPixel]);
+
+  const renderRegressionChannel = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
+    if (!d.points || d.points.length < 2) return;
+    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    if (!p1 || !p2) return;
+    const dy = p2.y - p1.y;
+    const dx = p2.x - p1.x;
+    // Regression line (center)
+    ctx.beginPath();
+    ctx.strokeStyle = d.color;
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.stroke();
+    // Channel bands (offset perpendicular)
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const perpX = -dy / dist * 30;
+    const perpY = dx / dist * 30;
+    ctx.beginPath();
+    ctx.strokeStyle = d.color;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 3]);
+    ctx.moveTo(p1.x + perpX, p1.y + perpY);
+    ctx.lineTo(p2.x + perpX, p2.y + perpY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(p1.x - perpX, p1.y - perpY);
+    ctx.lineTo(p2.x - perpX, p2.y - perpY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Fill
+    ctx.globalAlpha = 0.05;
+    ctx.fillStyle = d.color;
+    ctx.beginPath();
+    ctx.moveTo(p1.x + perpX, p1.y + perpY);
+    ctx.lineTo(p2.x + perpX, p2.y + perpY);
+    ctx.lineTo(p2.x - perpX, p2.y - perpY);
+    ctx.lineTo(p1.x - perpX, p1.y - perpY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }, [toPixel]);
+
+  const renderFlatChannel = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
+    if (!d.points || d.points.length < 2) return;
+    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    if (!p1 || !p2) return;
+    const minX = Math.min(p1.x, p2.x);
+    const maxX = Math.max(p1.x, p2.x);
+    // Top line
+    ctx.beginPath();
+    ctx.strokeStyle = d.color;
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(minX, p1.y); ctx.lineTo(maxX, p1.y);
+    ctx.stroke();
+    // Bottom line
+    ctx.beginPath();
+    ctx.moveTo(minX, p2.y); ctx.lineTo(maxX, p2.y);
+    ctx.stroke();
+    // Fill
+    ctx.globalAlpha = 0.05;
+    ctx.fillStyle = d.color;
+    ctx.fillRect(minX, Math.min(p1.y, p2.y), maxX - minX, Math.abs(p2.y - p1.y));
+    ctx.globalAlpha = 1;
+    // Labels
+    ctx.fillStyle = d.color;
+    ctx.font = '9px "JetBrains Mono", monospace';
+    ctx.fillText(d.points[0].price.toFixed(2), minX + 4, p1.y - 3);
+    ctx.fillText(d.points[1].price.toFixed(2), minX + 4, p2.y - 3);
+  }, [toPixel]);
+
+  const renderSchiffPitchfork = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine, w: number) => {
+    if (!d.points || d.points.length < 2) return;
+    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    if (!p1 || !p2) return;
+    // Modified Schiff: median starts from midpoint of first move
+    const startX = (p1.x + p2.x) / 2;
+    const startY = (p1.y + p2.y) / 2;
+    const halfH = Math.abs(p2.y - p1.y) / 2;
+    ctx.beginPath();
+    ctx.strokeStyle = d.color;
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(w, startY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.lineWidth = 1;
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(w, Math.min(p1.y, p2.y));
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(p2.x, p2.y);
+    ctx.lineTo(w, Math.max(p1.y, p2.y));
+    ctx.stroke();
+  }, [toPixel]);
+
+  const renderFibSpeedResistance = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
+    if (!d.points || d.points.length < 2) return;
+    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    if (!p1 || !p2) return;
+    const levels = [0.236, 0.382, 0.5, 0.618, 0.786];
+    levels.forEach((level, idx) => {
+      const r = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2) * level;
+      ctx.beginPath();
+      ctx.strokeStyle = FIB_COLORS[idx + 1];
+      ctx.lineWidth = 0.8;
+      ctx.arc(p1.x, p1.y, r, 0, Math.PI * 2);
+      ctx.stroke();
+      // Speed lines
+      const targetY = p1.y + (p2.y - p1.y) * level;
+      ctx.beginPath();
+      ctx.setLineDash([3, 3]);
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, targetY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    });
+  }, [toPixel]);
+
+  const renderFibSpiral = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
+    if (!d.points || d.points.length < 2) return;
+    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    if (!p1 || !p2) return;
+    const baseR = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
+    const phi = 1.618;
+    ctx.beginPath();
+    ctx.strokeStyle = d.color;
+    ctx.lineWidth = 1;
+    for (let t = 0; t < Math.PI * 6; t += 0.05) {
+      const r = baseR * Math.pow(phi, t / (2 * Math.PI)) * 0.1;
+      const x = p1.x + r * Math.cos(t);
+      const y = p1.y + r * Math.sin(t);
+      if (t === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }, [toPixel]);
+
+  const renderFibWedge = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
+    if (!d.points || d.points.length < 2) return;
+    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    if (!p1 || !p2) return;
+    const levels = [0.236, 0.382, 0.5, 0.618, 0.786];
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    levels.forEach((level, idx) => {
+      const endY1 = p1.y + dy * level;
+      const endY2 = p1.y - dy * level;
+      ctx.beginPath();
+      ctx.strokeStyle = FIB_COLORS[idx + 1];
+      ctx.lineWidth = 0.8;
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, endY1);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, endY2);
+      ctx.stroke();
+    });
+  }, [toPixel]);
+
+  const renderRotatedRectangle = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
+    if (!d.points || d.points.length < 2) return;
+    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    if (!p1 || !p2) return;
+    const cx = (p1.x + p2.x) / 2;
+    const cy = (p1.y + p2.y) / 2;
+    const w = Math.abs(p2.x - p1.x);
+    const h = Math.abs(p2.y - p1.y);
+    const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+    ctx.globalAlpha = d.opacity || 0.1;
+    ctx.fillStyle = d.color;
+    ctx.fillRect(-w / 2, -h / 4, w, h / 2);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = d.color;
+    ctx.lineWidth = d.lineWidth || 1;
+    ctx.strokeRect(-w / 2, -h / 4, w, h / 2);
+    ctx.restore();
+  }, [toPixel]);
+
+  const renderBezierCurve = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
+    if (!d.points || d.points.length < 2) return;
+    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    if (!p1 || !p2) return;
+    // Auto control point at midpoint offset
+    const cpX = (p1.x + p2.x) / 2;
+    const cpY = Math.min(p1.y, p2.y) - Math.abs(p2.y - p1.y) * 0.5;
+    ctx.beginPath();
+    ctx.strokeStyle = d.color;
+    ctx.lineWidth = d.lineWidth || 1.5;
+    ctx.moveTo(p1.x, p1.y);
+    ctx.quadraticCurveTo(cpX, cpY, p2.x, p2.y);
+    ctx.stroke();
+    // Control point indicator
+    ctx.beginPath();
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = d.color;
+    ctx.lineWidth = 0.5;
+    ctx.moveTo(p1.x, p1.y); ctx.lineTo(cpX, cpY); ctx.lineTo(p2.x, p2.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(cpX, cpY, 3, 0, Math.PI * 2);
+    ctx.fillStyle = d.color;
+    ctx.fill();
+  }, [toPixel]);
+
+  const renderAnchoredText = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
+    if (!d.points?.[0]) return;
+    const p = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    if (!p) return;
+    const text = d.text || 'Anchored';
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    const tw = ctx.measureText(text).width + 8;
+    ctx.fillRect(p.x - 2, p.y - 14, tw, 18);
+    ctx.fillStyle = d.color;
+    ctx.font = '11px "JetBrains Mono", monospace';
+    ctx.fillText(text, p.x + 2, p.y);
+    // Anchor dot
+    ctx.beginPath();
+    ctx.arc(p.x, p.y + 6, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }, [toPixel]);
+
+  const renderNoteBox = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
+    if (!d.points?.[0]) return;
+    const p = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    if (!p) return;
+    const text = d.text || 'Note';
+    const lines = text.split('\n');
+    const lineHeight = 14;
+    const maxWidth = Math.max(...lines.map(l => ctx.measureText(l).width)) + 16;
+    const boxH = lines.length * lineHeight + 12;
+    // Box
+    ctx.fillStyle = 'rgba(30, 30, 50, 0.9)';
+    ctx.beginPath();
+    ctx.roundRect(p.x, p.y - boxH, maxWidth, boxH, 4);
+    ctx.fill();
+    ctx.strokeStyle = d.color;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(p.x, p.y - boxH, maxWidth, boxH, 4);
+    ctx.stroke();
+    // Text
+    ctx.fillStyle = d.color;
+    ctx.font = '10px "JetBrains Mono", monospace';
+    lines.forEach((line, i) => {
+      ctx.fillText(line, p.x + 8, p.y - boxH + 14 + i * lineHeight);
+    });
+  }, [toPixel]);
+
+  const renderBarsPattern = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
+    if (!d.points || d.points.length < 2) return;
+    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    if (!p1 || !p2) return;
+    // Shaded region
+    ctx.globalAlpha = 0.08;
+    ctx.fillStyle = d.color;
+    ctx.fillRect(Math.min(p1.x, p2.x), Math.min(p1.y, p2.y), Math.abs(p2.x - p1.x), Math.abs(p2.y - p1.y));
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = d.color;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 3]);
+    ctx.strokeRect(Math.min(p1.x, p2.x), Math.min(p1.y, p2.y), Math.abs(p2.x - p1.x), Math.abs(p2.y - p1.y));
+    ctx.setLineDash([]);
+    // Info label
+    const priceDiff = d.points[1].price - d.points[0].price;
+    const pct = ((priceDiff / d.points[0].price) * 100).toFixed(2);
+    const timeDiff = Math.abs(d.points[1].time - d.points[0].time);
+    const hours = Math.floor(timeDiff / 3600);
+    const mins = Math.floor((timeDiff % 3600) / 60);
+    const cx = (p1.x + p2.x) / 2;
+    const cy = (p1.y + p2.y) / 2;
+    ctx.fillStyle = 'rgba(0,0,0,0.85)';
+    ctx.fillRect(cx - 50, cy - 24, 100, 44);
+    ctx.fillStyle = priceDiff >= 0 ? '#22c55e' : '#ef4444';
+    ctx.font = '10px "JetBrains Mono", monospace';
+    ctx.fillText(`${priceDiff >= 0 ? '+' : ''}${pct}%`, cx - 44, cy - 10);
+    ctx.fillStyle = '#6b7a99';
+    ctx.fillText(`${hours}h ${mins}m`, cx - 44, cy + 4);
+    ctx.fillText(`${priceDiff >= 0 ? '+' : ''}${priceDiff.toFixed(2)}`, cx - 44, cy + 16);
+  }, [toPixel]);
+
+  const renderRiskReward = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
+    if (!d.points || d.points.length < 2 || !series) return;
+    // Points[0] = entry, points[1] = target; stop loss auto-calculated as mirror
+    const entry = d.points[0].price;
+    const target = d.points[1].price;
+    const stopLoss = entry - (target - entry); // Mirror
+    const entryY = series.priceToCoordinate(entry);
+    const targetY = series.priceToCoordinate(target);
+    const slY = series.priceToCoordinate(stopLoss);
+    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    if (!p1 || !p2 || entryY === null || targetY === null || slY === null) return;
+    const left = Math.min(p1.x, p2.x);
+    const right = Math.max(p1.x, p2.x);
+    const width = right - left;
+    // Profit zone (green)
+    ctx.globalAlpha = 0.12;
+    ctx.fillStyle = '#22c55e';
+    ctx.fillRect(left, Math.min(entryY, targetY), width, Math.abs(targetY - entryY));
+    // Loss zone (red)
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(left, Math.min(entryY, slY), width, Math.abs(slY - entryY));
+    ctx.globalAlpha = 1;
+    // Entry line
+    ctx.beginPath();
+    ctx.strokeStyle = '#6b7a99';
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(left, entryY); ctx.lineTo(right, entryY);
+    ctx.stroke();
+    // Target line
+    ctx.beginPath();
+    ctx.strokeStyle = '#22c55e';
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(left, targetY); ctx.lineTo(right, targetY);
+    ctx.stroke();
+    // Stop loss line
+    ctx.beginPath();
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.moveTo(left, slY); ctx.lineTo(right, slY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Labels
+    const reward = Math.abs(target - entry);
+    const risk = Math.abs(entry - stopLoss);
+    const rr = risk > 0 ? (reward / risk).toFixed(2) : '∞';
+    const rewardPct = ((reward / entry) * 100).toFixed(2);
+    const riskPct = ((risk / entry) * 100).toFixed(2);
+    ctx.fillStyle = 'rgba(0,0,0,0.85)';
+    ctx.fillRect(right + 4, entryY - 40, 100, 76);
+    ctx.font = '10px "JetBrains Mono", monospace';
+    ctx.fillStyle = '#6b7a99';
+    ctx.fillText(`Entry: ${entry.toFixed(2)}`, right + 8, entryY - 26);
+    ctx.fillStyle = '#22c55e';
+    ctx.fillText(`TP: +${rewardPct}%`, right + 8, entryY - 12);
+    ctx.fillStyle = '#ef4444';
+    ctx.fillText(`SL: -${riskPct}%`, right + 8, entryY + 2);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillText(`R:R = 1:${rr}`, right + 8, entryY + 18);
+    ctx.fillText(`Target: ${target.toFixed(2)}`, right + 8, entryY + 32);
+  }, [toPixel, series]);
+
   // === MAIN RENDER ===
 
   const render = useCallback(() => {
@@ -725,44 +1172,67 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
     for (const d of drawings) {
       if (d.visible === false) continue;
-      switch (d.type) {
-        case 'hline': renderHLine(ctx, d, rect.width); break;
-        case 'vline': renderVLine(ctx, d, rect.height); break;
-        case 'trendline': renderTrendline(ctx, d); break;
-        case 'ray': renderRay(ctx, d, rect.width, rect.height); break;
-        case 'extended_line': renderExtendedLine(ctx, d, rect.width, rect.height); break;
-        case 'arrow_line': renderArrowLine(ctx, d); break;
-        case 'cross_line': renderCrossLine(ctx, d, rect.width, rect.height); break;
-        case 'h_ray': renderHRay(ctx, d, rect.width); break;
-        case 'info_line': renderInfoLine(ctx, d); break;
-        case 'fib_retracement':
-        case 'fib_extension': renderFib(ctx, d); break;
-        case 'fib_fan': renderFibFan(ctx, d, rect.width); break;
-        case 'fib_arc': renderFibArc(ctx, d); break;
-        case 'fib_time_zones': renderFibTimeZones(ctx, d, rect.height); break;
-        case 'fib_channel': renderFibChannel(ctx, d); break;
-        case 'rectangle': renderRectangle(ctx, d); break;
-        case 'circle': renderCircle(ctx, d); break;
-        case 'ellipse': renderEllipse(ctx, d); break;
-        case 'triangle': renderTriangle(ctx, d); break;
-        case 'parallel_channel': renderParallelChannel(ctx, d); break;
-        case 'disjoint_channel': renderParallelChannel(ctx, d); break; // same render
-        case 'pitchfork': renderPitchfork(ctx, d, rect.width); break;
-        case 'pen':
-        case 'polyline': renderPen(ctx, d); break;
-        case 'brush': renderBrush(ctx, d); break;
-        case 'highlighter': renderHighlighter(ctx, d); break;
-        case 'text': renderText(ctx, d); break;
-        case 'callout': renderCallout(ctx, d); break;
-        case 'arrow_marker_up':
-        case 'arrow_marker_down': renderArrowMarker(ctx, d); break;
-        case 'flag': renderFlag(ctx, d, rect.height); break;
-        case 'price_label': renderPriceLabel(ctx, d, rect.width); break;
-        case 'price_range': renderPriceRange(ctx, d); break;
-        case 'date_range': renderDateRange(ctx, d); break;
-        case 'long_position':
-        case 'short_position': renderLongShort(ctx, d); break;
-        case 'arc': renderFibArc(ctx, d); break; // reuse arc rendering
+      try {
+        switch (d.type) {
+          case 'hline': renderHLine(ctx, d, rect.width); break;
+          case 'vline': renderVLine(ctx, d, rect.height); break;
+          case 'trendline': renderTrendline(ctx, d); break;
+          case 'ray': renderRay(ctx, d, rect.width, rect.height); break;
+          case 'extended_line': renderExtendedLine(ctx, d, rect.width, rect.height); break;
+          case 'arrow_line': renderArrowLine(ctx, d); break;
+          case 'cross_line': renderCrossLine(ctx, d, rect.width, rect.height); break;
+          case 'h_ray': renderHRay(ctx, d, rect.width); break;
+          case 'v_ray': renderVRay(ctx, d, rect.height); break;
+          case 'h_segment': renderHSegment(ctx, d); break;
+          case 'info_line': renderInfoLine(ctx, d); break;
+          case 'trend_angle': renderTrendAngle(ctx, d); break;
+          case 'arrow_marker_standalone': renderArrowMarkerStandalone(ctx, d); break;
+          case 'fib_retracement':
+          case 'fib_extension':
+          case 'fib_trend_based': renderFib(ctx, d); break;
+          case 'fib_fan': renderFibFan(ctx, d, rect.width); break;
+          case 'fib_arc': renderFibArc(ctx, d); break;
+          case 'fib_speed_resistance': renderFibSpeedResistance(ctx, d); break;
+          case 'fib_spiral': renderFibSpiral(ctx, d); break;
+          case 'fib_time_zones': renderFibTimeZones(ctx, d, rect.height); break;
+          case 'fib_channel': renderFibChannel(ctx, d); break;
+          case 'fib_wedge': renderFibWedge(ctx, d); break;
+          case 'rectangle': renderRectangle(ctx, d); break;
+          case 'rotated_rectangle': renderRotatedRectangle(ctx, d); break;
+          case 'circle': renderCircle(ctx, d); break;
+          case 'ellipse': renderEllipse(ctx, d); break;
+          case 'triangle': renderTriangle(ctx, d); break;
+          case 'bezier_curve': renderBezierCurve(ctx, d); break;
+          case 'parallel_channel':
+          case 'disjoint_channel': renderParallelChannel(ctx, d); break;
+          case 'regression_channel': renderRegressionChannel(ctx, d); break;
+          case 'flat_channel': renderFlatChannel(ctx, d); break;
+          case 'pitchfork': renderPitchfork(ctx, d, rect.width); break;
+          case 'schiff_pitchfork':
+          case 'inside_pitchfork': renderSchiffPitchfork(ctx, d, rect.width); break;
+          case 'pen':
+          case 'polyline':
+          case 'path_tool': renderPen(ctx, d); break;
+          case 'brush': renderBrush(ctx, d); break;
+          case 'highlighter': renderHighlighter(ctx, d); break;
+          case 'text': renderText(ctx, d); break;
+          case 'anchored_text': renderAnchoredText(ctx, d); break;
+          case 'note_box': renderNoteBox(ctx, d); break;
+          case 'callout': renderCallout(ctx, d); break;
+          case 'arrow_marker_up':
+          case 'arrow_marker_down': renderArrowMarker(ctx, d); break;
+          case 'flag': renderFlag(ctx, d, rect.height); break;
+          case 'price_label': renderPriceLabel(ctx, d, rect.width); break;
+          case 'price_range': renderPriceRange(ctx, d); break;
+          case 'date_range': renderDateRange(ctx, d); break;
+          case 'bars_pattern': renderBarsPattern(ctx, d); break;
+          case 'risk_reward': renderRiskReward(ctx, d); break;
+          case 'long_position':
+          case 'short_position': renderLongShort(ctx, d); break;
+          case 'arc': renderFibArc(ctx, d); break;
+        }
+      } catch (err) {
+        console.error('Drawing render error:', d.type, err);
       }
     }
 
@@ -773,10 +1243,14 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         const cp = currentPixel.current;
         const mode = drawingModeRef.current;
         ctx.globalAlpha = 0.6;
-        if (mode === 'trendline' || mode === 'ray' || mode === 'extended_line' || mode === 'arrow_line' || mode === 'info_line') {
+        const lineModes: DrawingMode[] = ['trendline', 'ray', 'extended_line', 'arrow_line', 'info_line', 'trend_angle', 'h_segment'];
+        const rectModes: DrawingMode[] = ['rectangle', 'rotated_rectangle', 'parallel_channel', 'disjoint_channel', 'pitchfork', 'fib_channel', 'regression_channel', 'flat_channel', 'schiff_pitchfork', 'inside_pitchfork', 'bars_pattern'];
+        const fibModes: DrawingMode[] = ['fib_retracement', 'fib_extension', 'fib_trend_based', 'fib_fan', 'fib_speed_resistance', 'fib_wedge'];
+
+        if (lineModes.includes(mode)) {
           ctx.beginPath(); ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 1.5;
           ctx.moveTo(sp.x, sp.y); ctx.lineTo(cp.x, cp.y); ctx.stroke();
-        } else if (mode === 'rectangle' || mode === 'parallel_channel' || mode === 'disjoint_channel' || mode === 'pitchfork' || mode === 'fib_channel') {
+        } else if (rectModes.includes(mode)) {
           ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 1;
           ctx.strokeRect(Math.min(sp.x, cp.x), Math.min(sp.y, cp.y), Math.abs(cp.x - sp.x), Math.abs(cp.y - sp.y));
         } else if (mode === 'circle') {
@@ -795,7 +1269,14 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
           ctx.lineTo(sp.x, Math.max(sp.y, cp.y));
           ctx.lineTo(cp.x, Math.max(sp.y, cp.y));
           ctx.closePath(); ctx.stroke();
-        } else if (mode === 'fib_retracement' || mode === 'fib_extension') {
+        } else if (mode === 'bezier_curve') {
+          const cpX = (sp.x + cp.x) / 2;
+          const cpY = Math.min(sp.y, cp.y) - Math.abs(cp.y - sp.y) * 0.5;
+          ctx.beginPath(); ctx.strokeStyle = '#8b5cf6'; ctx.lineWidth = 1.5;
+          ctx.moveTo(sp.x, sp.y);
+          ctx.quadraticCurveTo(cpX, cpY, cp.x, cp.y);
+          ctx.stroke();
+        } else if (fibModes.includes(mode)) {
           const levels = mode === 'fib_extension' ? FIB_EXT_LEVELS : FIB_LEVELS;
           const yDiff = cp.y - sp.y;
           levels.forEach((level, idx) => {
@@ -804,7 +1285,11 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
             ctx.setLineDash([4, 2]); ctx.moveTo(Math.min(sp.x, cp.x), y); ctx.lineTo(Math.max(sp.x, cp.x), y);
             ctx.stroke(); ctx.setLineDash([]);
           });
-        } else if (mode === 'price_range' || mode === 'long_position' || mode === 'short_position') {
+        } else if (mode === 'fib_arc' || mode === 'fib_spiral' || mode === 'arc') {
+          const r = Math.sqrt((cp.x - sp.x) ** 2 + (cp.y - sp.y) ** 2);
+          ctx.beginPath(); ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 1;
+          ctx.arc(sp.x, sp.y, r, 0, Math.PI * 2); ctx.stroke();
+        } else if (mode === 'price_range' || mode === 'long_position' || mode === 'short_position' || mode === 'risk_reward') {
           const midX = (sp.x + cp.x) / 2;
           ctx.beginPath(); ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 1;
           ctx.moveTo(midX, sp.y); ctx.lineTo(midX, cp.y); ctx.stroke();
@@ -820,8 +1305,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       }
     }
 
-    // Pen/brush/highlighter/polyline preview
-    const freeDrawModes: DrawingMode[] = ['pen', 'brush', 'highlighter', 'polyline'];
+    // Pen/brush/highlighter/polyline/path preview
+    const freeDrawModes: DrawingMode[] = ['pen', 'brush', 'highlighter', 'polyline', 'path_tool'];
     if (freeDrawModes.includes(drawingModeRef.current) && penCoords.current.length > 1) {
       ctx.beginPath();
       ctx.strokeStyle = drawingModeRef.current === 'highlighter' ? '#eab308' : '#22c55e';
@@ -851,49 +1336,98 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     }
   }, [chart, series, drawings, toPixel, drawingModeRef,
     renderHLine, renderVLine, renderTrendline, renderRay, renderExtendedLine, renderArrowLine,
-    renderCrossLine, renderHRay, renderInfoLine, renderFib, renderFibFan, renderFibArc,
-    renderFibTimeZones, renderFibChannel, renderRectangle, renderCircle, renderEllipse,
-    renderTriangle, renderParallelChannel, renderPitchfork, renderPen, renderBrush,
-    renderHighlighter, renderText, renderCallout, renderArrowMarker, renderFlag,
-    renderPriceLabel, renderPriceRange, renderDateRange, renderLongShort]);
+    renderCrossLine, renderHRay, renderVRay, renderHSegment, renderInfoLine, renderTrendAngle,
+    renderArrowMarkerStandalone, renderFib, renderFibFan, renderFibArc, renderFibSpeedResistance,
+    renderFibSpiral, renderFibTimeZones, renderFibChannel, renderFibWedge,
+    renderRectangle, renderRotatedRectangle, renderCircle, renderEllipse, renderTriangle,
+    renderBezierCurve, renderParallelChannel, renderRegressionChannel, renderFlatChannel,
+    renderPitchfork, renderSchiffPitchfork, renderPen, renderBrush, renderHighlighter,
+    renderText, renderAnchoredText, renderNoteBox, renderCallout, renderArrowMarker,
+    renderFlag, renderPriceLabel, renderPriceRange, renderDateRange, renderBarsPattern,
+    renderRiskReward, renderLongShort]);
 
   // === INPUT HANDLING ===
 
-  // Single-click tools (place at point)
-  const singleClickModes: DrawingMode[] = ['hline', 'vline', 'cross_line', 'h_ray', 'text', 'callout', 'arrow_marker_up', 'arrow_marker_down', 'flag', 'price_label'];
+  // Single-click tools
+  const singleClickModes: DrawingMode[] = [
+    'hline', 'vline', 'cross_line', 'h_ray', 'v_ray',
+    'text', 'anchored_text', 'note_box', 'callout',
+    'arrow_marker_up', 'arrow_marker_down', 'arrow_marker_standalone',
+    'flag', 'price_label',
+  ];
   // Free-draw tools
-  const freeDrawModes: DrawingMode[] = ['pen', 'brush', 'highlighter', 'polyline'];
+  const freeDrawModesInput: DrawingMode[] = ['pen', 'brush', 'highlighter', 'polyline', 'path_tool'];
   // Two-point tools
   const twoPointModes: DrawingMode[] = [
-    'trendline', 'ray', 'extended_line', 'arrow_line', 'info_line',
-    'fib_retracement', 'fib_extension', 'fib_fan', 'fib_arc', 'fib_time_zones', 'fib_channel',
-    'rectangle', 'circle', 'ellipse', 'triangle',
-    'parallel_channel', 'disjoint_channel', 'pitchfork',
-    'price_range', 'date_range', 'long_position', 'short_position',
+    'trendline', 'ray', 'extended_line', 'arrow_line', 'info_line', 'trend_angle', 'h_segment',
+    'fib_retracement', 'fib_extension', 'fib_trend_based', 'fib_fan', 'fib_arc',
+    'fib_speed_resistance', 'fib_spiral', 'fib_time_zones', 'fib_channel', 'fib_wedge',
+    'rectangle', 'rotated_rectangle', 'circle', 'ellipse', 'triangle', 'bezier_curve',
+    'parallel_channel', 'disjoint_channel', 'regression_channel', 'flat_channel',
+    'pitchfork', 'schiff_pitchfork', 'inside_pitchfork',
+    'price_range', 'date_range', 'bars_pattern', 'risk_reward',
+    'long_position', 'short_position',
     'arc',
   ];
 
   const defaultColors: Record<string, string> = {
     trendline: '#22c55e', ray: '#22c55e', extended_line: '#22c55e', arrow_line: '#22c55e',
-    info_line: '#06b6d4', hline: '#f59e0b', vline: '#06b6d4', cross_line: '#6b7a99',
-    h_ray: '#f59e0b',
-    fib_retracement: '#f59e0b', fib_extension: '#8b5cf6', fib_fan: '#f59e0b',
-    fib_arc: '#f59e0b', fib_time_zones: '#06b6d4', fib_channel: '#f59e0b',
-    rectangle: '#3b82f6', circle: '#3b82f6', ellipse: '#3b82f6', triangle: '#3b82f6',
-    parallel_channel: '#06b6d4', disjoint_channel: '#06b6d4', pitchfork: '#8b5cf6',
+    info_line: '#06b6d4', trend_angle: '#f59e0b', h_segment: '#f59e0b',
+    hline: '#f59e0b', vline: '#06b6d4', cross_line: '#6b7a99',
+    h_ray: '#f59e0b', v_ray: '#06b6d4', arrow_marker_standalone: '#f59e0b',
+    fib_retracement: '#f59e0b', fib_extension: '#8b5cf6', fib_trend_based: '#f59e0b',
+    fib_fan: '#f59e0b', fib_arc: '#f59e0b', fib_speed_resistance: '#8b5cf6',
+    fib_spiral: '#f59e0b', fib_time_zones: '#06b6d4', fib_channel: '#f59e0b', fib_wedge: '#f59e0b',
+    rectangle: '#3b82f6', rotated_rectangle: '#3b82f6', circle: '#3b82f6', ellipse: '#3b82f6',
+    triangle: '#3b82f6', bezier_curve: '#8b5cf6', path_tool: '#22c55e',
+    parallel_channel: '#06b6d4', disjoint_channel: '#06b6d4',
+    regression_channel: '#8b5cf6', flat_channel: '#06b6d4',
+    pitchfork: '#8b5cf6', schiff_pitchfork: '#8b5cf6', inside_pitchfork: '#8b5cf6',
     pen: '#22c55e', brush: '#22c55e', highlighter: '#eab308', polyline: '#22c55e',
-    text: '#ffffff', callout: '#f59e0b', arrow_marker_up: '#22c55e', arrow_marker_down: '#ef4444',
+    text: '#ffffff', anchored_text: '#f59e0b', note_box: '#eab308',
+    callout: '#f59e0b', arrow_marker_up: '#22c55e', arrow_marker_down: '#ef4444',
     flag: '#f59e0b', price_label: '#3b82f6',
-    price_range: '#f59e0b', date_range: '#06b6d4',
+    price_range: '#f59e0b', date_range: '#06b6d4', bars_pattern: '#06b6d4',
+    risk_reward: '#f59e0b',
     long_position: '#22c55e', short_position: '#ef4444',
     arc: '#3b82f6',
   };
+
+  // Find nearest drawing for eraser
+  const findNearestDrawing = useCallback((px: number, py: number): string | null => {
+    const threshold = 15;
+    for (let i = drawings.length - 1; i >= 0; i--) {
+      const d = drawings[i];
+      if (d.visible === false) continue;
+      if (d.price != null && series) {
+        const y = series.priceToCoordinate(d.price);
+        if (y !== null && Math.abs(py - y) < threshold) return d.id;
+      }
+      if (d.points) {
+        for (const pt of d.points) {
+          const p = toPixel(pt.time as unknown as Time, pt.price);
+          if (p && Math.abs(px - p.x) < threshold && Math.abs(py - p.y) < threshold) return d.id;
+        }
+      }
+    }
+    return null;
+  }, [drawings, series, toPixel]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     const mode = drawingModeRef.current;
     if (mode === 'none') return;
     const coord = fromPixel(e.clientX, e.clientY);
     if (!coord) return;
+
+    // Eraser: find and remove nearest drawing
+    if (mode === 'eraser') {
+      const id = findNearestDrawing(coord.x, coord.y);
+      if (id && onRemoveDrawing) {
+        onRemoveDrawing(id);
+        render();
+      }
+      return;
+    }
 
     if (mode === 'laser') {
       isDrawing.current = true;
@@ -903,7 +1437,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       return;
     }
 
-    if (freeDrawModes.includes(mode)) {
+    if (freeDrawModesInput.includes(mode)) {
       isDrawing.current = true;
       penCoords.current = [{ time: coord.time, price: coord.price }];
       return;
@@ -914,9 +1448,9 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       if (mode === 'hline') {
         onAddDrawing({ id: `${mode}_${Date.now()}`, type: mode, price: coord.price, color });
       } else {
-        const textPromptModes = ['text', 'callout'];
+        const textModes: DrawingMode[] = ['text', 'anchored_text', 'note_box', 'callout'];
         let text: string | undefined;
-        if (textPromptModes.includes(mode)) {
+        if (textModes.includes(mode)) {
           text = prompt('Enter text:') || 'Note';
         }
         onAddDrawing({
@@ -935,11 +1469,11 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       currentPixel.current = { x: coord.x, y: coord.y };
       return;
     }
-  }, [fromPixel, onAddDrawing, onFinishDrawing, render, drawingModeRef]);
+  }, [fromPixel, onAddDrawing, onFinishDrawing, onRemoveDrawing, render, drawingModeRef, findNearestDrawing]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     const mode = drawingModeRef.current;
-    if (mode === 'none' || !isDrawing.current) return;
+    if (mode === 'none' || mode === 'eraser' || !isDrawing.current) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -951,7 +1485,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       render();
       return;
     }
-    if (freeDrawModes.includes(mode)) {
+    if (freeDrawModesInput.includes(mode)) {
       const coord = fromPixel(e.clientX, e.clientY);
       if (coord) penCoords.current.push({ time: coord.time, price: coord.price });
       render(); return;
@@ -962,6 +1496,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     const mode = drawingModeRef.current;
+    if (mode === 'eraser') return;
     if (mode === 'laser') {
       isDrawing.current = false;
       const fadeOut = () => {
@@ -972,7 +1507,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       laserRaf.current = requestAnimationFrame(fadeOut);
       return;
     }
-    if (freeDrawModes.includes(mode) && isDrawing.current) {
+    if (freeDrawModesInput.includes(mode) && isDrawing.current) {
       isDrawing.current = false;
       if (penCoords.current.length > 1) {
         const color = defaultColors[mode] || '#22c55e';
@@ -1020,7 +1555,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   return (
     <canvas
       ref={canvasRef}
-      className={`w-full h-full ${isActive ? 'cursor-crosshair' : ''}`}
+      className={`w-full h-full ${isActive ? (drawingMode === 'eraser' ? 'cursor-not-allowed' : 'cursor-crosshair') : ''}`}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}

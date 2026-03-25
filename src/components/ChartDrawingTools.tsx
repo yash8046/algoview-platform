@@ -5,7 +5,8 @@ import {
   BarChart3, ChevronDown, ChevronRight, Circle, Triangle, Type, ArrowUp, ArrowDown,
   Ruler, Target, Lock, Unlock, Eye, EyeOff, Undo2, Redo2, Magnet, Flag, MessageSquare,
   MoveHorizontal, MoveVertical, ArrowRight, Hash, Columns, Waves, PenTool, Highlighter,
-  Eraser, Tag, Crosshair, CornerRightDown
+  Eraser, Tag, Crosshair, CornerRightDown, Spline, RotateCcw, StickyNote, Compass,
+  ScatterChart, Shield, MapPin, Slash, ChevronsUp
 } from 'lucide-react';
 
 export type DrawingMode =
@@ -13,19 +14,24 @@ export type DrawingMode =
   // Lines
   | 'hline' | 'vline' | 'trendline' | 'ray' | 'extended_line' | 'arrow_line'
   | 'cross_line' | 'h_ray' | 'info_line'
+  | 'v_ray' | 'h_segment' | 'trend_angle' | 'arrow_marker_standalone'
   // Channels
   | 'parallel_channel' | 'disjoint_channel' | 'pitchfork'
+  | 'regression_channel' | 'flat_channel' | 'schiff_pitchfork' | 'inside_pitchfork'
   // Fibonacci
   | 'fib_retracement' | 'fib_extension' | 'fib_fan' | 'fib_arc' | 'fib_time_zones' | 'fib_channel'
+  | 'fib_trend_based' | 'fib_speed_resistance' | 'fib_spiral' | 'fib_wedge'
   // Shapes
   | 'rectangle' | 'circle' | 'ellipse' | 'triangle' | 'polyline' | 'arc'
+  | 'rotated_rectangle' | 'bezier_curve' | 'path_tool'
   // Draw
-  | 'pen' | 'brush' | 'highlighter' | 'laser'
+  | 'pen' | 'brush' | 'highlighter' | 'laser' | 'eraser'
   // Annotations
   | 'text' | 'callout' | 'arrow_marker_up' | 'arrow_marker_down' | 'flag' | 'price_label'
+  | 'anchored_text' | 'note_box'
   // Measure
   | 'price_range' | 'date_range' | 'long_position' | 'short_position'
-  // Control (not actual drawing modes, but toolbar actions)
+  | 'bars_pattern' | 'risk_reward'
   ;
 
 export interface DrawingLine {
@@ -62,11 +68,15 @@ const categories: ToolCategory[] = [
       { mode: 'ray', icon: ArrowRight, label: 'Ray' },
       { mode: 'extended_line', icon: MoveHorizontal, label: 'Extended Line' },
       { mode: 'info_line', icon: Ruler, label: 'Info Line' },
+      { mode: 'trend_angle', icon: Compass, label: 'Trend Angle' },
       { mode: 'hline', icon: Minus, label: 'Horizontal Line' },
       { mode: 'vline', icon: GripVertical, label: 'Vertical Line' },
       { mode: 'cross_line', icon: Crosshair, label: 'Cross Line' },
       { mode: 'arrow_line', icon: CornerRightDown, label: 'Arrow Line' },
       { mode: 'h_ray', icon: MoveHorizontal, label: 'Horizontal Ray' },
+      { mode: 'v_ray', icon: MoveVertical, label: 'Vertical Ray' },
+      { mode: 'h_segment', icon: Minus, label: 'H-Segment' },
+      { mode: 'arrow_marker_standalone', icon: MapPin, label: 'Arrow Marker' },
     ],
   },
   {
@@ -75,7 +85,11 @@ const categories: ToolCategory[] = [
     tools: [
       { mode: 'parallel_channel', icon: Columns, label: 'Parallel Channel' },
       { mode: 'disjoint_channel', icon: Columns, label: 'Disjoint Channel' },
+      { mode: 'regression_channel', icon: ScatterChart, label: 'Regression Channel' },
+      { mode: 'flat_channel', icon: Columns, label: 'Flat Top/Bottom' },
       { mode: 'pitchfork', icon: Waves, label: 'Pitchfork' },
+      { mode: 'schiff_pitchfork', icon: Waves, label: 'Schiff Pitchfork' },
+      { mode: 'inside_pitchfork', icon: Waves, label: 'Inside Pitchfork' },
     ],
   },
   {
@@ -84,10 +98,14 @@ const categories: ToolCategory[] = [
     tools: [
       { mode: 'fib_retracement', icon: Activity, label: 'Fib Retracement' },
       { mode: 'fib_extension', icon: Activity, label: 'Fib Extension' },
+      { mode: 'fib_trend_based', icon: Activity, label: 'Trend-Based Fib' },
       { mode: 'fib_fan', icon: Activity, label: 'Fib Fan' },
       { mode: 'fib_arc', icon: Activity, label: 'Fib Arc' },
+      { mode: 'fib_speed_resistance', icon: Activity, label: 'Speed Resistance' },
+      { mode: 'fib_spiral', icon: Activity, label: 'Fib Spiral' },
       { mode: 'fib_time_zones', icon: Activity, label: 'Fib Time Zones' },
       { mode: 'fib_channel', icon: Activity, label: 'Fib Channel' },
+      { mode: 'fib_wedge', icon: Activity, label: 'Fib Wedge' },
     ],
   },
   {
@@ -95,10 +113,13 @@ const categories: ToolCategory[] = [
     icon: Square,
     tools: [
       { mode: 'rectangle', icon: Square, label: 'Rectangle' },
+      { mode: 'rotated_rectangle', icon: RotateCcw, label: 'Rotated Rect' },
       { mode: 'circle', icon: Circle, label: 'Circle' },
       { mode: 'ellipse', icon: Circle, label: 'Ellipse' },
       { mode: 'triangle', icon: Triangle, label: 'Triangle' },
+      { mode: 'bezier_curve', icon: Spline, label: 'Bezier Curve' },
       { mode: 'polyline', icon: PenTool, label: 'Polyline' },
+      { mode: 'path_tool', icon: PenTool, label: 'Path Tool' },
       { mode: 'arc', icon: Waves, label: 'Arc' },
     ],
   },
@@ -109,6 +130,7 @@ const categories: ToolCategory[] = [
       { mode: 'pen', icon: Pencil, label: 'Pen' },
       { mode: 'brush', icon: PenTool, label: 'Brush' },
       { mode: 'highlighter', icon: Highlighter, label: 'Highlighter' },
+      { mode: 'eraser', icon: Eraser, label: 'Eraser' },
       { mode: 'laser', icon: Zap, label: 'Laser' },
     ],
   },
@@ -117,6 +139,8 @@ const categories: ToolCategory[] = [
     icon: Type,
     tools: [
       { mode: 'text', icon: Type, label: 'Text' },
+      { mode: 'anchored_text', icon: Type, label: 'Anchored Text' },
+      { mode: 'note_box', icon: StickyNote, label: 'Note Box' },
       { mode: 'callout', icon: MessageSquare, label: 'Callout' },
       { mode: 'arrow_marker_up', icon: ArrowUp, label: 'Arrow Up' },
       { mode: 'arrow_marker_down', icon: ArrowDown, label: 'Arrow Down' },
@@ -130,6 +154,8 @@ const categories: ToolCategory[] = [
     tools: [
       { mode: 'price_range', icon: MoveVertical, label: 'Price Range' },
       { mode: 'date_range', icon: MoveHorizontal, label: 'Date Range' },
+      { mode: 'bars_pattern', icon: BarChart3, label: 'Bars Pattern' },
+      { mode: 'risk_reward', icon: Shield, label: 'Risk/Reward' },
       { mode: 'long_position', icon: ArrowUp, label: 'Long Position' },
       { mode: 'short_position', icon: ArrowDown, label: 'Short Position' },
     ],

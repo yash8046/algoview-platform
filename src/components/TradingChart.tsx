@@ -53,7 +53,7 @@ export default function TradingChart() {
 
   const {
     drawingMode, setDrawingMode, drawingModeRef,
-    drawings, addDrawing, clearAllDrawings, finishDrawing,
+    drawings, addDrawing, removeDrawing, clearAllDrawings, finishDrawing,
     undo, redo, canUndo, canRedo,
   } = useChartDrawings(selectedSymbol);
 
@@ -233,6 +233,7 @@ export default function TradingChart() {
               drawingModeRef={drawingModeRef}
               drawings={drawings}
               onAddDrawing={addDrawing}
+              onRemoveDrawing={removeDrawing}
               onFinishDrawing={finishDrawing}
             />
           </div>
@@ -299,6 +300,7 @@ export default function TradingChart() {
             drawingModeRef={drawingModeRef}
             drawings={drawings}
             onAddDrawing={addDrawing}
+            onRemoveDrawing={removeDrawing}
             onFinishDrawing={finishDrawing}
           />
         </div>
