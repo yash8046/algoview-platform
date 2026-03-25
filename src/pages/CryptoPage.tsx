@@ -96,35 +96,22 @@ export default function CryptoPage() {
     loadFromDB();
   }, []);
 
-  // Mobile landscape: chart-focused with collapsible side panel
+  // Mobile landscape: no chart here, use Charts page
   if (isMobile && isLandscape) {
     return (
       <div className="flex flex-col h-[100dvh] overflow-hidden safe-area-top">
-        <div className="flex-1 flex gap-1 p-1 min-h-0">
-          <div className="flex-1 min-w-0">
-            <CryptoChart />
+        <div className="flex-1 flex gap-1 p-1 min-h-0 overflow-y-auto scrollbar-thin">
+          <div className="flex-1 flex flex-col gap-1">
+            <CryptoSummary />
+            <CryptoTradePanel />
+            <CryptoAISignals />
+            <CollapsibleSection title="▼ Simulated Positions" count={positions.length} defaultOpen={false}>
+              <CryptoPositions />
+            </CollapsibleSection>
+            <CollapsibleSection title="▶ Simulation History" count={trades.length} defaultOpen={false}>
+              <CryptoTradeHistory />
+            </CollapsibleSection>
           </div>
-          {showSidePanel && (
-            <div className="w-52 flex-shrink-0 flex flex-col gap-1 overflow-y-auto scrollbar-thin animate-in slide-in-from-right-5 duration-200">
-              <CryptoSummary />
-              <CryptoTradePanel />
-              <CryptoAISignals />
-              <CollapsibleSection title="▼ Simulated Positions" count={positions.length} defaultOpen={false}>
-                <CryptoPositions />
-              </CollapsibleSection>
-              <CollapsibleSection title="▶ Simulation History" count={trades.length} defaultOpen={false}>
-                <CryptoTradeHistory />
-              </CollapsibleSection>
-            </div>
-          )}
-          <button
-            onClick={() => setShowSidePanel(p => !p)}
-            className="fixed bottom-3 right-3 z-[150] p-2.5 rounded-full bg-primary text-primary-foreground shadow-lg active:scale-90 transition-transform"
-            style={{ minWidth: 44, minHeight: 44 }}
-            title={showSidePanel ? 'Hide panel' : 'Show panel'}
-          >
-            {showSidePanel ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
-          </button>
         </div>
       </div>
     );
@@ -141,7 +128,7 @@ export default function CryptoPage() {
           <div className="p-2 space-y-2">
             <CryptoSummary />
             <CryptoTopMovers />
-            <div className="h-[280px]">
+            <div className="h-[180px]">
               <CryptoChart minimal />
             </div>
             <CryptoTradePanel />
@@ -163,7 +150,6 @@ export default function CryptoPage() {
       <TopBar />
       <div className="flex-1 flex flex-col gap-2 p-2 overflow-hidden">
         <CryptoSummary />
-        <CryptoTopMovers />
         <div className="flex-1 flex gap-2 min-h-0">
           <div className="flex-1 flex flex-col gap-2 min-w-0">
             <div className="flex-1 min-h-0">
