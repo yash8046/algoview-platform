@@ -165,15 +165,7 @@ export default function CryptoChart() {
     volumeSeriesRef.current.setData(volumes);
     formattedCandlesRef.current = formatted;
 
-    if (indicators) {
-      const toLine = (arr: number[]) =>
-        arr.map((v, i) => ({ time: candles[i].time as any, value: v })).filter(d => !isNaN(d.value));
-      sma20Ref.current?.setData(toLine(indicators.sma20));
-      ema12Ref.current?.setData(toLine(indicators.ema12));
-      ema26Ref.current?.setData(toLine(indicators.ema26));
-      bbUpperRef.current?.setData(toLine(indicators.bb.map(b => b.upper)));
-      bbLowerRef.current?.setData(toLine(indicators.bb.map(b => b.lower)));
-    }
+    // Indicators managed by overlay system, not hardcoded
 
     if (markersRef.current) {
       markersRef.current.detach();
