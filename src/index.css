@@ -64,6 +64,10 @@
     @apply border-border;
   }
 
+  html, body, #root {
+    @apply h-full m-0 p-0;
+  }
+
   body {
     @apply bg-background text-foreground font-sans antialiased;
   }
