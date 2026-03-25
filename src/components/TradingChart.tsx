@@ -53,7 +53,7 @@ export default function TradingChart() {
 
   const {
     drawingMode, setDrawingMode, drawingModeRef,
-    drawings, addDrawing, clearAllDrawings, finishDrawing,
+    drawings, addDrawing, removeDrawing, clearAllDrawings, finishDrawing,
     undo, redo, canUndo, canRedo,
   } = useChartDrawings(selectedSymbol);
 
