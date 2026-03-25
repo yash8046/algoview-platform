@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Activity, Zap, BarChart3, Bitcoin, LogOut, FlaskConical, Menu, X, Info, Shield, FileText, MoreHorizontal, Blocks } from 'lucide-react';
+import { Activity, Zap, BarChart3, Bitcoin, LogOut, FlaskConical, Menu, X, Info, Shield, FileText, MoreHorizontal, Blocks, User } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -17,7 +17,7 @@ export default function TopBar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const mainNavLinks = [
-    { to: '/', label: 'Analysis', icon: null },
+    { to: '/', label: 'Analysis', icon: Activity },
     { to: '/crypto', label: 'Crypto', icon: Bitcoin },
     { to: '/portfolio', label: 'Portfolio', icon: BarChart3 },
     { to: '/backtest', label: 'Backtest', icon: FlaskConical },
@@ -82,26 +82,34 @@ export default function TopBar() {
 
       <div className="flex items-center gap-2 sm:gap-4">
         {!isMobile && (
-          <>
-            <div className="flex items-center gap-1.5 text-[11px] text-gain">
-              <Activity className="w-3.5 h-3.5" />
-              <span className="font-mono">Live Data</span>
-            </div>
-            {user && (
-              <span className="text-[11px] text-muted-foreground truncate max-w-[150px]">{user.email}</span>
-            )}
-          </>
+          <div className="flex items-center gap-1.5 text-[11px] text-gain">
+            <Activity className="w-3.5 h-3.5" />
+            <span className="font-mono">Live Data</span>
+          </div>
         )}
         {isMobile ? (
           <button onClick={() => setMenuOpen(!menuOpen)} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground">
             {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         ) : (
-          <button onClick={signOut}
-            className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-loss transition-colors">
-            <LogOut className="w-3.5 h-3.5" />
-            Logout
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-1.5 p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors outline-none">
+                <User className="w-4 h-4 text-primary" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[180px]">
+              {user && (
+                <div className="px-3 py-2 border-b border-border">
+                  <p className="text-xs font-medium text-foreground truncate">{user.email}</p>
+                </div>
+              )}
+              <DropdownMenuItem onClick={signOut} className="text-loss cursor-pointer">
+                <LogOut className="w-3.5 h-3.5 mr-2" />
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 
