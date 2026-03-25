@@ -29,11 +29,6 @@ export default function CryptoChart() {
   const chartRef = useRef<HTMLDivElement>(null);
   const candleSeriesRef = useRef<any>(null);
   const volumeSeriesRef = useRef<any>(null);
-  const sma20Ref = useRef<any>(null);
-  const ema12Ref = useRef<any>(null);
-  const ema26Ref = useRef<any>(null);
-  const bbUpperRef = useRef<any>(null);
-  const bbLowerRef = useRef<any>(null);
   const [chartApi, setChartApi] = useState<IChartApi | null>(null);
   const [seriesApi, setSeriesApi] = useState<any>(null);
   const [showPatterns, setShowPatterns] = useState(false);
