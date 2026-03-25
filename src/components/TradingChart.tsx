@@ -347,7 +347,24 @@ export default function TradingChart() {
             showPatterns={showPatterns}
             onTogglePatterns={() => setShowPatterns(p => !p)}
           />
-          <ChartIndicatorOverlay
+          <button
+            onClick={() => setIndicatorModalOpen(true)}
+            className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-mono transition-all min-h-[32px] active:scale-95 ${
+              indicators.length > 0
+                ? 'bg-primary/10 text-primary border border-primary/20'
+                : 'text-muted-foreground hover:text-foreground hover:bg-accent/30'
+            }`}
+            title="Indicators"
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Indicators</span>
+            {indicators.length > 0 && (
+              <span className="bg-primary/20 text-primary text-[9px] px-1.5 rounded-full font-semibold">{indicators.length}</span>
+            )}
+          </button>
+          <IndicatorManagerModal
+            open={indicatorModalOpen}
+            onClose={() => setIndicatorModalOpen(false)}
             indicators={indicators}
             onToggle={toggleIndicator}
             onRemove={removeIndicator}
