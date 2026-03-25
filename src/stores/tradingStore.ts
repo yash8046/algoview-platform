@@ -306,6 +306,8 @@ export const useTradingStore = create<TradingState>((set, get) => ({
             supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'stock').eq('user_id', userId),
           ]);
         }
+    }
+  },
 
   closePosition: async (positionId) => {
     const userId = await getUserId();

@@ -228,6 +228,8 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
             supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'crypto').eq('user_id', userId),
           ]);
         }
+    }
+  },
 
   closePosition: async (id) => {
     const userId = await getUserId();
