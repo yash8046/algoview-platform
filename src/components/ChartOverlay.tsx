@@ -1565,7 +1565,15 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     const mode = drawingModeRef.current;
-    if (mode === 'none') return;
+    if (mode === 'none') {
+      // Selection mode: tap near a drawing to select it
+      const coord = fromPixel(e.clientX, e.clientY);
+      if (!coord) { setSelectedDrawingId(null); return; }
+      const id = findNearestDrawing(coord.x, coord.y);
+      setSelectedDrawingId(id);
+      render();
+      return;
+    }
     const coord = fromPixel(e.clientX, e.clientY);
     if (!coord) return;
 
