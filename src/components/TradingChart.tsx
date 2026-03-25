@@ -27,7 +27,10 @@ export default function TradingChart() {
   const [landscapeFullscreen, setLandscapeFullscreen] = useState(false);
   const markersRef = useRef<any>(null);
   const candleDataRef = useRef<any[]>([]);
+  const rawCandlesRef = useRef<any[]>([]);
+  const indicatorSeriesRef = useRef<Map<string, any>>(new Map());
   const isAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+  const [magnetMode, setMagnetMode] = useState(false);
 
   const exitLandscape = async () => {
     try {
