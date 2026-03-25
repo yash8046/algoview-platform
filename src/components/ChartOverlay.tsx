@@ -14,6 +14,7 @@ interface ChartOverlayProps {
   drawings: DrawingLine[];
   onAddDrawing: (drawing: DrawingLine) => void;
   onFinishDrawing: () => void;
+  onRemoveDrawing?: (id: string) => void;
 }
 
 export default function ChartOverlay({ chart, series, drawingMode, drawingModeRef, drawings, onAddDrawing, onFinishDrawing }: ChartOverlayProps) {
