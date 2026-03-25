@@ -54,6 +54,7 @@ export default function TradingChart() {
   const {
     drawingMode, setDrawingMode, drawingModeRef,
     drawings, addDrawing, clearAllDrawings, finishDrawing,
+    undo, redo, canUndo, canRedo,
   } = useChartDrawings(selectedSymbol);
 
   useEffect(() => {

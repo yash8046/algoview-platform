@@ -67,6 +67,7 @@ export default function CryptoChart() {
   const {
     drawingMode, setDrawingMode, drawingModeRef,
     drawings, addDrawing, clearAllDrawings, finishDrawing,
+    undo, redo, canUndo, canRedo,
   } = useChartDrawings(selectedPair);
 
   useEffect(() => {
