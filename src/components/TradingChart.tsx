@@ -300,6 +300,7 @@ export default function TradingChart() {
             drawingModeRef={drawingModeRef}
             drawings={drawings}
             onAddDrawing={addDrawing}
+            onRemoveDrawing={removeDrawing}
             onFinishDrawing={finishDrawing}
           />
         </div>
