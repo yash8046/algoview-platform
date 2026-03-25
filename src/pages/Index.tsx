@@ -108,8 +108,8 @@ const Index = () => {
           <div className="p-2 space-y-2">
             <div data-tour="portfolio"><PortfolioSummary /></div>
             <TopPerformers />
-            <div className="h-[55vh] min-h-[300px]" data-tour="chart">
-              <TradingChart />
+            <div className="h-[280px]" data-tour="chart">
+              <TradingChart minimal />
             </div>
             <div data-tour="trade-panel"><TradePanel /></div>
             <div data-tour="ai-signals"><AISignals /></div>
