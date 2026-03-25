@@ -3,7 +3,8 @@ import { useAIAnalysis, type AIAnalysisResult, type SentimentData } from '@/hook
 import { useCryptoData } from '@/hooks/useCryptoData';
 import { useCryptoStore } from '@/stores/cryptoStore';
 import { useRewardedAd } from '@/hooks/useRewardedAd';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getUsdToInrRate } from '@/lib/exchangeRate';
 
 const signalConfig = {
   strong_buy: { icon: TrendingUp, color: 'text-gain', bg: 'bg-gain/15', border: 'border-gain/30', label: 'STRONG BULLISH' },
@@ -35,16 +36,28 @@ function ConfidenceBar({ value, label }: { value: number; label: string }) {
   );
 }
 
+function sentimentToPercent(s: number): number {
+  return Math.round(((s + 1) / 2) * 100);
+}
+
+function sentimentLabel(pct: number): string {
+  if (pct >= 70) return 'Bullish';
+  if (pct >= 55) return 'Slightly Bullish';
+  if (pct >= 45) return 'Neutral';
+  if (pct >= 30) return 'Slightly Bearish';
+  return 'Bearish';
+}
+
 function SentimentScore({ score, label }: { score: number | undefined | null; label: string }) {
   const s = typeof score === 'number' ? score : 0;
-  const color = s > 0.1 ? 'text-gain' : s < -0.1 ? 'text-loss' : 'text-warning';
-  const bg = s > 0.1 ? 'bg-gain' : s < -0.1 ? 'bg-loss' : 'bg-warning';
-  const pct = Math.round(((s + 1) / 2) * 100);
+  const pct = sentimentToPercent(s);
+  const color = pct >= 55 ? 'text-gain' : pct <= 45 ? 'text-loss' : 'text-warning';
+  const bg = pct >= 55 ? 'bg-gain' : pct <= 45 ? 'bg-loss' : 'bg-warning';
   return (
     <div className="flex-1 space-y-0.5">
       <div className="flex justify-between text-[10px]">
         <span className="text-muted-foreground">{label}</span>
-        <span className={`font-mono font-semibold ${color}`}>{s > 0 ? '+' : ''}{s.toFixed(2)}</span>
+        <span className={`font-mono font-semibold ${color}`}>{pct}% {sentimentLabel(pct)}</span>
       </div>
       <div className="h-1 bg-secondary rounded-full overflow-hidden">
         <div className={`h-full ${bg} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
@@ -80,10 +93,12 @@ function SentimentPanel({ sentiment }: { sentiment: Partial<SentimentData> }) {
       </div>
       <div className="pt-1.5 border-t border-border/50">
         <div className="flex justify-between text-[10px]">
-          <span className="text-muted-foreground font-medium">Weighted Final Score</span>
-          <span className={`font-mono font-bold ${finalScore > 0.1 ? 'text-gain' : finalScore < -0.1 ? 'text-loss' : 'text-warning'}`}>
-            {finalScore > 0 ? '+' : ''}{finalScore.toFixed(3)}
-          </span>
+          <span className="text-muted-foreground font-medium">Overall Sentiment</span>
+          {(() => {
+            const pct = sentimentToPercent(finalScore);
+            const color = pct >= 55 ? 'text-gain' : pct <= 45 ? 'text-loss' : 'text-warning';
+            return <span className={`font-mono font-bold ${color}`}>{pct}% {sentimentLabel(pct)}</span>;
+          })()}
         </div>
       </div>
       {sentiment?.manipulation_warning && (
@@ -109,6 +124,13 @@ function SignalCard({ result }: { result: AIAnalysisResult }) {
   const ai = result.aiSignal;
   const rule = result.ruleBasedSignal;
   const prediction = result.prediction;
+  const [inrRate, setInrRate] = useState(85.5);
+
+  useEffect(() => {
+    getUsdToInrRate().then(setInrRate);
+  }, []);
+
+  const toINR = (usd: number) => (usd * inrRate).toFixed(2);
 
   const detailedKey = ensemble.detailedSignal || ensemble.signal;
   const cfg = signalConfig[detailedKey as keyof typeof signalConfig] || signalConfig[ensemble.signal as keyof typeof signalConfig] || signalConfig.hold;
@@ -190,7 +212,7 @@ function SignalCard({ result }: { result: AIAnalysisResult }) {
               </div>
               <div className="flex justify-between text-[10px]">
                 <span className="text-muted-foreground">Range</span>
-                <span className="font-mono text-foreground">${result.priceRange.low.toFixed(2)} – ${result.priceRange.high.toFixed(2)}</span>
+                <span className="font-mono text-foreground">₹{toINR(result.priceRange.low)} – ₹{toINR(result.priceRange.high)}</span>
               </div>
               <div className="flex justify-between text-[10px]">
                 <span className="text-muted-foreground">% Move</span>
@@ -241,19 +263,19 @@ function SignalCard({ result }: { result: AIAnalysisResult }) {
           <span className={`text-[11px] font-mono font-semibold ${
             prediction.direction === 'up' ? 'text-gain' : prediction.direction === 'down' ? 'text-loss' : 'text-muted-foreground'
           }`}>
-            {prediction.direction === 'up' ? '↑ Positive' : prediction.direction === 'down' ? '↓ Negative' : '→ Neutral'} · ${prediction.predicted.toFixed(2)}
+            {prediction.direction === 'up' ? '↑ Positive' : prediction.direction === 'down' ? '↓ Negative' : '→ Neutral'} · ₹{toINR(prediction.predicted)}
           </span>
         </div>
         {ai.targetPrice && (
           <div className="flex justify-between mt-1.5 text-[10px]">
             <span className="text-muted-foreground">Projected Level</span>
-            <span className="font-mono text-gain">${ai.targetPrice.toFixed(2)}</span>
+            <span className="font-mono text-gain">₹{toINR(ai.targetPrice)}</span>
           </div>
         )}
         {ai.stopLoss && (
           <div className="flex justify-between mt-0.5 text-[10px]">
             <span className="text-muted-foreground">Support Level</span>
-            <span className="font-mono text-loss">${ai.stopLoss.toFixed(2)}</span>
+            <span className="font-mono text-loss">₹{toINR(ai.stopLoss)}</span>
           </div>
         )}
       </div>
