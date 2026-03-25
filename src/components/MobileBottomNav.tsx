@@ -7,8 +7,8 @@ const tabs = [
   { to: '/', label: 'Stocks', icon: BarChart3 },
   { to: '/crypto', label: 'Crypto', icon: Bitcoin },
   { to: '/charts', label: 'Charts', icon: CandlestickChart },
-  { to: '/backtest', label: 'Backtest', icon: FlaskConical },
   { to: '/strategy-builder', label: 'Strategy', icon: Blocks },
+  { to: '/backtest', label: 'Backtest', icon: FlaskConical },
 ];
 
 export default function MobileBottomNav() {

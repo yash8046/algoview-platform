@@ -7,8 +7,10 @@ import { calcRSI, calcMACD, calcBollingerBands, calcEMA, calcVWAP, calcSMA as ca
 import ChartDrawingTools from '@/components/ChartDrawingTools';
 import ChartIndicatorOverlay from '@/components/ChartIndicatorOverlay';
 import ChartOverlay from '@/components/ChartOverlay';
+import PriceAlertPanel from '@/components/PriceAlertPanel';
 import { useChartDrawings } from '@/hooks/useChartDrawings';
 import { useChartIndicators } from '@/hooks/useChartIndicators';
+import { usePriceAlerts } from '@/hooks/usePriceAlerts';
 import { detectCandlestickPatterns } from '@/lib/candlestickPatterns';
 import { Maximize2, Minimize2, Magnet, X } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
@@ -64,6 +66,8 @@ export default function TradingChart() {
   } = useChartDrawings(selectedSymbol);
 
   const { indicators, toggleIndicator, removeIndicator } = useChartIndicators();
+  const { alerts, activeAlerts, triggeredAlerts, addAlert, removeAlert, clearTriggered, checkAlerts, requestNotificationPermission } = usePriceAlerts();
+  const currentPriceRef = useRef(0);
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -135,9 +139,13 @@ export default function TradingChart() {
 
         if (resp.regularMarketPrice) {
           updatePrice(selectedSymbol, resp.regularMarketPrice, resp.previousClose || resp.regularMarketPrice);
+          currentPriceRef.current = resp.regularMarketPrice;
+          checkAlerts(selectedSymbol, resp.regularMarketPrice);
         } else if (candleData.length > 0) {
           const last = candleData[candleData.length - 1];
           updatePrice(selectedSymbol, last.close, resp.previousClose || last.open);
+          currentPriceRef.current = last.close;
+          checkAlerts(selectedSymbol, last.close);
         }
         setLoading(false);
       })
@@ -344,6 +352,17 @@ export default function TradingChart() {
             indicators={indicators}
             onToggle={toggleIndicator}
             onRemove={removeIndicator}
+          />
+          <PriceAlertPanel
+            alerts={alerts}
+            activeAlerts={activeAlerts}
+            triggeredAlerts={triggeredAlerts}
+            currentSymbol={selectedSymbol}
+            currentPrice={currentPriceRef.current}
+            onAdd={addAlert}
+            onRemove={removeAlert}
+            onClearTriggered={clearTriggered}
+            onRequestPermission={requestNotificationPermission}
           />
           <button
             onClick={() => setMagnetMode(m => !m)}

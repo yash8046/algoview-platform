@@ -5,10 +5,14 @@ import { useCryptoStore, CRYPTO_PAIRS } from '@/stores/cryptoStore';
 import { formatINR } from '@/lib/exchangeRate';
 import { calcSMA, calcEMA, calcBollingerBands } from '@/lib/technicalIndicators';
 import ChartDrawingTools from '@/components/ChartDrawingTools';
+import ChartIndicatorOverlay from '@/components/ChartIndicatorOverlay';
 import ChartOverlay from '@/components/ChartOverlay';
+import PriceAlertPanel from '@/components/PriceAlertPanel';
 import { useChartDrawings } from '@/hooks/useChartDrawings';
+import { useChartIndicators } from '@/hooks/useChartIndicators';
+import { usePriceAlerts } from '@/hooks/usePriceAlerts';
 import { detectCandlestickPatterns } from '@/lib/candlestickPatterns';
-import { Maximize2, Minimize2, Smartphone, X } from 'lucide-react';
+import { Maximize2, Minimize2, Magnet, X } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 
 const INTERVALS = [
@@ -38,6 +42,10 @@ export default function CryptoChart() {
   const markersRef = useRef<any>(null);
   const formattedCandlesRef = useRef<any[]>([]);
   const isAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+  const [magnetMode, setMagnetMode] = useState(false);
+
+  const { indicators: overlayIndicators, toggleIndicator, removeIndicator } = useChartIndicators();
+  const { alerts, activeAlerts, triggeredAlerts, addAlert, removeAlert, clearTriggered, checkAlerts, requestNotificationPermission } = usePriceAlerts();
 
   const exitLandscape = async () => {
     try {
@@ -71,8 +79,11 @@ export default function CryptoChart() {
   } = useChartDrawings(selectedPair);
 
   useEffect(() => {
-    if (livePrice > 0) updatePositionPrice(selectedPair, livePrice);
-  }, [livePrice, selectedPair]);
+    if (livePrice > 0) {
+      updatePositionPrice(selectedPair, livePrice);
+      checkAlerts(selectedPair, livePrice * usdToInr);
+    }
+  }, [livePrice, selectedPair, usdToInr]);
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -256,6 +267,8 @@ export default function CryptoChart() {
               onAddDrawing={addDrawing}
               onRemoveDrawing={removeDrawing}
               onFinishDrawing={finishDrawing}
+              magnetMode={magnetMode}
+              candleData={formattedCandlesRef.current}
             />
           </div>
         </div>
@@ -301,6 +314,31 @@ export default function CryptoChart() {
             showPatterns={showPatterns}
             onTogglePatterns={() => setShowPatterns(p => !p)}
           />
+          <ChartIndicatorOverlay
+            indicators={overlayIndicators}
+            onToggle={toggleIndicator}
+            onRemove={removeIndicator}
+          />
+          <PriceAlertPanel
+            alerts={alerts}
+            activeAlerts={activeAlerts}
+            triggeredAlerts={triggeredAlerts}
+            currentSymbol={selectedPair}
+            currentPrice={livePriceINR}
+            onAdd={addAlert}
+            onRemove={removeAlert}
+            onClearTriggered={clearTriggered}
+            onRequestPermission={requestNotificationPermission}
+          />
+          <button
+            onClick={() => setMagnetMode(m => !m)}
+            className={`p-1.5 rounded transition-colors min-h-[32px] active:scale-95 ${
+              magnetMode ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+            }`}
+            title="Magnet Mode (snap to OHLC)"
+          >
+            <Magnet className="w-3.5 h-3.5" />
+          </button>
           <div className="flex gap-0.5">
             {INTERVALS.map((i) => (
               <button
@@ -329,15 +367,17 @@ export default function CryptoChart() {
         <div ref={chartRef} className="absolute inset-0 bg-chart" style={{ zIndex: 1 }} />
         <div className="absolute inset-0" style={{ zIndex: isDrawingActive ? 100 : 0, pointerEvents: isDrawingActive ? 'auto' : 'none' }}>
           <ChartOverlay
-            chart={chartApi}
-            series={seriesApi}
-            drawingMode={drawingMode}
-            drawingModeRef={drawingModeRef}
-            drawings={drawings}
-            onAddDrawing={addDrawing}
-            onRemoveDrawing={removeDrawing}
-            onFinishDrawing={finishDrawing}
-          />
+              chart={chartApi}
+              series={seriesApi}
+              drawingMode={drawingMode}
+              drawingModeRef={drawingModeRef}
+              drawings={drawings}
+              onAddDrawing={addDrawing}
+              onRemoveDrawing={removeDrawing}
+              onFinishDrawing={finishDrawing}
+              magnetMode={magnetMode}
+              candleData={formattedCandlesRef.current}
+            />
         </div>
       </div>
     </>
