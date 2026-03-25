@@ -95,6 +95,15 @@ const categories: ToolCategory[] = [
     ],
   },
   {
+    name: 'Gann',
+    icon: Compass,
+    tools: [
+      { mode: 'gann_fan', icon: Compass, label: 'Gann Fan' },
+      { mode: 'gann_box', icon: Square, label: 'Gann Box' },
+      { mode: 'gann_square', icon: Square, label: 'Gann Square' },
+    ],
+  },
+  {
     name: 'Fibonacci',
     icon: Activity,
     tools: [
