@@ -5,7 +5,8 @@ import {
   BarChart3, ChevronDown, ChevronRight, Circle, Triangle, Type, ArrowUp, ArrowDown,
   Ruler, Target, Lock, Unlock, Eye, EyeOff, Undo2, Redo2, Magnet, Flag, MessageSquare,
   MoveHorizontal, MoveVertical, ArrowRight, Hash, Columns, Waves, PenTool, Highlighter,
-  Eraser, Tag, Crosshair, CornerRightDown
+  Eraser, Tag, Crosshair, CornerRightDown, Spline, RotateCcw, StickyNote, Compass,
+  ScatterChart, Shield, MapPin, Slash, ChevronsUp
 } from 'lucide-react';
 
 export type DrawingMode =
