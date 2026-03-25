@@ -314,6 +314,31 @@ export default function CryptoChart() {
             showPatterns={showPatterns}
             onTogglePatterns={() => setShowPatterns(p => !p)}
           />
+          <ChartIndicatorOverlay
+            indicators={overlayIndicators}
+            onToggle={toggleIndicator}
+            onRemove={removeIndicator}
+          />
+          <PriceAlertPanel
+            alerts={alerts}
+            activeAlerts={activeAlerts}
+            triggeredAlerts={triggeredAlerts}
+            currentSymbol={selectedPair}
+            currentPrice={livePriceINR}
+            onAdd={addAlert}
+            onRemove={removeAlert}
+            onClearTriggered={clearTriggered}
+            onRequestPermission={requestNotificationPermission}
+          />
+          <button
+            onClick={() => setMagnetMode(m => !m)}
+            className={`p-1.5 rounded transition-colors min-h-[32px] active:scale-95 ${
+              magnetMode ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+            }`}
+            title="Magnet Mode (snap to OHLC)"
+          >
+            <Magnet className="w-3.5 h-3.5" />
+          </button>
           <div className="flex gap-0.5">
             {INTERVALS.map((i) => (
               <button
