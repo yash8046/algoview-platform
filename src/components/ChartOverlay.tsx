@@ -1712,15 +1712,67 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   useEffect(() => () => { cancelAnimationFrame(laserRaf.current); }, []);
 
   const isActive = drawingMode !== 'none';
+  const hasDrawings = drawings.length > 0;
+
+  // Get selected drawing pixel position for floating toolbar
+  const selectedDrawing = selectedDrawingId ? drawings.find(d => d.id === selectedDrawingId) : null;
+  const selectedPos = (() => {
+    if (!selectedDrawing || !canvasRef.current) return null;
+    if (selectedDrawing.points && selectedDrawing.points.length > 0) {
+      const p = toPixel(selectedDrawing.points[0].time as unknown as Time, selectedDrawing.points[0].price);
+      if (p) return { x: p.x, y: p.y };
+    }
+    if (selectedDrawing.price != null && series) {
+      const y = series.priceToCoordinate(selectedDrawing.price);
+      if (y !== null) return { x: 60, y };
+    }
+    return null;
+  })();
 
   return (
-    <canvas
-      ref={canvasRef}
-      className={`w-full h-full ${isActive ? (drawingMode === 'eraser' ? 'cursor-not-allowed' : 'cursor-crosshair') : ''}`}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      style={{ touchAction: isActive ? 'none' : 'auto' }}
-    />
+    <div className="relative w-full h-full">
+      <canvas
+        ref={canvasRef}
+        className={`w-full h-full ${isActive ? (drawingMode === 'eraser' ? 'cursor-not-allowed' : 'cursor-crosshair') : (hasDrawings ? 'cursor-pointer' : '')}`}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        style={{ touchAction: isActive ? 'none' : 'auto' }}
+      />
+      {/* Floating selection toolbar */}
+      {selectedDrawingId && selectedPos && (
+        <div
+          className="absolute z-50 flex items-center gap-1 bg-card border border-border rounded-lg shadow-lg px-2 py-1"
+          style={{ left: Math.max(4, selectedPos.x - 60), top: Math.max(4, selectedPos.y - 40) }}
+        >
+          <button
+            onClick={() => {
+              if (onRemoveDrawing) onRemoveDrawing(selectedDrawingId);
+              setSelectedDrawingId(null);
+            }}
+            className="px-2 py-1 text-[10px] font-mono text-loss hover:bg-loss/10 rounded active:scale-95"
+          >
+            Delete
+          </button>
+          <button
+            onClick={() => {
+              if (selectedDrawing) {
+                onAddDrawing({ ...selectedDrawing, id: `${selectedDrawing.type}_clone_${Date.now()}` });
+              }
+              setSelectedDrawingId(null);
+            }}
+            className="px-2 py-1 text-[10px] font-mono text-muted-foreground hover:bg-accent rounded active:scale-95"
+          >
+            Clone
+          </button>
+          <button
+            onClick={() => setSelectedDrawingId(null)}
+            className="px-1 py-1 text-[10px] font-mono text-muted-foreground hover:bg-accent rounded active:scale-95"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
