@@ -1487,6 +1487,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     risk_reward: '#f59e0b',
     long_position: '#22c55e', short_position: '#ef4444',
     arc: '#3b82f6',
+    gann_fan: '#f59e0b', gann_box: '#f59e0b', gann_square: '#f59e0b',
   };
 
   // Find nearest drawing for eraser
