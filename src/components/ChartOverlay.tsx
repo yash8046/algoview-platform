@@ -1648,19 +1648,20 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     const coord = fromPixel(e.clientX, e.clientY);
     if (!coord) { startCoord.current = null; return; }
 
+    const snapped = snapToOHLC(coord.time, coord.price);
     const color = defaultColors[mode] || '#ffffff';
     onAddDrawing({
       id: `${mode}_${Date.now()}`, type: mode as any,
       points: [
         { time: startCoord.current.time as number, price: startCoord.current.price },
-        { time: coord.time as number, price: coord.price },
+        { time: snapped.time as number, price: snapped.price },
       ],
       color,
     });
     startCoord.current = null;
     currentPixel.current = null;
     onFinishDrawing(); render();
-  }, [fromPixel, onAddDrawing, onFinishDrawing, render, drawingModeRef]);
+  }, [fromPixel, onAddDrawing, onFinishDrawing, render, drawingModeRef, snapToOHLC]);
 
   useEffect(() => {
     if (!chart) return;
