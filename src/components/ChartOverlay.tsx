@@ -52,13 +52,24 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   // Magnet: snap price to nearest OHLC of the closest candle
   const snapToOHLC = useCallback((time: any, price: number): { time: any; price: number } => {
     if (!magnetMode || candleData.length === 0) return { time, price };
-    // Find nearest candle by time
+    
+    // Convert time to comparable number (handle both unix timestamps and date strings)
+    const timeToNum = (t: any): number => {
+      if (typeof t === 'number') return t;
+      if (typeof t === 'string') return new Date(t).getTime() / 1000;
+      return Number(t) || 0;
+    };
+    
+    const targetTime = timeToNum(time);
+    
+    // Find nearest candle by time using pixel distance if chart available, else by time value
     let nearest = candleData[0];
-    let minDist = Math.abs(Number(candleData[0].time) - Number(time));
+    let minDist = Math.abs(timeToNum(candleData[0].time) - targetTime);
     for (const c of candleData) {
-      const d = Math.abs(Number(c.time) - Number(time));
+      const d = Math.abs(timeToNum(c.time) - targetTime);
       if (d < minDist) { minDist = d; nearest = c; }
     }
+    
     // Snap to nearest OHLC value
     const ohlc = [nearest.open, nearest.high, nearest.low, nearest.close];
     let snapPrice = ohlc[0];
@@ -67,6 +78,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       const d = Math.abs(price - p);
       if (d < snapDist) { snapDist = d; snapPrice = p; }
     }
+    
+    console.log('[Magnet] Snapped to', nearest.time, 'OHLC:', nearest.open, nearest.high, nearest.low, nearest.close, '→', snapPrice);
     return { time: nearest.time, price: snapPrice };
   }, [magnetMode, candleData]);
 

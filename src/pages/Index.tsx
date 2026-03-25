@@ -139,7 +139,7 @@ const Index = () => {
             <div className="flex-1 min-h-0" data-tour="chart">
               <TradingChart />
             </div>
-            <div className="grid grid-cols-2 gap-2" style={{ height: '200px' }}>
+            <div className="grid grid-cols-2 gap-2 flex-shrink-0" style={{ maxHeight: '180px' }}>
               <Positions />
               <TradeHistory />
             </div>
