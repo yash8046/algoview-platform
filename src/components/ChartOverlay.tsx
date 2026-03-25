@@ -1355,7 +1355,36 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       }
     }
 
-    // In-progress preview
+    // Render selection handles for selected drawing
+    if (selectedDrawingId) {
+      const selD = drawings.find(d => d.id === selectedDrawingId);
+      if (selD && selD.points) {
+        for (const pt of selD.points) {
+          const px = toPixel(pt.time as unknown as Time, pt.price);
+          if (px) {
+            ctx.beginPath();
+            ctx.strokeStyle = '#22c55e';
+            ctx.lineWidth = 2;
+            ctx.fillStyle = 'rgba(34,197,94,0.3)';
+            ctx.rect(px.x - 5, px.y - 5, 10, 10);
+            ctx.fill();
+            ctx.stroke();
+          }
+        }
+      } else if (selD && selD.price != null && series) {
+        const y = series.priceToCoordinate(selD.price);
+        if (y !== null) {
+          ctx.beginPath();
+          ctx.strokeStyle = '#22c55e';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([4, 4]);
+          ctx.moveTo(0, y); ctx.lineTo(rect.width, y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      }
+    }
+
     if (isDrawing.current && startCoord.current && currentPixel.current) {
       const sp = toPixel(startCoord.current.time, startCoord.current.price);
       if (sp) {
