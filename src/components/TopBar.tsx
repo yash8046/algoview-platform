@@ -17,7 +17,7 @@ export default function TopBar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const mainNavLinks = [
-    { to: '/', label: 'Analysis', icon: Activity },
+    { to: '/', label: 'Stock', icon: Activity },
     { to: '/crypto', label: 'Crypto', icon: Bitcoin },
     { to: '/portfolio', label: 'Portfolio', icon: BarChart3 },
     { to: '/backtest', label: 'Backtest', icon: FlaskConical },

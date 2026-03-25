@@ -263,19 +263,36 @@ export const useTradingStore = create<TradingState>((set, get) => ({
       ]);
     } else {
       const pos = state.positions.find(p => p.symbol === symbol);
-      if (pos) {
-        const pnl = (price - pos.entryPrice) * pos.quantity;
-        trade.pnl = pnl;
-        const newBalance = state.balance + total;
+      if (!pos) return;
+      if (quantity > pos.quantity) return;
+
+      const sellTotal = price * quantity;
+      const pnl = (price - pos.entryPrice) * quantity;
+      trade.pnl = pnl;
+      trade.total = sellTotal;
+      const remainingQty = pos.quantity - quantity;
+      const newBalance = state.balance + sellTotal;
+
+      if (remainingQty <= 0) {
         set({
           balance: newBalance,
           positions: state.positions.filter(p => p.id !== pos.id),
           trades: [trade, ...state.trades],
         });
-
         await Promise.all([
-          supabase.from('paper_trades').insert({ id: trade.id, symbol, side, price, quantity, total, pnl, market: 'stock', currency: 'INR', user_id: userId }),
+          supabase.from('paper_trades').insert({ id: trade.id, symbol, side, price, quantity, total: sellTotal, pnl, market: 'stock', currency: 'INR', user_id: userId }),
           supabase.from('paper_positions').delete().eq('id', pos.id),
+          supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'stock').eq('user_id', userId),
+        ]);
+      } else {
+        set({
+          balance: newBalance,
+          positions: state.positions.map(p => p.id === pos.id ? { ...p, quantity: remainingQty } : p),
+          trades: [trade, ...state.trades],
+        });
+        await Promise.all([
+          supabase.from('paper_trades').insert({ id: trade.id, symbol, side, price, quantity, total: sellTotal, pnl, market: 'stock', currency: 'INR', user_id: userId }),
+          supabase.from('paper_positions').update({ quantity: remainingQty }).eq('id', pos.id),
           supabase.from('portfolio_balance').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('market', 'stock').eq('user_id', userId),
         ]);
       }
