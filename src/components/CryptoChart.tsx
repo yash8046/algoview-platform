@@ -67,6 +67,7 @@ export default function CryptoChart() {
   const {
     drawingMode, setDrawingMode, drawingModeRef,
     drawings, addDrawing, clearAllDrawings, finishDrawing,
+    undo, redo, canUndo, canRedo,
   } = useChartDrawings(selectedPair);
 
   useEffect(() => {
@@ -212,6 +213,10 @@ export default function CryptoChart() {
               onModeChange={setDrawingMode}
               drawings={drawings}
               onClearAll={clearAllDrawings}
+              onUndo={undo}
+              onRedo={redo}
+              canUndo={canUndo}
+              canRedo={canRedo}
               showPatterns={showPatterns}
               onTogglePatterns={() => setShowPatterns(p => !p)}
             />
@@ -288,6 +293,10 @@ export default function CryptoChart() {
             onModeChange={setDrawingMode}
             drawings={drawings}
             onClearAll={clearAllDrawings}
+            onUndo={undo}
+            onRedo={redo}
+            canUndo={canUndo}
+            canRedo={canRedo}
             showPatterns={showPatterns}
             onTogglePatterns={() => setShowPatterns(p => !p)}
           />

@@ -54,6 +54,7 @@ export default function TradingChart() {
   const {
     drawingMode, setDrawingMode, drawingModeRef,
     drawings, addDrawing, clearAllDrawings, finishDrawing,
+    undo, redo, canUndo, canRedo,
   } = useChartDrawings(selectedSymbol);
 
   useEffect(() => {
@@ -190,6 +191,10 @@ export default function TradingChart() {
               onModeChange={setDrawingMode}
               drawings={drawings}
               onClearAll={clearAllDrawings}
+              onUndo={undo}
+              onRedo={redo}
+              canUndo={canUndo}
+              canRedo={canRedo}
               showPatterns={showPatterns}
               onTogglePatterns={() => setShowPatterns(p => !p)}
             />
@@ -253,6 +258,10 @@ export default function TradingChart() {
             onModeChange={setDrawingMode}
             drawings={drawings}
             onClearAll={clearAllDrawings}
+            onUndo={undo}
+            onRedo={redo}
+            canUndo={canUndo}
+            canRedo={canRedo}
             showPatterns={showPatterns}
             onTogglePatterns={() => setShowPatterns(p => !p)}
           />
