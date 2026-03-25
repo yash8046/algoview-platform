@@ -201,10 +201,11 @@ export async function showRewardedAd(featureName: string = 'Feature'): Promise<A
     }
   }
 
-  // Ad not loaded — grant silently with toast
-  toast.info('No ad available — feature unlocked for free', { duration: 2000 });
+  // Ad not loaded — show detailed status
+  const lastErr = adLoadAttempts.rewarded;
+  toast.info(`No ad available (attempts: ${lastErr}, status: NOT_LOADED). Feature unlocked for free.`, { duration: 3000 });
   loadRewardedAd();
-  return { granted: true, adShown: false, message: '' };
+  return { granted: true, adShown: false, message: `Ad not loaded after ${lastErr} attempts` };
 }
 
 // ============ App Open Ad ============
