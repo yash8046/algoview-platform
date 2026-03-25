@@ -145,12 +145,6 @@ export default function TradePanel() {
           </button>
         </div>
 
-        {/* Sell disabled hint */}
-        {heldQty === 0 && (
-          <p className="text-[9px] text-muted-foreground/50 text-center italic">
-            Buy shares first to enable selling
-          </p>
-        )}
       </div>
     </div>
   );

@@ -108,11 +108,6 @@ export default function CryptoTradePanel() {
           {side === 'buy' ? 'BUY' : 'SELL'} {pairInfo?.baseAsset}
         </button>
 
-        {side === 'sell' && heldQty === 0 && (
-          <p className="text-[9px] text-muted-foreground/50 text-center italic">
-            Buy {pairInfo?.baseAsset} first to enable selling
-          </p>
-        )}
       </div>
     </div>
   );
