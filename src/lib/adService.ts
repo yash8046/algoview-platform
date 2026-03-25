@@ -12,6 +12,7 @@
  */
 
 import { Capacitor } from '@capacitor/core';
+import { toast } from 'sonner';
 
 // ============ State ============
 let isInitialized = false;
@@ -66,12 +67,14 @@ export async function initAdMob(): Promise<void> {
     });
     isInitialized = true;
     console.log('[AdService] AdMob initialized');
+    toast.success('AdMob initialized successfully', { duration: 2000 });
 
     // Pre-load ads
     loadRewardedAd();
     loadInterstitialAd();
-  } catch (err) {
+  } catch (err: any) {
     console.warn('[AdService] AdMob init failed:', err);
+    toast.error(`AdMob init failed: ${err?.message || err}`, { duration: 4000 });
   }
 }
 
@@ -124,7 +127,8 @@ async function loadInterstitialAd(): Promise<void> {
     await AdMob.prepareInterstitial({ adId: AD_UNITS.interstitial });
     interstitialAdLoaded = true;
     adLoadAttempts.interstitial = 0;
-  } catch (err) {
+    console.log('[AdService] Interstitial ad ready');
+  } catch (err: any) {
     interstitialAdLoaded = false;
     adLoadAttempts.interstitial++;
     console.warn(`[AdService] Interstitial load attempt ${adLoadAttempts.interstitial}:`, err);
@@ -161,15 +165,22 @@ async function loadRewardedAd(): Promise<void> {
     await AdMob.prepareRewardVideoAd({ adId: AD_UNITS.rewarded });
     rewardedAdLoaded = true;
     adLoadAttempts.rewarded = 0;
-  } catch (err) {
+    console.log('[AdService] Rewarded ad ready');
+    toast.success('Ad ready — watch to unlock features', { duration: 2000 });
+  } catch (err: any) {
     rewardedAdLoaded = false;
     adLoadAttempts.rewarded++;
-    console.warn(`[AdService] Rewarded load attempt ${adLoadAttempts.rewarded}:`, err);
+    const errMsg = err?.message || String(err);
+    const errorCode = err?.code || 'UNKNOWN';
+    console.warn(`[AdService] Rewarded load attempt ${adLoadAttempts.rewarded}: [${errorCode}] ${errMsg}`);
+    if (adLoadAttempts.rewarded <= 2) {
+      toast.error(`Ad not available (${errorCode}). Features unlocked for free.`, { duration: 3000 });
+    }
   }
 }
 
 export async function showRewardedAd(featureName: string = 'Feature'): Promise<AdResult> {
-  // On web or cooldown: grant silently, no toast
+  // On web or cooldown: grant silently
   if (!isNative()) return { granted: true, adShown: false, message: '' };
   if (!canShowAd('rewarded')) return { granted: true, adShown: false, message: '' };
 
@@ -179,17 +190,19 @@ export async function showRewardedAd(featureName: string = 'Feature'): Promise<A
       await AdMob.showRewardVideoAd();
       lastAdShownAt.rewarded = Date.now();
       rewardedAdLoaded = false;
+      toast.success(`${featureName} unlocked! 🎉`, { duration: 2000 });
       loadRewardedAd();
       return { granted: true, adShown: true, message: '' };
-    } catch (err) {
+    } catch (err: any) {
       console.warn('[AdService] Show rewarded failed:', err);
+      toast.error(`Ad failed: ${err?.message || 'Unknown error'}. Access granted for free.`, { duration: 3000 });
       loadRewardedAd();
-      // Grant silently — no message/toast
       return { granted: true, adShown: false, message: '' };
     }
   }
 
-  // Ad not loaded — grant silently
+  // Ad not loaded — grant silently with toast
+  toast.info('No ad available — feature unlocked for free', { duration: 2000 });
   loadRewardedAd();
   return { granted: true, adShown: false, message: '' };
 }

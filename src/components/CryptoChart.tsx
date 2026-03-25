@@ -12,7 +12,7 @@ import { useChartDrawings } from '@/hooks/useChartDrawings';
 import { useChartIndicators } from '@/hooks/useChartIndicators';
 import { usePriceAlerts } from '@/hooks/usePriceAlerts';
 import { detectCandlestickPatterns } from '@/lib/candlestickPatterns';
-import { Maximize2, Minimize2, Magnet, X, BarChart3 } from 'lucide-react';
+import { Maximize2, Minimize2, Magnet, X, BarChart3, Smartphone } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 
 const INTERVALS = [
@@ -402,6 +402,15 @@ export default function CryptoChart() {
               </button>
             ))}
           </div>
+          {isAndroid && (
+            <button
+              onClick={toggleLandscapeFullscreen}
+              className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground min-h-[32px] active:scale-95"
+              title="Landscape Mode"
+            >
+              <Smartphone className="w-4 h-4 rotate-90" />
+            </button>
+          )}
           <button
             onClick={() => setFullscreen(f => !f)}
             className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
@@ -433,8 +442,7 @@ export default function CryptoChart() {
 
   if (fullscreen) {
     return (
-      <div className="fixed inset-0 z-[200] bg-background flex flex-col safe-area-top">
-        <div className="h-[env(safe-area-inset-top,36px)] min-h-[36px] bg-background flex-shrink-0" />
+      <div className="fixed inset-0 z-[200] bg-background flex flex-col">
         {chartContent}
       </div>
     );

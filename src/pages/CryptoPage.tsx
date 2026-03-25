@@ -3,6 +3,7 @@ import TopBar from '@/components/TopBar';
 import CryptoChart from '@/components/CryptoChart';
 import CryptoTradePanel from '@/components/CryptoTradePanel';
 import CryptoPositions from '@/components/CryptoPositions';
+import CryptoTradeHistory from '@/components/CryptoTradeHistory';
 import CryptoAISignals from '@/components/CryptoAISignals';
 import CryptoTopMovers from '@/components/CryptoTopMovers';
 import { useCryptoStore } from '@/stores/cryptoStore';
@@ -111,6 +112,9 @@ export default function CryptoPage() {
               <CollapsibleSection title="▼ Simulated Positions" count={positions.length} defaultOpen={false}>
                 <CryptoPositions />
               </CollapsibleSection>
+              <CollapsibleSection title="▶ Simulation History" count={trades.length} defaultOpen={false}>
+                <CryptoTradeHistory />
+              </CollapsibleSection>
             </div>
           )}
           <button
@@ -143,6 +147,9 @@ export default function CryptoPage() {
             <CollapsibleSection title="▼ Simulated Positions" count={positions.length} defaultOpen={true}>
               <CryptoPositions />
             </CollapsibleSection>
+            <CollapsibleSection title="▶ Simulation History" count={trades.length} defaultOpen={false}>
+              <CryptoTradeHistory />
+            </CollapsibleSection>
           </div>
         </div>
       </div>
@@ -159,8 +166,9 @@ export default function CryptoPage() {
             <div className="flex-1 min-h-0">
               <CryptoChart />
             </div>
-            <div style={{ height: '200px' }}>
+            <div className="grid grid-cols-2 gap-2 flex-shrink-0" style={{ maxHeight: '180px' }}>
               <CryptoPositions />
+              <CryptoTradeHistory />
             </div>
           </div>
           <div className="w-72 flex-shrink-0 flex flex-col gap-2 min-h-0 overflow-y-auto scrollbar-thin">

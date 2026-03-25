@@ -110,7 +110,7 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
             side: p.side as 'long' | 'short',
             entryPrice: Number(p.entry_price),
             quantity: Number(p.quantity),
-            currentPrice: Number(p.current_price),
+            currentPrice: Number(p.current_price) || Number(p.entry_price),
             timestamp: new Date(p.created_at).getTime(),
           })),
         });
