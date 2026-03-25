@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import type { DrawingMode, DrawingLine } from '@/components/ChartDrawingTools';
 
 const STORAGE_KEY = 'chart_drawings';
+const MAX_UNDO = 50;
 
 function loadDrawings(symbol: string): DrawingLine[] {
   try {
@@ -20,30 +21,69 @@ export function useChartDrawings(symbol: string) {
   const [drawingMode, setDrawingMode] = useState<DrawingMode>('none');
   const drawingModeRef = useRef<DrawingMode>('none');
   const [drawings, setDrawings] = useState<DrawingLine[]>(() => loadDrawings(symbol));
+  const undoStack = useRef<DrawingLine[][]>([]);
+  const redoStack = useRef<DrawingLine[][]>([]);
 
   useEffect(() => {
     drawingModeRef.current = drawingMode;
   }, [drawingMode]);
 
   useEffect(() => {
-    setDrawings(loadDrawings(symbol));
+    const loaded = loadDrawings(symbol);
+    setDrawings(loaded);
+    undoStack.current = [];
+    redoStack.current = [];
   }, [symbol]);
 
   useEffect(() => {
     saveDrawings(symbol, drawings);
   }, [drawings, symbol]);
 
-  const addDrawing = useCallback((d: DrawingLine) => {
-    setDrawings((prev) => [...prev, d]);
+  const pushUndo = useCallback((prev: DrawingLine[]) => {
+    undoStack.current = [...undoStack.current.slice(-MAX_UNDO), prev];
+    redoStack.current = [];
   }, []);
 
+  const addDrawing = useCallback((d: DrawingLine) => {
+    setDrawings((prev) => {
+      pushUndo(prev);
+      return [...prev, d];
+    });
+  }, [pushUndo]);
+
   const clearAllDrawings = useCallback(() => {
-    setDrawings([]);
+    setDrawings((prev) => {
+      pushUndo(prev);
+      return [];
+    });
+  }, [pushUndo]);
+
+  const removeDrawing = useCallback((id: string) => {
+    setDrawings((prev) => {
+      pushUndo(prev);
+      return prev.filter(d => d.id !== id);
+    });
+  }, [pushUndo]);
+
+  const undo = useCallback(() => {
+    if (undoStack.current.length === 0) return;
+    const prev = undoStack.current.pop()!;
+    setDrawings((current) => {
+      redoStack.current.push(current);
+      return prev;
+    });
+  }, []);
+
+  const redo = useCallback(() => {
+    if (redoStack.current.length === 0) return;
+    const next = redoStack.current.pop()!;
+    setDrawings((current) => {
+      undoStack.current.push(current);
+      return next;
+    });
   }, []);
 
   const finishDrawing = useCallback(() => {
-    // Keep the current drawing mode active so the user can draw multiple
-    // shapes without reselecting. Only laser resets automatically.
     setDrawingMode((prev) => (prev === 'laser' ? 'none' : prev));
   }, []);
 
@@ -53,7 +93,12 @@ export function useChartDrawings(symbol: string) {
     drawingModeRef,
     drawings,
     addDrawing,
+    removeDrawing,
     clearAllDrawings,
     finishDrawing,
+    undo,
+    redo,
+    canUndo: undoStack.current.length > 0,
+    canRedo: redoStack.current.length > 0,
   };
 }
