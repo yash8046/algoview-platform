@@ -63,6 +63,8 @@ export default function TradingChart() {
     undo, redo, canUndo, canRedo,
   } = useChartDrawings(selectedSymbol);
 
+  const { indicators, toggleIndicator, removeIndicator } = useChartIndicators();
+
   useEffect(() => {
     if (!chartRef.current) return;
 
