@@ -254,6 +254,7 @@ export default function CryptoChart() {
               drawingModeRef={drawingModeRef}
               drawings={drawings}
               onAddDrawing={addDrawing}
+              onRemoveDrawing={removeDrawing}
               onFinishDrawing={finishDrawing}
             />
           </div>
