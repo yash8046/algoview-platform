@@ -460,4 +460,3 @@ export default function CryptoChart({ minimal = false }: { minimal?: boolean }) 
     </div>
   );
 }
-}
