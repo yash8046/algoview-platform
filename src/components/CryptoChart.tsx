@@ -12,7 +12,7 @@ import { useChartDrawings } from '@/hooks/useChartDrawings';
 import { useChartIndicators } from '@/hooks/useChartIndicators';
 import { usePriceAlerts } from '@/hooks/usePriceAlerts';
 import { detectCandlestickPatterns } from '@/lib/candlestickPatterns';
-import { Maximize2, Minimize2, Magnet, X, BarChart3 } from 'lucide-react';
+import { Maximize2, Minimize2, Magnet, X, BarChart3, Smartphone } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 
 const INTERVALS = [
