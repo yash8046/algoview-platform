@@ -17,7 +17,7 @@ interface ChartOverlayProps {
   onRemoveDrawing?: (id: string) => void;
 }
 
-export default function ChartOverlay({ chart, series, drawingMode, drawingModeRef, drawings, onAddDrawing, onFinishDrawing }: ChartOverlayProps) {
+export default function ChartOverlay({ chart, series, drawingMode, drawingModeRef, drawings, onAddDrawing, onFinishDrawing, onRemoveDrawing }: ChartOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawing = useRef(false);
   const startCoord = useRef<{ time: Time; price: number } | null>(null);
