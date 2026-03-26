@@ -52,6 +52,7 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
     } catch {}
     setLandscapeFullscreen(false);
     setFullscreen(false);
+    exitFullscreenStatusBar();
   };
 
   const toggleLandscapeFullscreen = async () => {
@@ -61,6 +62,7 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
         await ScreenOrientation.lock({ orientation: 'landscape' });
         setLandscapeFullscreen(true);
         setFullscreen(true);
+        enterFullscreenStatusBar();
       } else {
         await exitLandscape();
       }

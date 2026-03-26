@@ -43,6 +43,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
     } catch {}
     setLandscapeFullscreen(false);
     setFullscreen(false);
+    exitFullscreenStatusBar();
   };
 
   const toggleLandscapeFullscreen = async () => {
@@ -52,6 +53,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
         await ScreenOrientation.lock({ orientation: 'landscape' });
         setLandscapeFullscreen(true);
         setFullscreen(true);
+        enterFullscreenStatusBar();
       } else {
         await exitLandscape();
       }
