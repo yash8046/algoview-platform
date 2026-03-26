@@ -572,7 +572,9 @@ export default function StrategyBuilderPage() {
 
   return (
     <div className="flex flex-col h-[100dvh] overflow-hidden">
-      <TopBar />
+      <div className="flex-shrink-0">
+        <TopBar />
+      </div>
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Mobile: Toggle bar */}
         {isMobile && (
