@@ -3,7 +3,6 @@ import { useLocation } from 'react-router-dom';
 import TradingChart from '@/components/TradingChart';
 import CryptoChart from '@/components/CryptoChart';
 import { useIsMobile } from '@/hooks/use-mobile';
-import CryptoChart from '@/components/CryptoChart';
 import { useTradingStore } from '@/stores/tradingStore';
 import { useCryptoStore, CRYPTO_PAIRS } from '@/stores/cryptoStore';
 import { useAuth } from '@/contexts/AuthContext';
