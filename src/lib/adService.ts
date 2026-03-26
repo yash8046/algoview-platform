@@ -13,9 +13,9 @@ let lastAdShownAt = { rewarded: 0, interstitial: 0, appOpen: 0 };
 
 // ============ Config ============
 const AD_UNITS = {
-  interstitial: 'ca-app-pub-3940256099942544/1033173712',
-  rewarded: 'ca-app-pub-3940256099942544/5224354917',
-  appOpen: 'ca-app-pub-3940256099942544/9257395921',
+  interstitial: 'ca-app-pub-8367984144739081/7653194773',
+  rewarded: 'ca-app-pub-8367984144739081/5710658769',
+  appOpen: 'ca-app-pub-8367984144739081/6340113106',
 };
 
 export interface AdResult {
@@ -35,7 +35,7 @@ export async function initAdMob(): Promise<void> {
 
   try {
     await AdMob.initialize({
-      initializeForTesting: true,
+      initializeForTesting: false,
     });
     isInitialized = true;
     // preload ads
@@ -54,7 +54,7 @@ async function loadInterstitialAd(): Promise<void> {
   try {
     await AdMob.prepareInterstitial({
       adId: AD_UNITS.interstitial,
-      isTesting: true,
+      isTesting: false,
     });
     interstitialAdLoaded = true;
   } catch (err: any) {
@@ -94,7 +94,7 @@ async function loadRewardedAd(): Promise<void> {
   try {
     await AdMob.prepareRewardVideoAd({
       adId: AD_UNITS.rewarded,
-      isTesting: true,
+      isTesting: false,
     });
     rewardedAdLoaded = true;
   } catch (err: any) {
@@ -134,7 +134,7 @@ export async function showAppOpenAd(): Promise<void> {
   try {
     await AdMob.prepareInterstitial({
       adId: AD_UNITS.appOpen,
-      isTesting: true,
+      isTesting: false,
     });
     await AdMob.showInterstitial();
   } catch (err: any) {
