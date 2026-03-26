@@ -131,3 +131,11 @@
     padding-top: env(safe-area-inset-top, 0px);
   }
 }
+
+/* Prevent body scroll on Android WebView — layout is handled by flex containers */
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100dvh;
+}
