@@ -348,9 +348,22 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
     );
   }
 
-  // Top toolbar: indicators, alerts, magnet (shown when toolbarLeft)
+  // Top toolbar: drawing tools + indicators + alerts + magnet (shown when toolbarLeft)
   const topToolbar = !minimal && toolbarLeft && (
-    <div className="flex items-center gap-1.5 px-2 py-1.5 bg-secondary/30 border-b border-border/40 overflow-x-auto scrollbar-thin flex-shrink-0">
+    <div className="flex items-center gap-1 px-2 py-1 bg-secondary/30 border-b border-border/40 overflow-x-auto scrollbar-thin flex-shrink-0">
+      <ChartDrawingTools
+        activeMode={drawingMode}
+        onModeChange={setDrawingMode}
+        drawings={drawings}
+        onClearAll={clearAllDrawings}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        showPatterns={showPatterns}
+        onTogglePatterns={() => setShowPatterns(p => !p)}
+      />
+      <div className="w-px h-5 bg-border/40 flex-shrink-0" />
       <button
         onClick={() => setIndicatorModalOpen(true)}
         className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-mono transition-all min-h-[30px] active:scale-95 ${
@@ -394,60 +407,6 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
         <Magnet className="w-3.5 h-3.5" />
         <span className="text-[10px]">{magnetMode ? 'ON' : 'Magnet'}</span>
       </button>
-    </div>
-  );
-
-  // Timeframe bar (shown when toolbarLeft)
-  const timeframeBar = !minimal && toolbarLeft && (
-    <div className="flex items-center gap-1 px-2 py-1 bg-card/50 border-b border-border/30 overflow-x-auto scrollbar-thin flex-shrink-0">
-      {INTERVALS.map(i => (
-        <button
-          key={i.value}
-          onClick={() => setSelectedInterval(i.value)}
-          className={`px-2 py-1 text-[10px] font-mono rounded transition-colors min-h-[28px] whitespace-nowrap flex-shrink-0 active:scale-95 ${
-            selectedInterval === i.value
-              ? 'bg-primary text-primary-foreground font-semibold'
-              : 'text-muted-foreground hover:text-foreground hover:bg-accent/30'
-          }`}
-        >
-          {i.label}
-        </button>
-      ))}
-      <div className="flex-1" />
-      {isAndroid && (
-        <button
-          onClick={toggleLandscapeFullscreen}
-          className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground min-h-[28px] active:scale-95"
-          title="Landscape Mode"
-        >
-          <Smartphone className="w-3.5 h-3.5 rotate-90" />
-        </button>
-      )}
-      <button
-        onClick={() => setFullscreen(f => !f)}
-        className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground min-h-[28px] active:scale-95"
-        title={fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-      >
-        {fullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-      </button>
-    </div>
-  );
-
-  // Left drawing toolbar: ONLY drawing tools (when toolbarLeft)
-  const leftDrawingToolbar = !minimal && toolbarLeft && (
-    <div className="flex flex-col items-center gap-0.5 py-1.5 px-0.5 bg-card/80 border-r border-border/40 overflow-y-auto scrollbar-thin w-10 flex-shrink-0">
-      <ChartDrawingTools
-        activeMode={drawingMode}
-        onModeChange={setDrawingMode}
-        drawings={drawings}
-        onClearAll={clearAllDrawings}
-        onUndo={undo}
-        onRedo={redo}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        showPatterns={showPatterns}
-        onTogglePatterns={() => setShowPatterns(p => !p)}
-      />
     </div>
   );
 
