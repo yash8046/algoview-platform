@@ -9,11 +9,9 @@ import {
 
 export default function MorePage() {
   return (
-    <div className="flex flex-col h-[100dvh] overflow-hidden">
-      <div className="flex-shrink-0">
-        <TopBar />
-      </div>
-      <div className="flex-1 overflow-y-auto px-3 pt-3 pb-24 sm:p-4 scrollbar-thin">
+    <div className="flex h-[calc(100dvh-1.75rem)] max-h-[calc(100dvh-1.75rem)] min-h-0 flex-col overflow-hidden overscroll-none">
+      <TopBar />
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pt-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] sm:p-4">
         <div className="flex items-center gap-2 mb-4">
           <Info className="w-5 h-5 text-primary" />
           <h1 className="text-base font-bold text-foreground">More</h1>
