@@ -3,7 +3,7 @@ import { AlertTriangle, X, Info } from 'lucide-react';
 
 export function DisclaimerBanner() {
   return (
-    <div className="bg-warning/10 border-b border-warning/20 px-3 py-1.5 flex items-center gap-2 text-[10px] text-warning" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 4px)' }}>
+    <div className="bg-warning/10 border-b border-warning/20 px-3 py-1.5 flex items-center gap-2 text-[10px] text-warning">
       <AlertTriangle className="w-3 h-3 flex-shrink-0" />
       <span className="flex-1">This app provides AI-generated market insights for informational and educational purposes only. It does not constitute financial advice.</span>
     </div>

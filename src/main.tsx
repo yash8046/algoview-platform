@@ -12,23 +12,15 @@ if (import.meta.env.PROD && Capacitor.isNativePlatform()) {
   console.info = noop;
 }
 
-// Configure native status bar on Android/iOS
-async function configureStatusBar() {
-  if (!Capacitor.isNativePlatform()) return;
-  try {
-    const { StatusBar, Style } = await import("@capacitor/status-bar");
-    // Push WebView below the system status bar — no overlap
-    await StatusBar.setOverlaysWebView({ overlay: false });
-    // Dark background to match app theme
-    await StatusBar.setBackgroundColor({ color: "#0B0F1A" });
-    // Light icons on dark background
-    await StatusBar.setStyle({ style: Style.Dark });
-  } catch (e) {
-    // Plugin not available on web — ignore
-  }
+// Configure native status bar IMMEDIATELY at boot (outside React lifecycle)
+// This is critical — must run before any component renders
+if (Capacitor.isNativePlatform()) {
+  import("@capacitor/status-bar").then(({ StatusBar, Style }) => {
+    StatusBar.setOverlaysWebView({ overlay: false });
+    StatusBar.setBackgroundColor({ color: "#0B0F1A" });
+    StatusBar.setStyle({ style: Style.Dark });
+  }).catch(() => {});
 }
-
-configureStatusBar();
 
 // Initialize AdMob and show app-open ad on native platforms
 initAdMob().then(() => {
