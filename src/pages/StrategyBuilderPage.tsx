@@ -324,6 +324,8 @@ export default function StrategyBuilderPage() {
   // Strategy config panel (used as sidebar on desktop, bottom sheet on mobile)
   const strategyPanel = (
     <div className="h-full flex flex-col overflow-hidden">
+      {/* Scrollable config content */}
+      <div className="flex-1 overflow-y-auto overscroll-contain p-2.5 space-y-2.5 scrollbar-thin" style={{ WebkitOverflowScrolling: 'touch' }}>
       {/* Strategy Name */}
       <div>
         <label className="text-[9px] text-muted-foreground block mb-0.5">Strategy Name</label>
@@ -555,9 +557,10 @@ export default function StrategyBuilderPage() {
           </div>
         </div>
       </div>
+      </div>
 
-      {/* Actions */}
-      <div className="flex gap-1.5 pt-2 border-t border-border">
+      {/* Sticky bottom action bar — always visible */}
+      <div className="flex-shrink-0 flex gap-1.5 p-2.5 border-t border-border bg-card">
         <button onClick={() => gateStrategy(runTest)} disabled={running || strategy.entryConditions.length === 0}
           className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-[10px] font-semibold rounded bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 active:scale-[0.97] min-h-[44px]">
           <Film className="w-3.5 h-3.5" />
