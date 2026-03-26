@@ -186,7 +186,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
       setChartApi(null);
       setSeriesApi(null);
     };
-  }, [selectedSymbol, selectedTimeframe, fullscreen]);
+  }, [selectedSymbol, selectedTimeframe]);
 
   // Apply candlestick pattern markers
   useEffect(() => {
@@ -265,6 +265,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
   }, [indicators, chartApi]);
 
   const isDrawingActive = drawingMode !== 'none';
+  const hasDrawings = drawings.length > 0;
   const fullscreenToolbarInsetStyle = isAndroid && (fullscreen || landscapeFullscreen)
     ? { paddingTop: 'max(env(safe-area-inset-top, 0px), 0.5rem)' }
     : undefined;
@@ -357,7 +358,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
         {/* Chart fills remaining space */}
         <div className="relative flex-1 min-h-0 overflow-hidden">
           <div ref={chartRef} className="absolute inset-0 bg-chart" style={{ zIndex: 1 }} />
-          <div className="absolute inset-0" style={{ zIndex: isDrawingActive ? 100 : 0, pointerEvents: isDrawingActive ? 'auto' : 'none' }}>
+          <div className="absolute inset-0" style={{ zIndex: (isDrawingActive || hasDrawings) ? 100 : 0, pointerEvents: (isDrawingActive || hasDrawings) ? 'auto' : 'none' }}>
             <ChartOverlay
               chart={chartApi}
               series={seriesApi}
@@ -665,7 +666,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
         <div className="relative flex-1 min-h-0 min-w-0 overflow-hidden">
           <div ref={chartRef} className="absolute inset-0 bg-chart" style={{ zIndex: 1 }} />
           {!minimal && (
-            <div className="absolute inset-0" style={{ zIndex: isDrawingActive ? 100 : 0, pointerEvents: isDrawingActive ? 'auto' : 'none' }}>
+            <div className="absolute inset-0" style={{ zIndex: (isDrawingActive || hasDrawings) ? 100 : 0, pointerEvents: (isDrawingActive || hasDrawings) ? 'auto' : 'none' }}>
               <ChartOverlay
                 chart={chartApi}
                 series={seriesApi}

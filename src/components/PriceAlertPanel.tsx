@@ -52,8 +52,8 @@ export default function PriceAlertPanel({
 
       {open && createPortal(
         <div
-          className="fixed z-[9999] bg-card border border-border rounded-lg shadow-xl p-3 w-72"
-          style={{ top: 80, right: 16 }}
+          className="fixed z-[9999] bg-card border border-border rounded-lg shadow-xl p-2 sm:p-3 w-64 sm:w-72 max-h-[80dvh] overflow-y-auto scrollbar-thin"
+          style={{ top: 'max(env(safe-area-inset-top, 8px), 44px)', right: 8 }}
           onClick={e => e.stopPropagation()}
         >
           <div className="flex items-center justify-between mb-2">
@@ -64,11 +64,11 @@ export default function PriceAlertPanel({
           </div>
 
           {/* Add alert */}
-          <div className="flex items-center gap-1.5 mb-3">
+          <div className="flex items-center gap-1 mb-2">
             <select
               value={condition}
               onChange={e => setCondition(e.target.value as 'above' | 'below')}
-              className="bg-secondary text-foreground text-[10px] font-mono px-1.5 py-1.5 rounded border border-border min-h-[32px]"
+              className="bg-secondary text-foreground text-[10px] font-mono px-1 py-1 rounded border border-border min-h-[28px] flex-shrink-0"
             >
               <option value="above">Above</option>
               <option value="below">Below</option>
@@ -78,13 +78,13 @@ export default function PriceAlertPanel({
               value={price}
               onChange={e => setPrice(e.target.value)}
               placeholder={currentPrice.toFixed(2)}
-              className="flex-1 bg-secondary text-foreground text-[11px] font-mono px-2 py-1.5 rounded border border-border min-h-[32px] focus:outline-none focus:ring-1 focus:ring-primary"
+              className="flex-1 min-w-0 bg-secondary text-foreground text-[11px] font-mono px-2 py-1 rounded border border-border min-h-[28px] focus:outline-none focus:ring-1 focus:ring-primary"
             />
             <button
               onClick={handleAdd}
-              className="p-1.5 rounded bg-primary/20 text-primary hover:bg-primary/30 active:scale-95 min-h-[32px] min-w-[32px] flex items-center justify-center"
+              className="p-1 rounded bg-primary/20 text-primary hover:bg-primary/30 active:scale-95 min-h-[28px] min-w-[28px] flex-shrink-0 flex items-center justify-center"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-3 h-3" />
             </button>
           </div>
 

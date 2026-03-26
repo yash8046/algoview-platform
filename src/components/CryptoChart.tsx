@@ -144,7 +144,7 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
       setChartApi(null);
       setSeriesApi(null);
     };
-  }, [selectedPair, selectedInterval, fullscreen]);
+  }, [selectedPair, selectedInterval]);
 
   // Dynamic indicator series management
   const indicatorSeriesRef = useRef<Map<string, any>>(new Map());
@@ -243,6 +243,7 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
 
   const livePriceINR = livePrice * usdToInr;
   const isDrawingActive = drawingMode !== 'none';
+  const hasDrawings = drawings.length > 0;
   const fullscreenToolbarInsetStyle = isAndroid && (fullscreen || landscapeFullscreen)
     ? { paddingTop: 'max(env(safe-area-inset-top, 0px), 0.5rem)' }
     : undefined;
@@ -341,7 +342,7 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
         </div>
         <div className="relative flex-1 min-h-0 overflow-hidden">
           <div ref={chartRef} className="absolute inset-0 bg-chart" style={{ zIndex: 1 }} />
-          <div className="absolute inset-0" style={{ zIndex: isDrawingActive ? 100 : 0, pointerEvents: isDrawingActive ? 'auto' : 'none' }}>
+          <div className="absolute inset-0" style={{ zIndex: (isDrawingActive || hasDrawings) ? 100 : 0, pointerEvents: (isDrawingActive || hasDrawings) ? 'auto' : 'none' }}>
             <ChartOverlay
               chart={chartApi}
               series={seriesApi}
@@ -658,7 +659,7 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
         <div className="relative flex-1 min-h-0 min-w-0 overflow-hidden">
           <div ref={chartRef} className="absolute inset-0 bg-chart" style={{ zIndex: 1 }} />
           {!minimal && (
-            <div className="absolute inset-0" style={{ zIndex: isDrawingActive ? 100 : 0, pointerEvents: isDrawingActive ? 'auto' : 'none' }}>
+            <div className="absolute inset-0" style={{ zIndex: (isDrawingActive || hasDrawings) ? 100 : 0, pointerEvents: (isDrawingActive || hasDrawings) ? 'auto' : 'none' }}>
               <ChartOverlay
                 chart={chartApi}
                 series={seriesApi}
