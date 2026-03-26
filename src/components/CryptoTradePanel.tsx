@@ -22,7 +22,7 @@ export default function CryptoTradePanel() {
   const handleTrade = () => {
     if (!canTrade) {
       if (side === 'sell') {
-        toast.error(heldQty === 0 ? `No ${pairInfo?.baseAsset} to sell` : `Max: ${heldQty} ${pairInfo?.baseAsset}`);
+        toast.error(heldQty === 0 ? `No ${pairInfo?.baseAsset} to close` : `Max: ${heldQty} ${pairInfo?.baseAsset}`);
       }
       return;
     }

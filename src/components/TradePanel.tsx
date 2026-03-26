@@ -23,7 +23,7 @@ export default function TradePanel() {
   const handleTrade = (side: 'buy' | 'sell') => {
     if (Number(quantity) <= 0 || price <= 0) return;
     if (side === 'sell' && !canSell) {
-      toast.error(heldQty === 0 ? `No ${selectedSymbol} shares to sell` : `Max sell quantity: ${heldQty}`);
+      toast.error(heldQty === 0 ? `No ${selectedSymbol} shares to close` : `Max close quantity: ${heldQty}`);
       return;
     }
     executeTrade(selectedSymbol, side, price, Number(quantity));
@@ -51,7 +51,7 @@ export default function TradePanel() {
           <div className="p-1 rounded-md bg-warning/10">
             <Zap className="w-3.5 h-3.5 text-warning" />
           </div>
-          <h2 className="text-xs font-bold text-foreground tracking-wide uppercase">Trade</h2>
+          <h2 className="text-xs font-bold text-foreground tracking-wide uppercase">Simulate</h2>
         </div>
         {isInWatchlist ? (
           <span className="flex items-center gap-1 text-[10px] text-gain font-medium">

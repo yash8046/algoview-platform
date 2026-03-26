@@ -24,7 +24,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     target: '[data-tour="trade-panel"]',
     title: '🎯 Simulate a Trade',
-    description: 'Enter buy/sell orders with custom quantities. All trades use virtual money — no real funds involved.',
+    description: 'Place simulated long/short orders with custom quantities. All trades use virtual money — no real funds involved.',
     fallbackPosition: 'bottom',
   },
   {

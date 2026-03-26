@@ -106,24 +106,24 @@ const Index = () => {
         </div>
         <div className="flex-1 overflow-y-auto scrollbar-thin pb-20">
           <div className="p-2.5 space-y-2.5">
-            {/* Portfolio summary with premium feel */}
+            {/* Portfolio summary */}
             <div data-tour="portfolio"><PortfolioSummary /></div>
 
-            {/* Top performers */}
-            <TopPerformers />
-
-            {/* Explore trending stocks */}
+            {/* Market movers (dynamic gainers + losers) — TOP */}
             <ExploreStocks />
+
+            {/* Watchlist movers (from user's watchlist) */}
+            <TopPerformers />
 
             {/* Chart */}
             <div className="h-[220px] rounded-xl overflow-hidden border border-border/30 shadow-lg shadow-black/10" data-tour="chart">
               <TradingChart minimal />
             </div>
 
-            {/* Trade panel */}
+            {/* Simulate trade panel */}
             <div data-tour="trade-panel"><TradePanel /></div>
 
-            {/* AI Signals */}
+            {/* AI Analysis */}
             <div data-tour="ai-signals"><AISignals /></div>
 
             {/* Watchlist */}
