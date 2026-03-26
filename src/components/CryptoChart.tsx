@@ -348,19 +348,9 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
     );
   }
 
-  // Top toolbar: cursor, indicators, alerts, magnet (shown when toolbarLeft)
+  // Top toolbar: indicators, alerts, magnet (shown when toolbarLeft)
   const topToolbar = !minimal && toolbarLeft && (
     <div className="flex items-center gap-1.5 px-2 py-1.5 bg-secondary/30 border-b border-border/40 overflow-x-auto scrollbar-thin flex-shrink-0">
-      <button
-        onClick={() => setDrawingMode('none')}
-        className={`p-1.5 rounded transition-colors min-h-[30px] min-w-[30px] flex items-center justify-center active:scale-95 ${
-          drawingMode === 'none' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent/30'
-        }`}
-        title="Cursor"
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
-      </button>
-      <div className="w-px h-5 bg-border/40" />
       <button
         onClick={() => setIndicatorModalOpen(true)}
         className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-mono transition-all min-h-[30px] active:scale-95 ${
