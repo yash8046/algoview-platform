@@ -666,7 +666,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
         <div className="relative flex-1 min-h-0 min-w-0 overflow-hidden">
           <div ref={chartRef} className="absolute inset-0 bg-chart" style={{ zIndex: 1 }} />
           {!minimal && (
-            <div className="absolute inset-0" style={{ zIndex: isDrawingActive ? 100 : 0, pointerEvents: isDrawingActive ? 'auto' : 'none' }}>
+            <div className="absolute inset-0" style={{ zIndex: (isDrawingActive || hasDrawings) ? 100 : 0, pointerEvents: (isDrawingActive || hasDrawings) ? 'auto' : 'none' }}>
               <ChartOverlay
                 chart={chartApi}
                 series={seriesApi}
