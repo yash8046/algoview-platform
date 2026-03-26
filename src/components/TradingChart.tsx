@@ -422,7 +422,13 @@ export default function TradingChart({ minimal = false }: { minimal?: boolean })
             </button>
           )}
           <button
-            onClick={() => minimal ? navigate('/charts') : setFullscreen(f => !f)}
+            onClick={() => {
+              if (minimal) {
+                navigate('/charts', { state: { mode: 'stocks', symbol: selectedSymbol } });
+              } else {
+                setFullscreen(f => !f);
+              }
+            }}
             className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
             title={minimal ? 'Open Full Chart' : fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
