@@ -171,24 +171,22 @@ export default function Portfolio() {
     <div className="flex flex-col h-[100dvh] overflow-hidden bg-background">
       <div className="flex-shrink-0">
         <TopBar />
-      </div>
-
-      {/* Sim banner */}
-      <div className="flex items-center justify-between px-4 py-2 bg-warning/5 border-b border-warning/15">
-        <div className="flex items-center gap-2">
-          <FlaskConical className="w-3.5 h-3.5 text-warning" />
-          <span className="text-[11px] text-warning font-medium">Simulation Mode · Virtual Money Only</span>
+        {/* Sim banner - fixed, not scrollable */}
+        <div className="flex items-center justify-between px-4 py-2 bg-warning/5 border-b border-warning/15">
+          <div className="flex items-center gap-2">
+            <FlaskConical className="w-3.5 h-3.5 text-warning" />
+            <span className="text-[11px] text-warning font-medium">Simulation Mode · Virtual Money Only</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={handleRefresh} disabled={refreshing}
+              className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground active:scale-95 min-h-[36px] px-2">
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={handleRefresh} disabled={refreshing}
-            className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground active:scale-95 min-h-[36px] px-2">
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
-        </div>
       </div>
-
-      <div className="flex-1 overflow-y-auto p-3 pb-24 space-y-3">
+      <div className="flex-1 overflow-y-auto p-3 pb-24 space-y-3 scrollbar-thin">
         {/* Key metrics - 2x2 grid, mobile-friendly */}
         <div className="grid grid-cols-2 gap-3">
           <StatCard
