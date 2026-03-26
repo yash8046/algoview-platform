@@ -364,7 +364,62 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
     );
   }
 
-  const drawingToolbar = !minimal && (
+  const leftToolbar = !minimal && toolbarLeft && (
+    <div className="flex flex-col items-center gap-1 py-2 px-1 bg-panel-header border-r border-border overflow-y-auto scrollbar-thin w-11 flex-shrink-0">
+      <ChartDrawingTools
+        activeMode={drawingMode}
+        onModeChange={setDrawingMode}
+        drawings={drawings}
+        onClearAll={clearAllDrawings}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        showPatterns={showPatterns}
+        onTogglePatterns={() => setShowPatterns(p => !p)}
+      />
+      <button
+        onClick={() => setIndicatorModalOpen(true)}
+        className={`p-1.5 rounded transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center active:scale-95 ${
+          indicators.length > 0
+            ? 'bg-primary/10 text-primary'
+            : 'text-muted-foreground hover:text-foreground hover:bg-accent/30'
+        }`}
+        title="Indicators"
+      >
+        <BarChart3 className="w-3.5 h-3.5" />
+      </button>
+      <IndicatorManagerModal
+        open={indicatorModalOpen}
+        onClose={() => setIndicatorModalOpen(false)}
+        indicators={indicators}
+        onToggle={toggleIndicator}
+        onRemove={removeIndicator}
+      />
+      <PriceAlertPanel
+        alerts={alerts}
+        activeAlerts={activeAlerts}
+        triggeredAlerts={triggeredAlerts}
+        currentSymbol={selectedSymbol}
+        currentPrice={currentPriceRef.current}
+        onAdd={addAlert}
+        onRemove={removeAlert}
+        onClearTriggered={clearTriggered}
+        onRequestPermission={requestNotificationPermission}
+      />
+      <button
+        onClick={() => setMagnetMode(m => !m)}
+        className={`p-1.5 rounded transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center active:scale-95 ${
+          magnetMode ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+        }`}
+        title="Magnet Mode"
+      >
+        <Magnet className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+
+  const drawingToolbar = !minimal && toolbarBottom && (
     <div className="flex items-center gap-1 px-2 py-1 bg-panel-header border-t border-border overflow-x-auto scrollbar-thin">
       <ChartDrawingTools
         activeMode={drawingMode}
