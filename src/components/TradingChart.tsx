@@ -39,6 +39,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
       return next;
     });
   };
+  const cleanupRef = useRef<(() => void) | null>(null);
   const markersRef = useRef<any>(null);
   const candleDataRef = useRef<any[]>([]);
   const rawCandlesRef = useRef<any[]>([]);
