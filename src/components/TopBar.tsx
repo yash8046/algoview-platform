@@ -37,6 +37,27 @@ export default function TopBar() {
   return (
     <header className="flex items-center justify-between px-3 sm:px-5 py-2 sm:py-2.5 bg-card border-b border-border relative">
       <div className="flex items-center gap-2 sm:gap-3">
+        {/* Profile icon on leftmost for mobile */}
+        {isMobile && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors outline-none">
+                <User className="w-4 h-4 text-primary" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-[180px]">
+              {user && (
+                <div className="px-3 py-2 border-b border-border">
+                  <p className="text-xs font-medium text-foreground truncate">{user.email}</p>
+                </div>
+              )}
+              <DropdownMenuItem onClick={signOut} className="text-loss cursor-pointer">
+                <LogOut className="w-3.5 h-3.5 mr-2" />
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         <div className="flex items-center gap-1.5 sm:gap-2">
           <div className="p-1 sm:p-1.5 rounded-md bg-primary/20">
             <Zap className="w-4 sm:w-5 h-4 sm:h-5 text-primary" />
@@ -88,29 +109,9 @@ export default function TopBar() {
           </div>
         )}
         {isMobile ? (
-          <div className="flex items-center gap-1.5">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors outline-none">
-                  <User className="w-4 h-4 text-primary" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[180px]">
-                {user && (
-                  <div className="px-3 py-2 border-b border-border">
-                    <p className="text-xs font-medium text-foreground truncate">{user.email}</p>
-                  </div>
-                )}
-                <DropdownMenuItem onClick={signOut} className="text-loss cursor-pointer">
-                  <LogOut className="w-3.5 h-3.5 mr-2" />
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <button onClick={() => setMenuOpen(!menuOpen)} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground">
-              {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
+          <button onClick={() => setMenuOpen(!menuOpen)} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground">
+            {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         ) : (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
