@@ -91,14 +91,17 @@ serve(async (req) => {
 
     results.sort((a, b) => b.change - a.change);
 
+    // Top gainers and losers
+    const losers = [...results].reverse().filter(r => r.change < 0).slice(0, count);
+
     return new Response(
-      JSON.stringify({ gainers: results.slice(0, count) }),
+      JSON.stringify({ gainers: results.slice(0, count), losers }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
     console.error("market-movers error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error", gainers: [] }),
+      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error", gainers: [], losers: [] }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
