@@ -58,10 +58,11 @@ serve(async (req) => {
     if (!response.ok) {
       // Fallback: fetch individual charts for a smaller set
       console.log("Spark API failed, using individual chart fallback");
-      const gainers = await fetchIndividual(NSE_POOL.slice(0, 20));
-      gainers.sort((a: any, b: any) => b.change - a.change);
+      const results = await fetchIndividual(NSE_POOL.slice(0, 20));
+      results.sort((a: any, b: any) => b.change - a.change);
+      const losers = [...results].reverse().filter((r: any) => r.change < 0).slice(0, count);
       return new Response(
-        JSON.stringify({ gainers: gainers.slice(0, count) }),
+        JSON.stringify({ gainers: results.slice(0, count), losers }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
