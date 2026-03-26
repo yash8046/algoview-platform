@@ -36,13 +36,13 @@ export function isIndianMarketOpen(): boolean {
 
 export function getSmartTTL(assetType: 'stock' | 'crypto'): number {
   if (assetType === 'crypto') {
-    return 2 * 60 * 1000; // 2 minutes for crypto
+    return 5 * 60 * 1000; // 5 minutes for crypto (was 2m)
   }
   if (isIndianMarketOpen()) {
-    return 3 * 60 * 1000; // 3 minutes during market hours
+    return 5 * 60 * 1000; // 5 minutes during market hours (was 3m)
   }
-  // Market closed: cache until reasonable time (30 min)
-  return 30 * 60 * 1000;
+  // Market closed: cache longer
+  return 45 * 60 * 1000; // 45 min (was 30m)
 }
 
 export function timeAgo(timestamp: number): string {

@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useCryptoStore, CRYPTO_PAIRS } from '@/stores/cryptoStore';
-import { fetchTicker } from '@/lib/binanceApi';
+import { fetchAllTickers } from '@/lib/binanceApi';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
 interface TickerInfo {
@@ -13,35 +13,49 @@ interface TickerInfo {
 export default function CryptoTopMovers() {
   const { setSelectedPair, usdToInr } = useCryptoStore();
   const [tickers, setTickers] = useState<TickerInfo[]>([]);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
+    mountedRef.current = true;
+    const symbols = CRYPTO_PAIRS.map(p => p.symbol);
+
     const load = async () => {
-      const results = await Promise.allSettled(
-        CRYPTO_PAIRS.map(async (p) => {
-          const data = await fetchTicker(p.symbol);
-          return {
-            symbol: p.symbol,
-            label: p.baseAsset,
-            price: parseFloat(data.lastPrice) * usdToInr,
-            changePercent: parseFloat(data.priceChangePercent),
-          };
-        })
-      );
-      const valid = results
-        .filter((r): r is PromiseFulfilledResult<TickerInfo> => r.status === 'fulfilled')
-        .map(r => r.value);
-      setTickers(valid);
+      try {
+        // Single batch API call instead of 22+ individual calls
+        const tickerMap = await fetchAllTickers(symbols);
+        if (!mountedRef.current) return;
+
+        const valid: TickerInfo[] = [];
+        for (const p of CRYPTO_PAIRS) {
+          const data = tickerMap.get(p.symbol.toUpperCase());
+          if (data) {
+            valid.push({
+              symbol: p.symbol,
+              label: p.baseAsset,
+              price: parseFloat(data.lastPrice) * usdToInr,
+              changePercent: parseFloat(data.priceChangePercent),
+            });
+          }
+        }
+        setTickers(valid);
+      } catch (e) {
+        console.warn('CryptoTopMovers fetch error:', e);
+      }
     };
+
     load();
-    const interval = setInterval(load, 30000);
-    return () => clearInterval(interval);
+    const interval = setInterval(load, 60_000); // 60s instead of 30s
+    return () => {
+      mountedRef.current = false;
+      clearInterval(interval);
+    };
   }, [usdToInr]);
 
   if (tickers.length === 0) return null;
 
   const sorted = [...tickers].sort((a, b) => b.changePercent - a.changePercent);
-  const gainers = sorted.filter(t => t.changePercent > 0);
-  const losers = [...sorted].reverse().filter(t => t.changePercent < 0);
+  const gainers = sorted.filter(t => t.changePercent > 0).slice(0, 8);
+  const losers = [...sorted].reverse().filter(t => t.changePercent < 0).slice(0, 8);
 
   return (
     <div className="space-y-2">
