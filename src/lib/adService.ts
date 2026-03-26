@@ -4,23 +4,16 @@
 
 import { Capacitor } from '@capacitor/core';
 import { toast } from 'sonner';
-import {
-  AdMob,
-  BannerAdSize,
-  BannerAdPosition
-} from '@capacitor-community/admob';
+import { AdMob } from '@capacitor-community/admob';
 
 // ============ State ============
 let isInitialized = false;
 let rewardedAdLoaded = false;
 let interstitialAdLoaded = false;
-let bannerVisible = false;
-
 let lastAdShownAt = { rewarded: 0, interstitial: 0, appOpen: 0 };
 
 // ============ Config ============
 const AD_UNITS = {
-  banner: 'ca-app-pub-3940256099942544/6300978111',
   interstitial: 'ca-app-pub-3940256099942544/1033173712',
   rewarded: 'ca-app-pub-3940256099942544/5224354917',
   appOpen: 'ca-app-pub-3940256099942544/9257395921',
@@ -61,46 +54,6 @@ export async function initAdMob(): Promise<void> {
   }
 }
 
-// ============ BANNER ============
-export async function showBannerAd(): Promise<void> {
-  if (!isNative() || bannerVisible) return;
-
-  try {
-    await AdMob.showBanner({
-      adId: AD_UNITS.banner,
-      adSize: BannerAdSize.BANNER,
-      position: BannerAdPosition.TOP_CENTER,
-      margin: 60,
-      isTesting: true,
-    });
-
-    bannerVisible = true;
-  } catch (err: any) {
-    toast.error('Banner error ' + errMsg(err));
-  }
-}
-
-export async function hideBannerAd(): Promise<void> {
-  if (!isNative() || !bannerVisible) return;
-
-  try {
-    await AdMob.hideBanner();
-    bannerVisible = false;
-  } catch (err: any) {
-    toast.error('Banner hide ' + errMsg(err));
-  }
-}
-
-export async function removeBannerAd(): Promise<void> {
-  if (!isNative() || !bannerVisible) return;
-
-  try {
-    await AdMob.removeBanner();
-    bannerVisible = false;
-  } catch (err: any) {
-    console.warn('[AdService] Remove banner failed:', err);
-  }
-}
 
 // ============ INTERSTITIAL ============
 async function loadInterstitialAd(): Promise<void> {
