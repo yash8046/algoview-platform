@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
+import TopBar from '@/components/TopBar';
 import TradingChart from '@/components/TradingChart';
 import Watchlist from '@/components/Watchlist';
 import PortfolioSummary from '@/components/PortfolioSummary';

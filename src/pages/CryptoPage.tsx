@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
+import TopBar from '@/components/TopBar';
 import CryptoChart from '@/components/CryptoChart';
 import CryptoTradePanel from '@/components/CryptoTradePanel';
 import CryptoPositions from '@/components/CryptoPositions';
