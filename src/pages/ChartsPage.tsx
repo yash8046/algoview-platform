@@ -204,7 +204,7 @@ export default function ChartsPage() {
       {/* Chart area */}
       <div className="flex-1 min-h-0 overflow-hidden">
         <div className="h-full w-full min-w-0 min-h-0 relative">
-          {mode === 'stocks' ? <TradingChart /> : <CryptoChart />}
+          {mode === 'stocks' ? <TradingChart toolbarBottom={isMobile} /> : <CryptoChart toolbarBottom={isMobile} />}
         </div>
       </div>
 
