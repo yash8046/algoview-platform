@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { enterFullscreenStatusBar, exitFullscreenStatusBar } from '@/lib/statusBarHelper';
 import { createChart, ColorType, IChartApi, CandlestickSeries, HistogramSeries, LineSeries, createSeriesMarkers } from 'lightweight-charts';
 import { useTradingStore } from '@/stores/tradingStore';
 import { fetchYahooFinanceData } from '@/lib/yahooFinance';

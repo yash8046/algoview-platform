@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { enterFullscreenStatusBar, exitFullscreenStatusBar } from '@/lib/statusBarHelper';
 import { createChart, CandlestickSeries, HistogramSeries, LineSeries, createSeriesMarkers, type IChartApi } from 'lightweight-charts';
 import { useCryptoData } from '@/hooks/useCryptoData';
 import { useCryptoStore, CRYPTO_PAIRS } from '@/stores/cryptoStore';
