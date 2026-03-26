@@ -18,7 +18,7 @@ import { useNavigate } from 'react-router-dom';
 
 const TIMEFRAMES = ['1m', '5m', '15m', '1H', '4H', '1D', '1W'];
 
-export default function TradingChart({ minimal = false }: { minimal?: boolean }) {
+export default function TradingChart({ minimal = false, toolbarBottom = false }: { minimal?: boolean; toolbarBottom?: boolean }) {
   const navigate = useNavigate();
   const chartRef = useRef<HTMLDivElement>(null);
   const { selectedSymbol, selectedTimeframe, setSelectedTimeframe, updatePrice } = useTradingStore();
@@ -364,6 +364,65 @@ export default function TradingChart({ minimal = false }: { minimal?: boolean })
     );
   }
 
+  const drawingToolbar = !minimal && (
+    <div className="flex items-center gap-1 px-2 py-1 bg-panel-header border-t border-border overflow-x-auto scrollbar-thin">
+      <ChartDrawingTools
+        activeMode={drawingMode}
+        onModeChange={setDrawingMode}
+        drawings={drawings}
+        onClearAll={clearAllDrawings}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        showPatterns={showPatterns}
+        onTogglePatterns={() => setShowPatterns(p => !p)}
+      />
+      <button
+        onClick={() => setIndicatorModalOpen(true)}
+        className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-mono transition-all min-h-[32px] active:scale-95 ${
+          indicators.length > 0
+            ? 'bg-primary/10 text-primary border border-primary/20'
+            : 'text-muted-foreground hover:text-foreground hover:bg-accent/30'
+        }`}
+        title="Indicators"
+      >
+        <BarChart3 className="w-3.5 h-3.5" />
+        <span className="hidden sm:inline">Indicators</span>
+        {indicators.length > 0 && (
+          <span className="bg-primary/20 text-primary text-[9px] px-1.5 rounded-full font-semibold">{indicators.length}</span>
+        )}
+      </button>
+      <IndicatorManagerModal
+        open={indicatorModalOpen}
+        onClose={() => setIndicatorModalOpen(false)}
+        indicators={indicators}
+        onToggle={toggleIndicator}
+        onRemove={removeIndicator}
+      />
+      <PriceAlertPanel
+        alerts={alerts}
+        activeAlerts={activeAlerts}
+        triggeredAlerts={triggeredAlerts}
+        currentSymbol={selectedSymbol}
+        currentPrice={currentPriceRef.current}
+        onAdd={addAlert}
+        onRemove={removeAlert}
+        onClearTriggered={clearTriggered}
+        onRequestPermission={requestNotificationPermission}
+      />
+      <button
+        onClick={() => setMagnetMode(m => !m)}
+        className={`p-1.5 rounded transition-colors min-h-[32px] active:scale-95 ${
+          magnetMode ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+        }`}
+        title="Magnet Mode (snap to OHLC)"
+      >
+        <Magnet className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+
   const chartContent = (
     <>
       <div style={fullscreenToolbarInsetStyle} className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2 bg-panel-header border-b border-border gap-2">
@@ -375,7 +434,7 @@ export default function TradingChart({ minimal = false }: { minimal?: boolean })
           {error && <span className="text-[10px] text-loss truncate max-w-[100px]">Error</span>}
         </div>
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-          {!minimal && (
+          {!minimal && !toolbarBottom && (
             <>
               <ChartDrawingTools
                 activeMode={drawingMode}
@@ -491,6 +550,7 @@ export default function TradingChart({ minimal = false }: { minimal?: boolean })
           </div>
         )}
       </div>
+      {toolbarBottom && drawingToolbar}
     </>
   );
 

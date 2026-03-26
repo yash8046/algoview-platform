@@ -8,6 +8,7 @@ import Positions from '@/components/Positions';
 import TradeHistory from '@/components/TradeHistory';
 import AISignals from '@/components/AISignals';
 import TopPerformers from '@/components/TopPerformers';
+import ExploreStocks from '@/components/ExploreStocks';
 import { useTradingStore } from '@/stores/tradingStore';
 import { useIsMobile } from '@/hooks/use-mobile';
 import GuidedTour from '@/components/GuidedTour';
@@ -98,6 +99,9 @@ const Index = () => {
 
             {/* Top performers */}
             <TopPerformers />
+
+            {/* Explore trending stocks */}
+            <ExploreStocks />
 
             {/* Chart */}
             <div className="h-[220px] rounded-xl overflow-hidden border border-border/30 shadow-lg shadow-black/10" data-tour="chart">

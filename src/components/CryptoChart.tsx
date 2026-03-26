@@ -24,7 +24,7 @@ const INTERVALS = [
   { label: '1D', value: '1d' },
 ];
 
-export default function CryptoChart({ minimal = false }: { minimal?: boolean }) {
+export default function CryptoChart({ minimal = false, toolbarBottom = false }: { minimal?: boolean; toolbarBottom?: boolean }) {
   const navigate = useNavigate();
   const { selectedPair, selectedInterval, setSelectedPair, setSelectedInterval, updatePositionPrice, usdToInr } = useCryptoStore();
   const { candles, livePrice, loading, error } = useCryptoData(selectedPair, selectedInterval);
@@ -348,6 +348,65 @@ export default function CryptoChart({ minimal = false }: { minimal?: boolean }) 
     );
   }
 
+  const drawingToolbar = !minimal && (
+    <div className="flex items-center gap-1 px-2 py-1 bg-panel-header border-t border-border overflow-x-auto scrollbar-thin">
+      <ChartDrawingTools
+        activeMode={drawingMode}
+        onModeChange={setDrawingMode}
+        drawings={drawings}
+        onClearAll={clearAllDrawings}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        showPatterns={showPatterns}
+        onTogglePatterns={() => setShowPatterns(p => !p)}
+      />
+      <button
+        onClick={() => setIndicatorModalOpen(true)}
+        className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-mono transition-all min-h-[32px] active:scale-95 ${
+          overlayIndicators.length > 0
+            ? 'bg-primary/10 text-primary border border-primary/20'
+            : 'text-muted-foreground hover:text-foreground hover:bg-accent/30'
+        }`}
+        title="Indicators"
+      >
+        <BarChart3 className="w-3.5 h-3.5" />
+        <span className="hidden sm:inline">Indicators</span>
+        {overlayIndicators.length > 0 && (
+          <span className="bg-primary/20 text-primary text-[9px] px-1.5 rounded-full font-semibold">{overlayIndicators.length}</span>
+        )}
+      </button>
+      <IndicatorManagerModal
+        open={indicatorModalOpen}
+        onClose={() => setIndicatorModalOpen(false)}
+        indicators={overlayIndicators}
+        onToggle={toggleIndicator}
+        onRemove={removeIndicator}
+      />
+      <PriceAlertPanel
+        alerts={alerts}
+        activeAlerts={activeAlerts}
+        triggeredAlerts={triggeredAlerts}
+        currentSymbol={selectedPair}
+        currentPrice={livePriceINR}
+        onAdd={addAlert}
+        onRemove={removeAlert}
+        onClearTriggered={clearTriggered}
+        onRequestPermission={requestNotificationPermission}
+      />
+      <button
+        onClick={() => setMagnetMode(m => !m)}
+        className={`p-1.5 rounded transition-colors min-h-[32px] active:scale-95 ${
+          magnetMode ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+        }`}
+        title="Magnet Mode (snap to OHLC)"
+      >
+        <Magnet className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+
   const chartContent = (
     <>
       <div style={fullscreenToolbarInsetStyle} className="px-2 sm:px-4 py-1.5 sm:py-2 bg-panel-header border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-0">
@@ -369,7 +428,7 @@ export default function CryptoChart({ minimal = false }: { minimal?: boolean }) 
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto justify-between sm:justify-end">
-          {!minimal && (
+          {!minimal && !toolbarBottom && (
             <>
               <ChartDrawingTools
                 activeMode={drawingMode}
@@ -485,6 +544,7 @@ export default function CryptoChart({ minimal = false }: { minimal?: boolean }) 
           </div>
         )}
       </div>
+      {toolbarBottom && drawingToolbar}
     </>
   );
 
