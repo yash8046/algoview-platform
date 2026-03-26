@@ -323,7 +323,7 @@ export default function StrategyBuilderPage() {
 
   // Strategy config panel (used as sidebar on desktop, bottom sheet on mobile)
   const strategyPanel = (
-    <div className="h-full overflow-y-auto overscroll-contain p-2.5 space-y-2.5 pb-24 md:pb-3 scrollbar-thin" style={{ WebkitOverflowScrolling: 'touch' }}>
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Strategy Name */}
       <div>
         <label className="text-[9px] text-muted-foreground block mb-0.5">Strategy Name</label>
