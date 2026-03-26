@@ -39,6 +39,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
       return next;
     });
   };
+  const cleanupRef = useRef<(() => void) | null>(null);
   const markersRef = useRef<any>(null);
   const candleDataRef = useRef<any[]>([]);
   const rawCandlesRef = useRef<any[]>([]);
@@ -87,106 +88,119 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
   useEffect(() => {
     if (!chartRef.current) return;
 
-    const chart = createChart(chartRef.current, {
-      layout: {
-        background: { type: ColorType.Solid, color: '#0a0f1a' },
-        textColor: '#6b7a99',
-        fontSize: 12,
-        fontFamily: '"JetBrains Mono", monospace',
-      },
-      grid: {
-        vertLines: { color: 'rgba(42, 56, 89, 0.3)' },
-        horzLines: { color: 'rgba(42, 56, 89, 0.3)' },
-      },
-      crosshair: {
-        mode: 0,
-        vertLine: { color: 'rgba(38, 198, 218, 0.4)', labelBackgroundColor: '#1a2332' },
-        horzLine: { color: 'rgba(38, 198, 218, 0.4)', labelBackgroundColor: '#1a2332' },
-      },
-      rightPriceScale: { borderColor: 'rgba(42, 56, 89, 0.5)' },
-      timeScale: { borderColor: 'rgba(42, 56, 89, 0.5)', timeVisible: true },
-      localization: { priceFormatter: (p: number) => '₹' + p.toFixed(2) },
-    });
+    // Delay chart creation by one frame so the DOM container has settled
+    // (critical when switching between fullscreen/landscape layouts)
+    let cancelled = false;
+    const raf = requestAnimationFrame(() => {
+      if (cancelled || !chartRef.current) return;
 
-    const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: '#22c55e', downColor: '#ef4444',
-      borderDownColor: '#ef4444', borderUpColor: '#22c55e',
-      wickDownColor: '#ef4444', wickUpColor: '#22c55e',
-    });
-
-    const volumeSeries = chart.addSeries(HistogramSeries, {
-      priceFormat: { type: 'volume' }, priceScaleId: '',
-    });
-    volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
-
-    // No default indicators — user adds via indicator modal
-
-    setChartApi(chart);
-    setSeriesApi(candleSeries);
-
-    setLoading(true);
-    setError(null);
-
-    fetchYahooFinanceData(selectedSymbol, selectedTimeframe)
-      .then((resp) => {
-        const candleData = resp.candles.map(c => ({
-          time: c.time as any,
-          open: +c.open.toFixed(2), high: +c.high.toFixed(2),
-          low: +c.low.toFixed(2), close: +c.close.toFixed(2),
-        }));
-        const volData = resp.candles.map(c => ({
-          time: c.time as any, value: c.volume,
-          color: c.close >= c.open ? 'rgba(38, 166, 91, 0.3)' : 'rgba(239, 83, 80, 0.3)',
-        }));
-
-        candleSeries.setData(candleData);
-        volumeSeries.setData(volData);
-        candleDataRef.current = candleData;
-        rawCandlesRef.current = resp.candles.map(c => ({
-          time: c.time, open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume,
-        }));
-
-        // Indicators managed by indicator system, not hardcoded
-
-        chart.timeScale().fitContent();
-
-        if (resp.regularMarketPrice) {
-          updatePrice(selectedSymbol, resp.regularMarketPrice, resp.previousClose || resp.regularMarketPrice);
-          currentPriceRef.current = resp.regularMarketPrice;
-          checkAlerts(selectedSymbol, resp.regularMarketPrice);
-        } else if (candleData.length > 0) {
-          const last = candleData[candleData.length - 1];
-          updatePrice(selectedSymbol, last.close, resp.previousClose || last.open);
-          currentPriceRef.current = last.close;
-          checkAlerts(selectedSymbol, last.close);
-        }
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error('Chart data error:', err);
-        setError(err.message);
-        setLoading(false);
+      const chart = createChart(chartRef.current, {
+        layout: {
+          background: { type: ColorType.Solid, color: '#0a0f1a' },
+          textColor: '#6b7a99',
+          fontSize: 12,
+          fontFamily: '"JetBrains Mono", monospace',
+        },
+        grid: {
+          vertLines: { color: 'rgba(42, 56, 89, 0.3)' },
+          horzLines: { color: 'rgba(42, 56, 89, 0.3)' },
+        },
+        crosshair: {
+          mode: 0,
+          vertLine: { color: 'rgba(38, 198, 218, 0.4)', labelBackgroundColor: '#1a2332' },
+          horzLine: { color: 'rgba(38, 198, 218, 0.4)', labelBackgroundColor: '#1a2332' },
+        },
+        rightPriceScale: { borderColor: 'rgba(42, 56, 89, 0.5)' },
+        timeScale: { borderColor: 'rgba(42, 56, 89, 0.5)', timeVisible: true },
+        localization: { priceFormatter: (p: number) => '₹' + p.toFixed(2) },
       });
 
-    const resizeChart = () => {
-      if (chartRef.current) {
-        chart.applyOptions({ width: chartRef.current.clientWidth, height: chartRef.current.clientHeight });
-      }
-    };
+      const candleSeries = chart.addSeries(CandlestickSeries, {
+        upColor: '#22c55e', downColor: '#ef4444',
+        borderDownColor: '#ef4444', borderUpColor: '#22c55e',
+        wickDownColor: '#ef4444', wickUpColor: '#22c55e',
+      });
 
-    const observer = new ResizeObserver(resizeChart);
-    observer.observe(chartRef.current);
+      const volumeSeries = chart.addSeries(HistogramSeries, {
+        priceFormat: { type: 'volume' }, priceScaleId: '',
+      });
+      volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
-    window.addEventListener('orientationchange', () => setTimeout(resizeChart, 200));
+      setChartApi(chart);
+      setSeriesApi(candleSeries);
+
+      setLoading(true);
+      setError(null);
+
+      fetchYahooFinanceData(selectedSymbol, selectedTimeframe)
+        .then((resp) => {
+          if (cancelled) return;
+          const candleData = resp.candles.map(c => ({
+            time: c.time as any,
+            open: +c.open.toFixed(2), high: +c.high.toFixed(2),
+            low: +c.low.toFixed(2), close: +c.close.toFixed(2),
+          }));
+          const volData = resp.candles.map(c => ({
+            time: c.time as any, value: c.volume,
+            color: c.close >= c.open ? 'rgba(38, 166, 91, 0.3)' : 'rgba(239, 83, 80, 0.3)',
+          }));
+
+          candleSeries.setData(candleData);
+          volumeSeries.setData(volData);
+          candleDataRef.current = candleData;
+          rawCandlesRef.current = resp.candles.map(c => ({
+            time: c.time, open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume,
+          }));
+
+          chart.timeScale().fitContent();
+
+          if (resp.regularMarketPrice) {
+            updatePrice(selectedSymbol, resp.regularMarketPrice, resp.previousClose || resp.regularMarketPrice);
+            currentPriceRef.current = resp.regularMarketPrice;
+            checkAlerts(selectedSymbol, resp.regularMarketPrice);
+          } else if (candleData.length > 0) {
+            const last = candleData[candleData.length - 1];
+            updatePrice(selectedSymbol, last.close, resp.previousClose || last.open);
+            currentPriceRef.current = last.close;
+            checkAlerts(selectedSymbol, last.close);
+          }
+          setLoading(false);
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          console.error('Chart data error:', err);
+          setError(err.message);
+          setLoading(false);
+        });
+
+      const resizeChart = () => {
+        if (chartRef.current) {
+          chart.applyOptions({ width: chartRef.current.clientWidth, height: chartRef.current.clientHeight });
+        }
+      };
+
+      const observer = new ResizeObserver(resizeChart);
+      observer.observe(chartRef.current!);
+
+      window.addEventListener('orientationchange', () => setTimeout(resizeChart, 200));
+
+      // Store cleanup refs on the outer scope
+      cleanupRef.current = () => {
+        observer.disconnect();
+        window.removeEventListener('orientationchange', resizeChart);
+        chart.remove();
+        setChartApi(null);
+        setSeriesApi(null);
+      };
+    });
 
     return () => {
-      observer.disconnect();
-      window.removeEventListener('orientationchange', resizeChart);
-      chart.remove();
-      setChartApi(null);
-      setSeriesApi(null);
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      cleanupRef.current?.();
+      cleanupRef.current = null;
     };
-  }, [selectedSymbol, selectedTimeframe]);
+  }, [selectedSymbol, selectedTimeframe, fullscreen, landscapeFullscreen]);
 
   // Apply candlestick pattern markers
   useEffect(() => {
