@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { enterFullscreenStatusBar, exitFullscreenStatusBar } from '@/lib/statusBarHelper';
 import { createChart, ColorType, IChartApi, CandlestickSeries, HistogramSeries, LineSeries, createSeriesMarkers } from 'lightweight-charts';
 import { useTradingStore } from '@/stores/tradingStore';
 import { fetchYahooFinanceData } from '@/lib/yahooFinance';
@@ -29,6 +30,15 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
   const [showPatterns, setShowPatterns] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [landscapeFullscreen, setLandscapeFullscreen] = useState(false);
+
+  const toggleFullscreen = () => {
+    setFullscreen(prev => {
+      const next = !prev;
+      if (next) enterFullscreenStatusBar();
+      else exitFullscreenStatusBar();
+      return next;
+    });
+  };
   const markersRef = useRef<any>(null);
   const candleDataRef = useRef<any[]>([]);
   const rawCandlesRef = useRef<any[]>([]);
@@ -43,6 +53,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
     } catch {}
     setLandscapeFullscreen(false);
     setFullscreen(false);
+    exitFullscreenStatusBar();
   };
 
   const toggleLandscapeFullscreen = async () => {
@@ -52,12 +63,13 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
         await ScreenOrientation.lock({ orientation: 'landscape' });
         setLandscapeFullscreen(true);
         setFullscreen(true);
+        enterFullscreenStatusBar();
       } else {
         await exitLandscape();
       }
     } catch (err) {
       console.warn('[Chart] Screen orientation failed:', err);
-      setFullscreen(f => !f);
+      toggleFullscreen();
     }
   };
 
@@ -589,7 +601,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
                 if (minimal) {
                   navigate('/charts', { state: { mode: 'stocks', symbol: selectedSymbol } });
                 } else {
-                  setFullscreen(f => !f);
+                  toggleFullscreen();
                 }
               }}
               className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
@@ -631,7 +643,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
             </button>
           )}
           <button
-            onClick={() => setFullscreen(f => !f)}
+            onClick={() => toggleFullscreen()}
             className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground min-h-[28px] active:scale-95"
             title={fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >

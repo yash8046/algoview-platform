@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { enterFullscreenStatusBar, exitFullscreenStatusBar } from '@/lib/statusBarHelper';
 import { createChart, CandlestickSeries, HistogramSeries, LineSeries, createSeriesMarkers, type IChartApi } from 'lightweight-charts';
 import { useCryptoData } from '@/hooks/useCryptoData';
 import { useCryptoStore, CRYPTO_PAIRS } from '@/stores/cryptoStore';
@@ -36,6 +37,15 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
   const [showPatterns, setShowPatterns] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [landscapeFullscreen, setLandscapeFullscreen] = useState(false);
+
+  const toggleFullscreen = () => {
+    setFullscreen(prev => {
+      const next = !prev;
+      if (next) enterFullscreenStatusBar();
+      else exitFullscreenStatusBar();
+      return next;
+    });
+  };
   const markersRef = useRef<any>(null);
   const formattedCandlesRef = useRef<any[]>([]);
   const isAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
@@ -52,6 +62,7 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
     } catch {}
     setLandscapeFullscreen(false);
     setFullscreen(false);
+    exitFullscreenStatusBar();
   };
 
   const toggleLandscapeFullscreen = async () => {
@@ -61,12 +72,13 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
         await ScreenOrientation.lock({ orientation: 'landscape' });
         setLandscapeFullscreen(true);
         setFullscreen(true);
+        enterFullscreenStatusBar();
       } else {
         await exitLandscape();
       }
     } catch (err) {
       console.warn('[CryptoChart] Screen orientation failed:', err);
-      setFullscreen(f => !f);
+      toggleFullscreen();
     }
   };
 
@@ -582,7 +594,7 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
                 if (minimal) {
                   navigate('/charts', { state: { mode: 'crypto', symbol: selectedPair } });
                 } else {
-                  setFullscreen(f => !f);
+                  toggleFullscreen();
                 }
               }}
               className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
@@ -624,7 +636,7 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
             </button>
           )}
           <button
-            onClick={() => setFullscreen(f => !f)}
+            onClick={() => toggleFullscreen()}
             className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground min-h-[28px] active:scale-95"
             title={fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
