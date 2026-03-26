@@ -540,116 +540,135 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
 
   const chartContent = (
     <>
-      <div style={fullscreenToolbarInsetStyle} className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2 bg-panel-header border-b border-border gap-2">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          {!toolbarBottom && !toolbarLeft && (
-            <h2 className="font-mono text-xs sm:text-sm font-semibold text-foreground truncate">
-              {selectedSymbol === 'NIFTY 50' ? 'NIFTY 50' : `${selectedSymbol}.NS`}
-            </h2>
-          )}
-          {loading && <span className="text-[10px] text-primary animate-pulse">Loading...</span>}
-          {error && <span className="text-[10px] text-loss truncate max-w-[100px]">Error</span>}
-        </div>
-        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-          {showHeaderTools && (
-            <>
-              <ChartDrawingTools
-                activeMode={drawingMode}
-                onModeChange={setDrawingMode}
-                drawings={drawings}
-                onClearAll={clearAllDrawings}
-                onUndo={undo}
-                onRedo={redo}
-                canUndo={canUndo}
-                canRedo={canRedo}
-                showPatterns={showPatterns}
-                onTogglePatterns={() => setShowPatterns(p => !p)}
-              />
-              <button
-                onClick={() => setIndicatorModalOpen(true)}
-                className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-mono transition-all min-h-[32px] active:scale-95 ${
-                  indicators.length > 0
-                    ? 'bg-primary/10 text-primary border border-primary/20'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/30'
-                }`}
-                title="Indicators"
-              >
-                <BarChart3 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Indicators</span>
-                {indicators.length > 0 && (
-                  <span className="bg-primary/20 text-primary text-[9px] px-1.5 rounded-full font-semibold">{indicators.length}</span>
-                )}
-              </button>
-              <IndicatorManagerModal
-                open={indicatorModalOpen}
-                onClose={() => setIndicatorModalOpen(false)}
-                indicators={indicators}
-                onToggle={toggleIndicator}
-                onRemove={removeIndicator}
-              />
-              <PriceAlertPanel
-                alerts={alerts}
-                activeAlerts={activeAlerts}
-                triggeredAlerts={triggeredAlerts}
-                currentSymbol={selectedSymbol}
-                currentPrice={currentPriceRef.current}
-                onAdd={addAlert}
-                onRemove={removeAlert}
-                onClearTriggered={clearTriggered}
-                onRequestPermission={requestNotificationPermission}
-              />
-              <button
-                onClick={() => setMagnetMode(m => !m)}
-                className={`p-1.5 rounded transition-colors min-h-[32px] active:scale-95 ${
-                  magnetMode ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                }`}
-                title="Magnet Mode (snap to OHLC)"
-              >
-                <Magnet className="w-3.5 h-3.5" />
-              </button>
-            </>
-          )}
-          <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-thin max-w-[120px] sm:max-w-none flex-shrink-0">
-            {TIMEFRAMES.map(tf => (
-              <button
-                key={tf}
-                onClick={() => setSelectedTimeframe(tf)}
-                className={`px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs font-mono rounded transition-colors min-h-[32px] whitespace-nowrap flex-shrink-0 active:scale-95 ${
-                  selectedTimeframe === tf
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                }`}
-              >
-                {tf}
-              </button>
-            ))}
+      {/* Header - only shown when NOT in toolbarLeft mode (ChartsPage owns the header) */}
+      {!toolbarLeft && (
+        <div style={fullscreenToolbarInsetStyle} className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2 bg-panel-header border-b border-border gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            {!toolbarBottom && (
+              <h2 className="font-mono text-xs sm:text-sm font-semibold text-foreground truncate">
+                {selectedSymbol === 'NIFTY 50' ? 'NIFTY 50' : `${selectedSymbol}.NS`}
+              </h2>
+            )}
+            {loading && <span className="text-[10px] text-primary animate-pulse">Loading...</span>}
+            {error && <span className="text-[10px] text-loss truncate max-w-[100px]">Error</span>}
           </div>
-          {!minimal && isAndroid && (
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            {showHeaderTools && (
+              <>
+                <ChartDrawingTools
+                  activeMode={drawingMode}
+                  onModeChange={setDrawingMode}
+                  drawings={drawings}
+                  onClearAll={clearAllDrawings}
+                  onUndo={undo}
+                  onRedo={redo}
+                  canUndo={canUndo}
+                  canRedo={canRedo}
+                  showPatterns={showPatterns}
+                  onTogglePatterns={() => setShowPatterns(p => !p)}
+                />
+                <button
+                  onClick={() => setIndicatorModalOpen(true)}
+                  className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-mono transition-all min-h-[32px] active:scale-95 ${
+                    indicators.length > 0
+                      ? 'bg-primary/10 text-primary border border-primary/20'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-accent/30'
+                  }`}
+                  title="Indicators"
+                >
+                  <BarChart3 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Indicators</span>
+                  {indicators.length > 0 && (
+                    <span className="bg-primary/20 text-primary text-[9px] px-1.5 rounded-full font-semibold">{indicators.length}</span>
+                  )}
+                </button>
+                <IndicatorManagerModal
+                  open={indicatorModalOpen}
+                  onClose={() => setIndicatorModalOpen(false)}
+                  indicators={indicators}
+                  onToggle={toggleIndicator}
+                  onRemove={removeIndicator}
+                />
+                <PriceAlertPanel
+                  alerts={alerts}
+                  activeAlerts={activeAlerts}
+                  triggeredAlerts={triggeredAlerts}
+                  currentSymbol={selectedSymbol}
+                  currentPrice={currentPriceRef.current}
+                  onAdd={addAlert}
+                  onRemove={removeAlert}
+                  onClearTriggered={clearTriggered}
+                  onRequestPermission={requestNotificationPermission}
+                />
+                <button
+                  onClick={() => setMagnetMode(m => !m)}
+                  className={`p-1.5 rounded transition-colors min-h-[32px] active:scale-95 ${
+                    magnetMode ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                  }`}
+                  title="Magnet Mode (snap to OHLC)"
+                >
+                  <Magnet className="w-3.5 h-3.5" />
+                </button>
+              </>
+            )}
+            <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-thin max-w-[120px] sm:max-w-none flex-shrink-0">
+              {TIMEFRAMES.map(tf => (
+                <button
+                  key={tf}
+                  onClick={() => setSelectedTimeframe(tf)}
+                  className={`px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs font-mono rounded transition-colors min-h-[32px] whitespace-nowrap flex-shrink-0 active:scale-95 ${
+                    selectedTimeframe === tf
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                  }`}
+                >
+                  {tf}
+                </button>
+              ))}
+            </div>
+            {!minimal && isAndroid && (
+              <button
+                onClick={toggleLandscapeFullscreen}
+                className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground min-h-[32px] active:scale-95"
+                title="Landscape Mode"
+              >
+                <Smartphone className="w-4 h-4 rotate-90" />
+              </button>
+            )}
             <button
-              onClick={toggleLandscapeFullscreen}
-              className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground min-h-[32px] active:scale-95"
-              title="Landscape Mode"
+              onClick={() => {
+                if (minimal) {
+                  navigate('/charts', { state: { mode: 'stocks', symbol: selectedSymbol } });
+                } else {
+                  setFullscreen(f => !f);
+                }
+              }}
+              className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+              title={minimal ? 'Open Full Chart' : fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
             >
-              <Smartphone className="w-4 h-4 rotate-90" />
+              {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
-          )}
-          <button
-            onClick={() => {
-              if (minimal) {
-                navigate('/charts', { state: { mode: 'stocks', symbol: selectedSymbol } });
-              } else {
-                setFullscreen(f => !f);
-              }
-            }}
-            className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
-            title={minimal ? 'Open Full Chart' : fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-          >
-            {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          </button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Top toolbar row (toolbarLeft mode) */}
+      {topToolbar}
+
+      {/* Timeframe bar (toolbarLeft mode) */}
+      {timeframeBar}
+
+      {/* Loading/error indicator for toolbarLeft mode */}
+      {toolbarLeft && (loading || error) && (
+        <div className="px-2 py-0.5 flex-shrink-0">
+          {loading && <span className="text-[10px] text-primary animate-pulse">Loading...</span>}
+          {error && <span className="text-[10px] text-loss">Error loading data</span>}
+        </div>
+      )}
+
+      {/* Chart + left drawing toolbar */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {leftToolbar}
+        {leftDrawingToolbar}
         <div className="relative flex-1 min-h-0 min-w-0 overflow-hidden">
           <div ref={chartRef} className="absolute inset-0 bg-chart" style={{ zIndex: 1 }} />
           {!minimal && (
