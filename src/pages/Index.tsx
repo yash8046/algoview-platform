@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import TopBar from '@/components/TopBar';
 import TradingChart from '@/components/TradingChart';
 import Watchlist from '@/components/Watchlist';
@@ -61,6 +62,17 @@ const Index = () => {
 
   useEffect(() => {
     loadFromDB();
+    // Lock portrait on Android for dashboard
+    if (Capacitor.isNativePlatform()) {
+      import('@capacitor/screen-orientation').then(({ ScreenOrientation }) => {
+        ScreenOrientation.lock({ orientation: 'portrait' }).catch(() => {});
+      });
+      return () => {
+        import('@capacitor/screen-orientation').then(({ ScreenOrientation }) => {
+          ScreenOrientation.unlock().catch(() => {});
+        });
+      };
+    }
   }, []);
 
   // Mobile landscape
