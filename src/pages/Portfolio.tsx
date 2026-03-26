@@ -168,8 +168,10 @@ export default function Portfolio() {
   const hasHoldings = positions.length > 0 || cryptoPositions.length > 0;
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-background">
-      <TopBar />
+    <div className="flex flex-col h-[100dvh] overflow-hidden bg-background">
+      <div className="flex-shrink-0">
+        <TopBar />
+      </div>
 
       {/* Sim banner */}
       <div className="flex items-center justify-between px-4 py-2 bg-warning/5 border-b border-warning/15">
