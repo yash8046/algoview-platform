@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import TradingChart from '@/components/TradingChart';
 import CryptoChart from '@/components/CryptoChart';
 import { useTradingStore } from '@/stores/tradingStore';
@@ -10,11 +11,24 @@ import {
 type ChartMode = 'stocks' | 'crypto';
 
 export default function ChartsPage() {
-  const [mode, setMode] = useState<ChartMode>('stocks');
+  const location = useLocation();
+  const navState = location.state as { mode?: ChartMode; symbol?: string } | null;
+  const [mode, setMode] = useState<ChartMode>(navState?.mode || 'stocks');
   const { watchlist, selectedSymbol, setSelectedSymbol } = useTradingStore();
   const { selectedPair, setSelectedPair } = useCryptoStore();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Sync symbol from navigation state
+  useEffect(() => {
+    if (navState?.symbol) {
+      if (navState.mode === 'stocks') {
+        setSelectedSymbol(navState.symbol);
+      } else if (navState.mode === 'crypto') {
+        setSelectedPair(navState.symbol);
+      }
+    }
+  }, [navState]);
 
   const currentSymbol = mode === 'stocks'
     ? (selectedSymbol === 'NIFTY 50' ? 'NIFTY 50' : `${selectedSymbol}.NS`)
