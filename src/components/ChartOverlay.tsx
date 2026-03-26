@@ -1667,12 +1667,28 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     }
     if (freeDrawModesInput.includes(mode)) {
       const coord = fromPixel(e.clientX, e.clientY);
-      if (coord) penCoords.current.push({ time: coord.time, price: coord.price });
+      if (coord) {
+        const snapped = snapToOHLC(coord.time, coord.price);
+        penCoords.current.push({ time: snapped.time, price: snapped.price });
+      }
       render(); return;
+    }
+    // Apply magnet snap during drag for live preview
+    if (magnetMode && twoPointModes.includes(mode)) {
+      const coord = fromPixel(e.clientX, e.clientY);
+      if (coord) {
+        const snapped = snapToOHLC(coord.time, coord.price);
+        const snappedPx = toPixel(snapped.time as any, snapped.price);
+        if (snappedPx) {
+          currentPixel.current = { x: snappedPx.x, y: snappedPx.y };
+          render();
+          return;
+        }
+      }
     }
     currentPixel.current = { x, y };
     render();
-  }, [fromPixel, render, drawingModeRef]);
+  }, [fromPixel, render, drawingModeRef, magnetMode, snapToOHLC, toPixel]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     const mode = drawingModeRef.current;
