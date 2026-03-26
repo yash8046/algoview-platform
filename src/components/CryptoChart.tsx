@@ -144,7 +144,7 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
       setChartApi(null);
       setSeriesApi(null);
     };
-  }, [selectedPair, selectedInterval, fullscreen]);
+  }, [selectedPair, selectedInterval]);
 
   // Dynamic indicator series management
   const indicatorSeriesRef = useRef<Map<string, any>>(new Map());
@@ -243,6 +243,7 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
 
   const livePriceINR = livePrice * usdToInr;
   const isDrawingActive = drawingMode !== 'none';
+  const hasDrawings = drawings.length > 0;
   const fullscreenToolbarInsetStyle = isAndroid && (fullscreen || landscapeFullscreen)
     ? { paddingTop: 'max(env(safe-area-inset-top, 0px), 0.5rem)' }
     : undefined;
