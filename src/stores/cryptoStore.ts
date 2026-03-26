@@ -39,6 +39,20 @@ export const CRYPTO_PAIRS: CryptoPair[] = [
   { symbol: 'DOGEUSDT', label: 'DOGE/USDT', baseAsset: 'DOGE', quoteAsset: 'USDT' },
   { symbol: 'ADAUSDT', label: 'ADA/USDT', baseAsset: 'ADA', quoteAsset: 'USDT' },
   { symbol: 'AVAXUSDT', label: 'AVAX/USDT', baseAsset: 'AVAX', quoteAsset: 'USDT' },
+  { symbol: 'DOTUSDT', label: 'DOT/USDT', baseAsset: 'DOT', quoteAsset: 'USDT' },
+  { symbol: 'MATICUSDT', label: 'MATIC/USDT', baseAsset: 'MATIC', quoteAsset: 'USDT' },
+  { symbol: 'LINKUSDT', label: 'LINK/USDT', baseAsset: 'LINK', quoteAsset: 'USDT' },
+  { symbol: 'LTCUSDT', label: 'LTC/USDT', baseAsset: 'LTC', quoteAsset: 'USDT' },
+  { symbol: 'UNIUSDT', label: 'UNI/USDT', baseAsset: 'UNI', quoteAsset: 'USDT' },
+  { symbol: 'ATOMUSDT', label: 'ATOM/USDT', baseAsset: 'ATOM', quoteAsset: 'USDT' },
+  { symbol: 'NEARUSDT', label: 'NEAR/USDT', baseAsset: 'NEAR', quoteAsset: 'USDT' },
+  { symbol: 'APTUSDT', label: 'APT/USDT', baseAsset: 'APT', quoteAsset: 'USDT' },
+  { symbol: 'ARBUSDT', label: 'ARB/USDT', baseAsset: 'ARB', quoteAsset: 'USDT' },
+  { symbol: 'OPUSDT', label: 'OP/USDT', baseAsset: 'OP', quoteAsset: 'USDT' },
+  { symbol: 'SUIUSDT', label: 'SUI/USDT', baseAsset: 'SUI', quoteAsset: 'USDT' },
+  { symbol: 'SHIBUSDT', label: 'SHIB/USDT', baseAsset: 'SHIB', quoteAsset: 'USDT' },
+  { symbol: 'TRXUSDT', label: 'TRX/USDT', baseAsset: 'TRX', quoteAsset: 'USDT' },
+  { symbol: 'PEPEUSDT', label: 'PEPE/USDT', baseAsset: 'PEPE', quoteAsset: 'USDT' },
 ];
 
 async function getUserId(): Promise<string | null> {

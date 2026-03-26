@@ -46,6 +46,7 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
       return next;
     });
   };
+  const cleanupRef = useRef<(() => void) | null>(null);
   const markersRef = useRef<any>(null);
   const formattedCandlesRef = useRef<any[]>([]);
   const isAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
@@ -98,53 +99,62 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
   useEffect(() => {
     if (!chartRef.current) return;
 
-    const chart = createChart(chartRef.current, {
-      layout: {
-        background: { color: 'hsl(222, 47%, 5%)' },
-        textColor: 'hsl(215, 15%, 50%)',
-        fontFamily: '"JetBrains Mono", monospace',
-        fontSize: 11,
-      },
-      grid: {
-        vertLines: { color: 'hsl(222, 30%, 12%)' },
-        horzLines: { color: 'hsl(222, 30%, 12%)' },
-      },
-      crosshair: { mode: 0 },
-      rightPriceScale: { borderColor: 'hsl(222, 30%, 18%)' },
-      timeScale: { borderColor: 'hsl(222, 30%, 18%)', timeVisible: true, secondsVisible: false },
+    let cancelled = false;
+    const raf = requestAnimationFrame(() => {
+      if (cancelled || !chartRef.current) return;
+
+      const chart = createChart(chartRef.current, {
+        layout: {
+          background: { color: 'hsl(222, 47%, 5%)' },
+          textColor: 'hsl(215, 15%, 50%)',
+          fontFamily: '"JetBrains Mono", monospace',
+          fontSize: 11,
+        },
+        grid: {
+          vertLines: { color: 'hsl(222, 30%, 12%)' },
+          horzLines: { color: 'hsl(222, 30%, 12%)' },
+        },
+        crosshair: { mode: 0 },
+        rightPriceScale: { borderColor: 'hsl(222, 30%, 18%)' },
+        timeScale: { borderColor: 'hsl(222, 30%, 18%)', timeVisible: true, secondsVisible: false },
+      });
+
+      const candleSeries = chart.addSeries(CandlestickSeries, {
+        upColor: 'hsl(142, 71%, 45%)', downColor: 'hsl(0, 72%, 51%)',
+        borderUpColor: 'hsl(142, 71%, 45%)', borderDownColor: 'hsl(0, 72%, 51%)',
+        wickUpColor: 'hsl(142, 71%, 45%)', wickDownColor: 'hsl(0, 72%, 51%)',
+      });
+
+      const volumeSeries = chart.addSeries(HistogramSeries, {
+        priceFormat: { type: 'volume' }, priceScaleId: '',
+      });
+      volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
+
+      setChartApi(chart);
+      setSeriesApi(candleSeries);
+      candleSeriesRef.current = candleSeries;
+      volumeSeriesRef.current = volumeSeries;
+
+      const observer = new ResizeObserver(() => {
+        if (chartRef.current) chart.applyOptions({ width: chartRef.current.clientWidth, height: chartRef.current.clientHeight });
+      });
+      observer.observe(chartRef.current!);
+
+      cleanupRef.current = () => {
+        observer.disconnect();
+        chart.remove();
+        setChartApi(null);
+        setSeriesApi(null);
+      };
     });
-
-    const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: 'hsl(142, 71%, 45%)', downColor: 'hsl(0, 72%, 51%)',
-      borderUpColor: 'hsl(142, 71%, 45%)', borderDownColor: 'hsl(0, 72%, 51%)',
-      wickUpColor: 'hsl(142, 71%, 45%)', wickDownColor: 'hsl(0, 72%, 51%)',
-    });
-
-    const volumeSeries = chart.addSeries(HistogramSeries, {
-      priceFormat: { type: 'volume' }, priceScaleId: '',
-    });
-    volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
-
-    // No default indicator lines — user adds via modal
-
-    setChartApi(chart);
-    setSeriesApi(candleSeries);
-    candleSeriesRef.current = candleSeries;
-    volumeSeriesRef.current = volumeSeries;
-    // Indicator refs no longer needed — managed by indicator system
-
-    const observer = new ResizeObserver(() => {
-      if (chartRef.current) chart.applyOptions({ width: chartRef.current.clientWidth, height: chartRef.current.clientHeight });
-    });
-    observer.observe(chartRef.current);
 
     return () => {
-      observer.disconnect();
-      chart.remove();
-      setChartApi(null);
-      setSeriesApi(null);
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      cleanupRef.current?.();
+      cleanupRef.current = null;
     };
-  }, [selectedPair, selectedInterval]);
+  }, [selectedPair, selectedInterval, fullscreen, landscapeFullscreen]);
 
   // Dynamic indicator series management
   const indicatorSeriesRef = useRef<Map<string, any>>(new Map());
