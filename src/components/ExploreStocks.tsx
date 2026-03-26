@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Compass, TrendingUp, ArrowRight } from 'lucide-react';
+import { Compass } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTradingStore } from '@/stores/tradingStore';
 import { fetchYahooFinanceData } from '@/lib/yahooFinance';
@@ -12,6 +12,7 @@ interface ExploreStock {
   loading: boolean;
 }
 
+// Curated list of popular NSE stocks across sectors — live data decides ranking
 const EXPLORE_SYMBOLS = [
   { symbol: 'IRFC', name: 'IRFC' },
   { symbol: 'ZOMATO', name: 'Zomato' },
@@ -23,6 +24,11 @@ const EXPLORE_SYMBOLS = [
   { symbol: 'DIXON', name: 'Dixon Tech' },
   { symbol: 'PERSISTENT', name: 'Persistent Sys' },
   { symbol: 'PAYTM', name: 'Paytm' },
+  { symbol: 'SUZLON', name: 'Suzlon Energy' },
+  { symbol: 'TATAMOTORS', name: 'Tata Motors' },
+  { symbol: 'ITC', name: 'ITC' },
+  { symbol: 'HDFCBANK', name: 'HDFC Bank' },
+  { symbol: 'BHARTIARTL', name: 'Bharti Airtel' },
 ];
 
 export default function ExploreStocks() {
@@ -34,7 +40,7 @@ export default function ExploreStocks() {
   const exploreOnly = EXPLORE_SYMBOLS.filter(s => !watchlistSymbols.has(s.symbol));
 
   useEffect(() => {
-    const toFetch = exploreOnly.slice(0, 8);
+    const toFetch = exploreOnly.slice(0, 10);
     setStocks(toFetch.map(s => ({ ...s, price: 0, change: 0, loading: true })));
 
     toFetch.forEach(async (s, idx) => {
@@ -43,7 +49,14 @@ export default function ExploreStocks() {
         const price = data.regularMarketPrice || (data.candles.length > 0 ? data.candles[data.candles.length - 1].close : 0);
         const prevClose = data.previousClose || (data.candles.length > 0 ? data.candles[0].open : price);
         const change = prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : 0;
-        setStocks(prev => prev.map((st, i) => i === idx ? { ...st, price, change, loading: false } : st));
+        setStocks(prev => {
+          const updated = prev.map((st, i) => i === idx ? { ...st, price, change, loading: false } : st);
+          // Sort by change descending — top gainers first
+          const loaded = updated.filter(s => !s.loading);
+          const still = updated.filter(s => s.loading);
+          loaded.sort((a, b) => b.change - a.change);
+          return [...loaded, ...still];
+        });
       } catch {
         setStocks(prev => prev.map((st, i) => i === idx ? { ...st, loading: false } : st));
       }
@@ -59,7 +72,7 @@ export default function ExploreStocks() {
           <Compass className="w-3.5 h-3.5 text-primary/70" />
           <span className="text-[11px] font-bold text-foreground tracking-wide uppercase">Explore</span>
         </div>
-        <span className="text-[9px] text-muted-foreground font-mono">Trending Stocks</span>
+        <span className="text-[9px] text-muted-foreground font-mono">Top Gainers Today</span>
       </div>
       <div className="flex gap-2 overflow-x-auto scrollbar-thin p-2.5 pb-2">
         {stocks.map(s => (

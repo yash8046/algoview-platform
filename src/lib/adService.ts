@@ -3,7 +3,6 @@
  */
 
 import { Capacitor } from '@capacitor/core';
-import { toast } from 'sonner';
 import { AdMob } from '@capacitor-community/admob';
 
 // ============ State ============
@@ -30,10 +29,6 @@ function isNative() {
   return Capacitor.isNativePlatform();
 }
 
-function errMsg(err: any) {
-  return `[${err?.code || 'UNKNOWN'}] ${err?.message || 'Unknown error'}`;
-}
-
 // ============ INIT ============
 export async function initAdMob(): Promise<void> {
   if (!isNative() || isInitialized) return;
@@ -42,15 +37,12 @@ export async function initAdMob(): Promise<void> {
     await AdMob.initialize({
       initializeForTesting: true,
     });
-
     isInitialized = true;
-    toast.success('AdMob initialized');
-
     // preload ads
     loadRewardedAd();
     loadInterstitialAd();
   } catch (err: any) {
-    toast.error('Init failed ' + errMsg(err));
+    console.warn('AdMob init failed:', err?.message);
   }
 }
 
@@ -64,11 +56,10 @@ async function loadInterstitialAd(): Promise<void> {
       adId: AD_UNITS.interstitial,
       isTesting: true,
     });
-
     interstitialAdLoaded = true;
   } catch (err: any) {
     interstitialAdLoaded = false;
-    toast.error('Interstitial load ' + errMsg(err));
+    console.warn('Interstitial load failed:', err?.message);
   }
 }
 
@@ -90,9 +81,8 @@ export async function showInterstitialAd(): Promise<AdResult> {
 
     return { granted: true, adShown: true };
   } catch (err: any) {
-    toast.error('Interstitial show ' + errMsg(err));
+    console.warn('Interstitial show failed:', err?.message);
     loadInterstitialAd();
-
     return { granted: true, adShown: false };
   }
 }
@@ -106,11 +96,10 @@ async function loadRewardedAd(): Promise<void> {
       adId: AD_UNITS.rewarded,
       isTesting: true,
     });
-
     rewardedAdLoaded = true;
   } catch (err: any) {
     rewardedAdLoaded = false;
-    toast.error('Rewarded load ' + errMsg(err));
+    console.warn('Rewarded load failed:', err?.message);
   }
 }
 
@@ -119,9 +108,7 @@ export async function showRewardedAd(feature = 'Feature'): Promise<AdResult> {
 
   try {
     if (!rewardedAdLoaded) {
-      toast.info('Ad not ready, continuing...');
       loadRewardedAd();
-
       return { granted: true, adShown: false };
     }
 
@@ -130,15 +117,12 @@ export async function showRewardedAd(feature = 'Feature'): Promise<AdResult> {
     rewardedAdLoaded = false;
     lastAdShownAt.rewarded = Date.now();
 
-    toast.success(`${feature} unlocked`);
-
     loadRewardedAd();
 
     return { granted: true, adShown: true };
   } catch (err: any) {
-    toast.error('Rewarded show ' + errMsg(err));
+    console.warn('Rewarded show failed:', err?.message);
     loadRewardedAd();
-
     return { granted: true, adShown: false };
   }
 }
@@ -152,10 +136,9 @@ export async function showAppOpenAd(): Promise<void> {
       adId: AD_UNITS.appOpen,
       isTesting: true,
     });
-
     await AdMob.showInterstitial();
   } catch (err: any) {
-    toast.info('App open unavailable ' + errMsg(err));
+    console.warn('App open ad unavailable:', err?.message);
   }
 }
 
