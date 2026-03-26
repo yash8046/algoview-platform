@@ -49,39 +49,46 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     return { time, price, x, y };
   }, [chart, series]);
 
-  // Magnet: snap price to nearest OHLC of the closest candle
+  // Magnet: snap to nearest OHLC using pixel-based proximity for reliability
   const snapToOHLC = useCallback((time: any, price: number): { time: any; price: number } => {
-    if (!magnetMode || candleData.length === 0) return { time, price };
+    if (!magnetMode || candleData.length === 0 || !chart || !series) return { time, price };
     
-    // Convert time to comparable number (handle both unix timestamps and date strings)
-    const timeToNum = (t: any): number => {
-      if (typeof t === 'number') return t;
-      if (typeof t === 'string') return new Date(t).getTime() / 1000;
-      return Number(t) || 0;
-    };
+    // Use pixel coordinates for finding nearest candle — more reliable across time formats
+    const targetX = chart.timeScale().timeToCoordinate(time as any);
+    const targetY = series.priceToCoordinate(price);
+    if (targetX === null || targetY === null) return { time, price };
     
-    const targetTime = timeToNum(time);
-    
-    // Find nearest candle by time using pixel distance if chart available, else by time value
+    // Find nearest candle by pixel X distance
     let nearest = candleData[0];
-    let minDist = Math.abs(timeToNum(candleData[0].time) - targetTime);
+    let minPixelDist = Infinity;
     for (const c of candleData) {
-      const d = Math.abs(timeToNum(c.time) - targetTime);
-      if (d < minDist) { minDist = d; nearest = c; }
+      const cx = chart.timeScale().timeToCoordinate(c.time as any);
+      if (cx === null) continue;
+      const d = Math.abs(cx - targetX);
+      if (d < minPixelDist) { minPixelDist = d; nearest = c; }
     }
     
-    // Snap to nearest OHLC value
-    const ohlc = [nearest.open, nearest.high, nearest.low, nearest.close];
-    let snapPrice = ohlc[0];
-    let snapDist = Math.abs(price - ohlc[0]);
-    for (const p of ohlc) {
-      const d = Math.abs(price - p);
-      if (d < snapDist) { snapDist = d; snapPrice = p; }
+    // Only snap if within 30px of a candle
+    if (minPixelDist > 30) return { time, price };
+    
+    // Snap to nearest OHLC value by pixel Y distance
+    const ohlc = [
+      { price: nearest.open, label: 'O' },
+      { price: nearest.high, label: 'H' },
+      { price: nearest.low, label: 'L' },
+      { price: nearest.close, label: 'C' },
+    ];
+    let snapPrice = ohlc[0].price;
+    let snapDist = Infinity;
+    for (const o of ohlc) {
+      const oy = series.priceToCoordinate(o.price);
+      if (oy === null) continue;
+      const d = Math.abs(targetY - oy);
+      if (d < snapDist) { snapDist = d; snapPrice = o.price; }
     }
     
-    console.log('[Magnet] Snapped to', nearest.time, 'OHLC:', nearest.open, nearest.high, nearest.low, nearest.close, '→', snapPrice);
     return { time: nearest.time, price: snapPrice };
-  }, [magnetMode, candleData]);
+  }, [magnetMode, candleData, chart, series]);
 
   // === RENDERERS ===
 

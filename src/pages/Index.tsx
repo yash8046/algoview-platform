@@ -100,7 +100,7 @@ const Index = () => {
             <TopPerformers />
 
             {/* Chart */}
-            <div className="h-[180px] rounded-xl overflow-hidden border border-border/30 shadow-lg shadow-black/10" data-tour="chart">
+            <div className="h-[220px] rounded-xl overflow-hidden border border-border/30 shadow-lg shadow-black/10" data-tour="chart">
               <TradingChart minimal />
             </div>
 
