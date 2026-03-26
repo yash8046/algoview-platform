@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import TradingChart from '@/components/TradingChart';
 import CryptoChart from '@/components/CryptoChart';
+import { useIsMobile } from '@/hooks/use-mobile';
+import CryptoChart from '@/components/CryptoChart';
 import { useTradingStore } from '@/stores/tradingStore';
 import { useCryptoStore, CRYPTO_PAIRS } from '@/stores/cryptoStore';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,6 +26,7 @@ export default function ChartsPage() {
   const { watchlist, selectedSymbol, setSelectedSymbol } = useTradingStore();
   const { selectedPair, setSelectedPair } = useCryptoStore();
   const { user, signOut } = useAuth();
+  const isMobile = useIsMobile();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
