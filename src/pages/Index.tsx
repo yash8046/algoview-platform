@@ -146,7 +146,7 @@ const Index = () => {
           {/* Center: Chart + bottom panels */}
           <div className="flex-1 flex flex-col gap-2.5 min-w-0">
             <div className="flex-1 min-h-0 rounded-xl overflow-hidden border border-border/30 shadow-lg shadow-black/10" data-tour="chart">
-              <TradingChart />
+              <TradingChart minimal />
             </div>
             <div className="grid grid-cols-2 gap-2.5 flex-shrink-0" style={{ maxHeight: '180px' }}>
               <div className="bg-card/80 backdrop-blur-sm rounded-xl border border-border/50 overflow-hidden shadow-lg shadow-black/5">
