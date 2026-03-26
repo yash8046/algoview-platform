@@ -63,7 +63,7 @@ export default function CryptoTopMovers() {
         <div className="bg-card rounded-lg border border-border p-2">
           <div className="flex items-center gap-1.5 mb-2 px-1">
             <TrendingUp className="w-3.5 h-3.5 text-gain" />
-            <span className="text-[11px] font-semibold text-foreground">Top Gainers</span>
+            <span className="text-[11px] font-semibold text-foreground">Market Top Gainers</span>
           </div>
           <div className="flex gap-2 overflow-x-auto scrollbar-thin pb-1">
             {gainers.map(t => (
@@ -84,7 +84,7 @@ export default function CryptoTopMovers() {
         <div className="bg-card rounded-lg border border-border p-2">
           <div className="flex items-center gap-1.5 mb-2 px-1">
             <TrendingDown className="w-3.5 h-3.5 text-loss" />
-            <span className="text-[11px] font-semibold text-foreground">Top Losers</span>
+            <span className="text-[11px] font-semibold text-foreground">Market Top Losers</span>
           </div>
           <div className="flex gap-2 overflow-x-auto scrollbar-thin pb-1">
             {losers.map(t => (
