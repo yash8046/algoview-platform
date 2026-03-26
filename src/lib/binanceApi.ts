@@ -36,6 +36,34 @@ export async function fetchTicker(symbol: string) {
   return res.json();
 }
 
+// Batch fetch all tickers in a single API call (much cheaper than individual calls)
+let tickerCache: { data: any[]; expiry: number } | null = null;
+const TICKER_CACHE_TTL = 30_000; // 30s cache
+
+export async function fetchAllTickers(symbols: string[]): Promise<Map<string, any>> {
+  // Return cached if fresh
+  if (tickerCache && tickerCache.expiry > Date.now()) {
+    const map = new Map<string, any>();
+    for (const t of tickerCache.data) {
+      if (symbols.includes(t.symbol)) map.set(t.symbol, t);
+    }
+    return map;
+  }
+
+  const symbolParam = JSON.stringify(symbols.map(s => s.toUpperCase()));
+  const res = await fetch(`${BINANCE_REST}/ticker/24hr?symbols=${encodeURIComponent(symbolParam)}`);
+  if (!res.ok) throw new Error(`Binance batch ticker error: ${res.status}`);
+  const data = await res.json();
+  
+  tickerCache = { data, expiry: Date.now() + TICKER_CACHE_TTL };
+  
+  const map = new Map<string, any>();
+  for (const t of data) {
+    map.set(t.symbol, t);
+  }
+  return map;
+}
+
 export interface WebSocketCallbacks {
   onCandle: (candle: BinanceCandle) => void;
   onError?: (err: Event) => void;

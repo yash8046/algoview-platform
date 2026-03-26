@@ -68,7 +68,7 @@ const fallbackSentiment: SentimentData = {
 
 // Cache: reuse results within 5 minutes
 const cache = new Map<string, { result: AIAnalysisResult; expiry: number }>();
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 10 * 60 * 1000; // 10 min (was 5m)
 
 export function useAIAnalysis() {
   const [analysis, setAnalysis] = useState<AIAnalysisResult | null>(null);

@@ -53,6 +53,16 @@ export const CRYPTO_PAIRS: CryptoPair[] = [
   { symbol: 'SHIBUSDT', label: 'SHIB/USDT', baseAsset: 'SHIB', quoteAsset: 'USDT' },
   { symbol: 'TRXUSDT', label: 'TRX/USDT', baseAsset: 'TRX', quoteAsset: 'USDT' },
   { symbol: 'PEPEUSDT', label: 'PEPE/USDT', baseAsset: 'PEPE', quoteAsset: 'USDT' },
+  { symbol: 'FTMUSDT', label: 'FTM/USDT', baseAsset: 'FTM', quoteAsset: 'USDT' },
+  { symbol: 'FILUSDT', label: 'FIL/USDT', baseAsset: 'FIL', quoteAsset: 'USDT' },
+  { symbol: 'AAVEUSDT', label: 'AAVE/USDT', baseAsset: 'AAVE', quoteAsset: 'USDT' },
+  { symbol: 'INJUSDT', label: 'INJ/USDT', baseAsset: 'INJ', quoteAsset: 'USDT' },
+  { symbol: 'RENDERUSDT', label: 'RENDER/USDT', baseAsset: 'RENDER', quoteAsset: 'USDT' },
+  { symbol: 'FETUSDT', label: 'FET/USDT', baseAsset: 'FET', quoteAsset: 'USDT' },
+  { symbol: 'WIFUSDT', label: 'WIF/USDT', baseAsset: 'WIF', quoteAsset: 'USDT' },
+  { symbol: 'JUPUSDT', label: 'JUP/USDT', baseAsset: 'JUP', quoteAsset: 'USDT' },
+  { symbol: 'ONDOUSDT', label: 'ONDO/USDT', baseAsset: 'ONDO', quoteAsset: 'USDT' },
+  { symbol: 'ENAUSDT', label: 'ENA/USDT', baseAsset: 'ENA', quoteAsset: 'USDT' },
 ];
 
 async function getUserId(): Promise<string | null> {
