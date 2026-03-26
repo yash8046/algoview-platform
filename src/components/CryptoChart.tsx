@@ -37,6 +37,15 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
   const [showPatterns, setShowPatterns] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [landscapeFullscreen, setLandscapeFullscreen] = useState(false);
+
+  const toggleFullscreen = () => {
+    setFullscreen(prev => {
+      const next = !prev;
+      if (next) enterFullscreenStatusBar();
+      else exitFullscreenStatusBar();
+      return next;
+    });
+  };
   const markersRef = useRef<any>(null);
   const formattedCandlesRef = useRef<any[]>([]);
   const isAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';

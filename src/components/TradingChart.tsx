@@ -30,6 +30,15 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
   const [showPatterns, setShowPatterns] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [landscapeFullscreen, setLandscapeFullscreen] = useState(false);
+
+  const toggleFullscreen = () => {
+    setFullscreen(prev => {
+      const next = !prev;
+      if (next) enterFullscreenStatusBar();
+      else exitFullscreenStatusBar();
+      return next;
+    });
+  };
   const markersRef = useRef<any>(null);
   const candleDataRef = useRef<any[]>([]);
   const rawCandlesRef = useRef<any[]>([]);
