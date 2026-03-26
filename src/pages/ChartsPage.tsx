@@ -41,7 +41,6 @@ export default function ChartsPage() {
       {/* SYMBOL HEADER — Only symbol dropdown, no profile, no toggle */}
       <div
         className="h-11 flex-shrink-0 flex items-center bg-card border-b border-border/40 px-2 z-20"
-        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         <div className="relative flex items-center h-full">
           <button
