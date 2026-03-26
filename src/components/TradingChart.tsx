@@ -69,7 +69,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
       }
     } catch (err) {
       console.warn('[Chart] Screen orientation failed:', err);
-      setFullscreen(f => !f);
+      toggleFullscreen();
     }
   };
 
@@ -601,7 +601,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
                 if (minimal) {
                   navigate('/charts', { state: { mode: 'stocks', symbol: selectedSymbol } });
                 } else {
-                  setFullscreen(f => !f);
+                  toggleFullscreen();
                 }
               }}
               className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
@@ -643,7 +643,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
             </button>
           )}
           <button
-            onClick={() => setFullscreen(f => !f)}
+            onClick={() => toggleFullscreen()}
             className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground min-h-[28px] active:scale-95"
             title={fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >

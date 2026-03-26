@@ -78,7 +78,7 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
       }
     } catch (err) {
       console.warn('[CryptoChart] Screen orientation failed:', err);
-      setFullscreen(f => !f);
+      toggleFullscreen();
     }
   };
 
@@ -594,7 +594,7 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
                 if (minimal) {
                   navigate('/charts', { state: { mode: 'crypto', symbol: selectedPair } });
                 } else {
-                  setFullscreen(f => !f);
+                  toggleFullscreen();
                 }
               }}
               className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
@@ -636,7 +636,7 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
             </button>
           )}
           <button
-            onClick={() => setFullscreen(f => !f)}
+            onClick={() => toggleFullscreen()}
             className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground min-h-[28px] active:scale-95"
             title={fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
