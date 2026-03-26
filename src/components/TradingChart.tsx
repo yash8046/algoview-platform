@@ -605,7 +605,40 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
       {topToolbar}
 
       {/* Timeframe bar (toolbarLeft mode) */}
-      {timeframeBar}
+      {!minimal && toolbarLeft && (
+        <div className="flex items-center gap-1 px-2 py-1 bg-card/50 border-b border-border/30 overflow-x-auto scrollbar-thin flex-shrink-0">
+          {TIMEFRAMES.map(tf => (
+            <button
+              key={tf}
+              onClick={() => setSelectedTimeframe(tf)}
+              className={`px-2 py-1 text-[10px] font-mono rounded transition-colors min-h-[28px] whitespace-nowrap flex-shrink-0 active:scale-95 ${
+                selectedTimeframe === tf
+                  ? 'bg-primary text-primary-foreground font-semibold'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/30'
+              }`}
+            >
+              {tf}
+            </button>
+          ))}
+          <div className="flex-1" />
+          {isAndroid && (
+            <button
+              onClick={toggleLandscapeFullscreen}
+              className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground min-h-[28px] active:scale-95"
+              title="Landscape Mode"
+            >
+              <Smartphone className="w-3.5 h-3.5 rotate-90" />
+            </button>
+          )}
+          <button
+            onClick={() => setFullscreen(f => !f)}
+            className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground min-h-[28px] active:scale-95"
+            title={fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+          >
+            {fullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          </button>
+        </div>
+      )}
 
       {/* Loading/error indicator for toolbarLeft mode */}
       {toolbarLeft && (loading || error) && (
@@ -615,9 +648,8 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
         </div>
       )}
 
-      {/* Chart + left drawing toolbar */}
+      {/* Chart area — full width, no left sidebar */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {leftDrawingToolbar}
         <div className="relative flex-1 min-h-0 min-w-0 overflow-hidden">
           <div ref={chartRef} className="absolute inset-0 bg-chart" style={{ zIndex: 1 }} />
           {!minimal && (
