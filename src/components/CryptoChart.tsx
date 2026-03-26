@@ -348,7 +348,62 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
     );
   }
 
-  const drawingToolbar = !minimal && (
+  const leftToolbar = !minimal && toolbarLeft && (
+    <div className="flex flex-col items-center gap-1 py-2 px-1 bg-panel-header border-r border-border overflow-y-auto scrollbar-thin w-11 flex-shrink-0">
+      <ChartDrawingTools
+        activeMode={drawingMode}
+        onModeChange={setDrawingMode}
+        drawings={drawings}
+        onClearAll={clearAllDrawings}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        showPatterns={showPatterns}
+        onTogglePatterns={() => setShowPatterns(p => !p)}
+      />
+      <button
+        onClick={() => setIndicatorModalOpen(true)}
+        className={`p-1.5 rounded transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center active:scale-95 ${
+          overlayIndicators.length > 0
+            ? 'bg-primary/10 text-primary'
+            : 'text-muted-foreground hover:text-foreground hover:bg-accent/30'
+        }`}
+        title="Indicators"
+      >
+        <BarChart3 className="w-3.5 h-3.5" />
+      </button>
+      <IndicatorManagerModal
+        open={indicatorModalOpen}
+        onClose={() => setIndicatorModalOpen(false)}
+        indicators={overlayIndicators}
+        onToggle={toggleIndicator}
+        onRemove={removeIndicator}
+      />
+      <PriceAlertPanel
+        alerts={alerts}
+        activeAlerts={activeAlerts}
+        triggeredAlerts={triggeredAlerts}
+        currentSymbol={selectedPair}
+        currentPrice={livePriceINR}
+        onAdd={addAlert}
+        onRemove={removeAlert}
+        onClearTriggered={clearTriggered}
+        onRequestPermission={requestNotificationPermission}
+      />
+      <button
+        onClick={() => setMagnetMode(m => !m)}
+        className={`p-1.5 rounded transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center active:scale-95 ${
+          magnetMode ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+        }`}
+        title="Magnet Mode"
+      >
+        <Magnet className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+
+  const drawingToolbar = !minimal && toolbarBottom && (
     <div className="flex items-center gap-1 px-2 py-1 bg-panel-header border-t border-border overflow-x-auto scrollbar-thin">
       <ChartDrawingTools
         activeMode={drawingMode}
@@ -407,11 +462,13 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
     </div>
   );
 
+  const showHeaderTools = !minimal && !toolbarBottom && !toolbarLeft;
+
   const chartContent = (
     <>
       <div style={fullscreenToolbarInsetStyle} className="px-2 sm:px-4 py-1.5 sm:py-2 bg-panel-header border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-0">
         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-          {!toolbarBottom && (
+          {!toolbarBottom && !toolbarLeft && (
             <select
               value={selectedPair}
               onChange={(e) => setSelectedPair(e.target.value)}
@@ -430,7 +487,7 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto justify-between sm:justify-end">
-          {!minimal && !toolbarBottom && (
+          {showHeaderTools && (
             <>
               <ChartDrawingTools
                 activeMode={drawingMode}
@@ -527,24 +584,27 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
           </button>
         </div>
       </div>
-      <div className="relative flex-1 min-h-0 overflow-hidden">
-        <div ref={chartRef} className="absolute inset-0 bg-chart" style={{ zIndex: 1 }} />
-        {!minimal && (
-          <div className="absolute inset-0" style={{ zIndex: isDrawingActive ? 100 : 0, pointerEvents: isDrawingActive ? 'auto' : 'none' }}>
-            <ChartOverlay
-              chart={chartApi}
-              series={seriesApi}
-              drawingMode={drawingMode}
-              drawingModeRef={drawingModeRef}
-              drawings={drawings}
-              onAddDrawing={addDrawing}
-              onRemoveDrawing={removeDrawing}
-              onFinishDrawing={finishDrawing}
-              magnetMode={magnetMode}
-              candleData={formattedCandlesRef.current}
-            />
-          </div>
-        )}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        {leftToolbar}
+        <div className="relative flex-1 min-h-0 min-w-0 overflow-hidden">
+          <div ref={chartRef} className="absolute inset-0 bg-chart" style={{ zIndex: 1 }} />
+          {!minimal && (
+            <div className="absolute inset-0" style={{ zIndex: isDrawingActive ? 100 : 0, pointerEvents: isDrawingActive ? 'auto' : 'none' }}>
+              <ChartOverlay
+                chart={chartApi}
+                series={seriesApi}
+                drawingMode={drawingMode}
+                drawingModeRef={drawingModeRef}
+                drawings={drawings}
+                onAddDrawing={addDrawing}
+                onRemoveDrawing={removeDrawing}
+                onFinishDrawing={finishDrawing}
+                magnetMode={magnetMode}
+                candleData={formattedCandlesRef.current}
+              />
+            </div>
+          )}
+        </div>
       </div>
       {toolbarBottom && drawingToolbar}
     </>
