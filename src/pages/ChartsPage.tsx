@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import TradingChart from '@/components/TradingChart';
 import CryptoChart from '@/components/CryptoChart';
 import { useTradingStore } from '@/stores/tradingStore';
@@ -10,11 +11,24 @@ import {
 type ChartMode = 'stocks' | 'crypto';
 
 export default function ChartsPage() {
-  const [mode, setMode] = useState<ChartMode>('stocks');
+  const location = useLocation();
+  const navState = location.state as { mode?: ChartMode; symbol?: string } | null;
+  const [mode, setMode] = useState<ChartMode>(navState?.mode || 'stocks');
   const { watchlist, selectedSymbol, setSelectedSymbol } = useTradingStore();
   const { selectedPair, setSelectedPair } = useCryptoStore();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Sync symbol from navigation state
+  useEffect(() => {
+    if (navState?.symbol) {
+      if (navState.mode === 'stocks') {
+        setSelectedSymbol(navState.symbol);
+      } else if (navState.mode === 'crypto') {
+        setSelectedPair(navState.symbol);
+      }
+    }
+  }, [navState]);
 
   const currentSymbol = mode === 'stocks'
     ? (selectedSymbol === 'NIFTY 50' ? 'NIFTY 50' : `${selectedSymbol}.NS`)
@@ -34,12 +48,12 @@ export default function ChartsPage() {
       {/* ═══ TOP HEADER — 48px, TradingView-style thin bar ═══ */}
       <div className="h-12 flex-shrink-0 flex items-center bg-card border-b border-border/40 px-0 safe-area-top z-20">
         {/* Symbol selector */}
-        <div className="relative flex items-center h-full border-r border-border/30">
+        <div className="relative flex items-center h-full border-r border-border/30 max-w-[45%]">
           <button
             onClick={() => setSearchOpen(!searchOpen)}
-            className="flex items-center gap-2 px-3 h-full hover:bg-accent/30 transition-colors min-w-[140px]"
+            className="flex items-center gap-1.5 px-2 sm:px-3 h-full hover:bg-accent/30 transition-colors min-w-0"
           >
-            <span className="font-mono text-xs font-semibold text-foreground truncate">
+            <span className="font-mono text-[10px] sm:text-xs font-semibold text-foreground truncate">
               {currentSymbol}
             </span>
             <ChevronDown className="w-3 h-3 text-muted-foreground flex-shrink-0" />
@@ -124,11 +138,11 @@ export default function ChartsPage() {
         <div className="flex-1" />
 
         {/* Mode indicator */}
-        <div className="flex items-center gap-1 px-3 h-full border-l border-border/30">
+        <div className="flex items-center gap-1 px-1.5 sm:px-3 h-full border-l border-border/30">
           <div className="flex items-center bg-secondary/30 rounded p-0.5">
             <button
               onClick={() => setMode('stocks')}
-              className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold transition-all ${
+              className={`flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded text-[9px] sm:text-[10px] font-semibold transition-all ${
                 mode === 'stocks'
                   ? 'bg-primary/15 text-primary'
                   : 'text-muted-foreground hover:text-foreground'
@@ -139,7 +153,7 @@ export default function ChartsPage() {
             </button>
             <button
               onClick={() => setMode('crypto')}
-              className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold transition-all ${
+              className={`flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded text-[9px] sm:text-[10px] font-semibold transition-all ${
                 mode === 'crypto'
                   ? 'bg-primary/15 text-primary'
                   : 'text-muted-foreground hover:text-foreground'

@@ -128,7 +128,7 @@ export default function CryptoPage() {
           <div className="p-2 space-y-2">
             <CryptoSummary />
             <CryptoTopMovers />
-            <div className="h-[180px]">
+            <div className="h-[220px]">
               <CryptoChart minimal />
             </div>
             <CryptoTradePanel />

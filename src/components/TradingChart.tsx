@@ -262,14 +262,14 @@ export default function TradingChart({ minimal = false }: { minimal?: boolean })
     return (
       <div className="fixed inset-0 z-[200] bg-background flex flex-col overflow-hidden">
         {/* Compact landscape toolbar */}
-        <div style={fullscreenToolbarInsetStyle} className="flex shrink-0 items-center justify-between px-2 py-1 bg-panel-header border-b border-border">
-          <div className="flex items-center gap-2">
-            <h2 className="font-mono text-[10px] font-semibold text-foreground">
+        <div style={fullscreenToolbarInsetStyle} className="flex shrink-0 items-center justify-between px-1.5 py-0.5 bg-panel-header border-b border-border gap-1">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <h2 className="font-mono text-[9px] font-semibold text-foreground truncate max-w-[80px]">
               {selectedSymbol === 'NIFTY 50' ? 'NIFTY 50' : `${selectedSymbol}.NS`}
             </h2>
-            {loading && <span className="text-[9px] text-primary animate-pulse">Loading...</span>}
+            {loading && <span className="text-[8px] text-primary animate-pulse">...</span>}
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-thin">
             <ChartDrawingTools
               activeMode={drawingMode}
               onModeChange={setDrawingMode}
@@ -282,12 +282,48 @@ export default function TradingChart({ minimal = false }: { minimal?: boolean })
               showPatterns={showPatterns}
               onTogglePatterns={() => setShowPatterns(p => !p)}
             />
-            <div className="flex items-center gap-0.5">
+            <button
+              onClick={() => setIndicatorModalOpen(true)}
+              className={`p-1 rounded text-[9px] font-mono transition-all min-h-[26px] active:scale-95 ${
+                indicators.length > 0 ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent/30'
+              }`}
+              title="Indicators"
+            >
+              <BarChart3 className="w-3 h-3" />
+            </button>
+            <IndicatorManagerModal
+              open={indicatorModalOpen}
+              onClose={() => setIndicatorModalOpen(false)}
+              indicators={indicators}
+              onToggle={toggleIndicator}
+              onRemove={removeIndicator}
+            />
+            <PriceAlertPanel
+              alerts={alerts}
+              activeAlerts={activeAlerts}
+              triggeredAlerts={triggeredAlerts}
+              currentSymbol={selectedSymbol}
+              currentPrice={currentPriceRef.current}
+              onAdd={addAlert}
+              onRemove={removeAlert}
+              onClearTriggered={clearTriggered}
+              onRequestPermission={requestNotificationPermission}
+            />
+            <button
+              onClick={() => setMagnetMode(m => !m)}
+              className={`p-1 rounded transition-colors min-h-[26px] active:scale-95 ${
+                magnetMode ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+              }`}
+              title="Magnet"
+            >
+              <Magnet className="w-3 h-3" />
+            </button>
+            <div className="flex items-center gap-0.5 ml-0.5">
               {TIMEFRAMES.map(tf => (
                 <button
                   key={tf}
                   onClick={() => setSelectedTimeframe(tf)}
-                  className={`px-1.5 py-0.5 text-[9px] font-mono rounded min-h-[28px] active:scale-95 ${
+                  className={`px-1 py-0.5 text-[8px] font-mono rounded min-h-[26px] active:scale-95 ${
                     selectedTimeframe === tf
                       ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:text-foreground hover:bg-accent'
@@ -299,10 +335,10 @@ export default function TradingChart({ minimal = false }: { minimal?: boolean })
             </div>
             <button
               onClick={exitLandscape}
-              className="p-1.5 rounded bg-loss/20 text-loss hover:bg-loss/30 active:scale-90 min-h-[28px] min-w-[28px] flex items-center justify-center ml-1"
+              className="p-1 rounded bg-loss/20 text-loss hover:bg-loss/30 active:scale-90 min-h-[26px] min-w-[26px] flex items-center justify-center ml-0.5"
               title="Exit Landscape"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -422,7 +458,13 @@ export default function TradingChart({ minimal = false }: { minimal?: boolean })
             </button>
           )}
           <button
-            onClick={() => minimal ? navigate('/charts') : setFullscreen(f => !f)}
+            onClick={() => {
+              if (minimal) {
+                navigate('/charts', { state: { mode: 'stocks', symbol: selectedSymbol } });
+              } else {
+                setFullscreen(f => !f);
+              }
+            }}
             className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
             title={minimal ? 'Open Full Chart' : fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
