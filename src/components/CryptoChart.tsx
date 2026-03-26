@@ -24,7 +24,7 @@ const INTERVALS = [
   { label: '1D', value: '1d' },
 ];
 
-export default function CryptoChart({ minimal = false }: { minimal?: boolean }) {
+export default function CryptoChart({ minimal = false, toolbarBottom = false }: { minimal?: boolean; toolbarBottom?: boolean }) {
   const navigate = useNavigate();
   const { selectedPair, selectedInterval, setSelectedPair, setSelectedInterval, updatePositionPrice, usdToInr } = useCryptoStore();
   const { candles, livePrice, loading, error } = useCryptoData(selectedPair, selectedInterval);
