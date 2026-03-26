@@ -18,7 +18,7 @@ import { useNavigate } from 'react-router-dom';
 
 const TIMEFRAMES = ['1m', '5m', '15m', '1H', '4H', '1D', '1W'];
 
-export default function TradingChart({ minimal = false, toolbarBottom = false }: { minimal?: boolean; toolbarBottom?: boolean }) {
+export default function TradingChart({ minimal = false, toolbarBottom = false, toolbarLeft = false }: { minimal?: boolean; toolbarBottom?: boolean; toolbarLeft?: boolean }) {
   const navigate = useNavigate();
   const chartRef = useRef<HTMLDivElement>(null);
   const { selectedSymbol, selectedTimeframe, setSelectedTimeframe, updatePrice } = useTradingStore();
