@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const TEST_ADMOB_APP_ID = 'ca-app-pub-3940256099942544~3347511713';
+const TEST_ADMOB_APP_ID = 'ca-app-pub-8367984144739081~1142050331';
 
 const manifestPath = path.resolve('android/app/src/main/AndroidManifest.xml');
 const stringsPath = path.resolve('android/app/src/main/res/values/strings.xml');
