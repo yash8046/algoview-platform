@@ -478,11 +478,13 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
     </div>
   );
 
+  const showHeaderTools = !minimal && !toolbarBottom && !toolbarLeft;
+
   const chartContent = (
     <>
       <div style={fullscreenToolbarInsetStyle} className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2 bg-panel-header border-b border-border gap-2">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          {!toolbarBottom && (
+          {!toolbarBottom && !toolbarLeft && (
             <h2 className="font-mono text-xs sm:text-sm font-semibold text-foreground truncate">
               {selectedSymbol === 'NIFTY 50' ? 'NIFTY 50' : `${selectedSymbol}.NS`}
             </h2>
@@ -491,7 +493,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
           {error && <span className="text-[10px] text-loss truncate max-w-[100px]">Error</span>}
         </div>
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-          {!minimal && !toolbarBottom && (
+          {showHeaderTools && (
             <>
               <ChartDrawingTools
                 activeMode={drawingMode}
@@ -588,24 +590,27 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
           </button>
         </div>
       </div>
-      <div className="relative flex-1 min-h-0 overflow-hidden">
-        <div ref={chartRef} className="absolute inset-0 bg-chart" style={{ zIndex: 1 }} />
-        {!minimal && (
-          <div className="absolute inset-0" style={{ zIndex: isDrawingActive ? 100 : 0, pointerEvents: isDrawingActive ? 'auto' : 'none' }}>
-            <ChartOverlay
-              chart={chartApi}
-              series={seriesApi}
-              drawingMode={drawingMode}
-              drawingModeRef={drawingModeRef}
-              drawings={drawings}
-              onAddDrawing={addDrawing}
-              onRemoveDrawing={removeDrawing}
-              onFinishDrawing={finishDrawing}
-              magnetMode={magnetMode}
-              candleData={candleDataRef.current}
-            />
-          </div>
-        )}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        {leftToolbar}
+        <div className="relative flex-1 min-h-0 min-w-0 overflow-hidden">
+          <div ref={chartRef} className="absolute inset-0 bg-chart" style={{ zIndex: 1 }} />
+          {!minimal && (
+            <div className="absolute inset-0" style={{ zIndex: isDrawingActive ? 100 : 0, pointerEvents: isDrawingActive ? 'auto' : 'none' }}>
+              <ChartOverlay
+                chart={chartApi}
+                series={seriesApi}
+                drawingMode={drawingMode}
+                drawingModeRef={drawingModeRef}
+                drawings={drawings}
+                onAddDrawing={addDrawing}
+                onRemoveDrawing={removeDrawing}
+                onFinishDrawing={finishDrawing}
+                magnetMode={magnetMode}
+                candleData={candleDataRef.current}
+              />
+            </div>
+          )}
+        </div>
       </div>
       {toolbarBottom && drawingToolbar}
     </>
