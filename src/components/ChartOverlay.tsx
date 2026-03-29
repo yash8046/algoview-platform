@@ -3,11 +3,10 @@ import type { IChartApi, Time } from 'lightweight-charts';
 import type { DrawingMode, DrawingLine } from './ChartDrawingTools';
 import DrawingToolbar from './DrawingToolbar';
 
-// Pixel-snap helper: aligns a CSS-pixel coordinate to the nearest device pixel
-// so strokes land on exact pixel boundaries, preventing Android flicker/blur.
-// After ctx.setTransform(DPR,...) all drawing is in CSS pixels; this just rounds + half-pixel offsets.
-const px = (v: number, lineW: number = 1.5) =>
-  Math.round(v) + ((Math.round(lineW) % 2) ? 0.5 : 0);
+// Pixel-snap helper: aligns a CSS-pixel coordinate to the nearest device pixel boundary.
+// Works in device-pixel space internally, returns CSS pixels for use after ctx.setTransform(dpr,...).
+const pxSnap = (n: number, lineW: number, dpr: number) =>
+  (Math.round(n * dpr) + ((Math.round(lineW * dpr) & 1) ? 0.5 : 0)) / dpr;
 
 const FIB_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
 const FIB_EXT_LEVELS = [0, 0.618, 1, 1.382, 1.618, 2, 2.618];
