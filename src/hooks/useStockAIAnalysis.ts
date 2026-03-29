@@ -48,7 +48,7 @@ const fallbackSentiment: SentimentData = {
 // Smart cache with market-aware TTL
 const cache = new Map<string, { result: StockAIResult; expiry: number }>();
 
-export function useStockAIAnalysis(symbol: string, timeframe: string) {
+export function useStockAIAnalysis(symbol: string, timeframe: string, marketRegion: 'IN' | 'US' = 'IN') {
   const [result, setResult] = useState<StockAIResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -105,10 +105,11 @@ export function useStockAIAnalysis(symbol: string, timeframe: string) {
       const ruleSignal = generateRuleBasedSignal(candles);
       const prediction = predictNextPrice(candles);
 
+      const pairLabel = marketRegion === 'US' ? symbol : `${symbol}.NS`;
       const { data: aiData, error: fnError } = await supabase.functions.invoke('ai-analysis', {
         body: {
           indicators: ruleSignal.indicators,
-          pair: `${symbol}.NS`,
+          pair: pairLabel,
           timeframe,
           ruleSignal: {
             signal: ruleSignal.signal,
@@ -192,7 +193,7 @@ export function useStockAIAnalysis(symbol: string, timeframe: string) {
     } finally {
       setLoading(false);
     }
-  }, [symbol, timeframe]);
+  }, [symbol, timeframe, marketRegion]);
 
   return { result, loading, error, refresh: analyze };
 }

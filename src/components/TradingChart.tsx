@@ -22,7 +22,7 @@ const TIMEFRAMES = ['1m', '5m', '15m', '1H', '4H', '1D', '1W'];
 export default function TradingChart({ minimal = false, toolbarBottom = false, toolbarLeft = false }: { minimal?: boolean; toolbarBottom?: boolean; toolbarLeft?: boolean }) {
   const navigate = useNavigate();
   const chartRef = useRef<HTMLDivElement>(null);
-  const { selectedSymbol, selectedTimeframe, setSelectedTimeframe, updatePrice } = useTradingStore();
+  const { selectedSymbol, selectedTimeframe, setSelectedTimeframe, updatePrice, marketRegion } = useTradingStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [chartApi, setChartApi] = useState<IChartApi | null>(null);
@@ -112,7 +112,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
         },
         rightPriceScale: { borderColor: 'rgba(42, 56, 89, 0.5)' },
         timeScale: { borderColor: 'rgba(42, 56, 89, 0.5)', timeVisible: true },
-        localization: { priceFormatter: (p: number) => '₹' + p.toFixed(2) },
+        localization: { priceFormatter: (p: number) => (marketRegion === 'US' ? '$' : '₹') + p.toFixed(2) },
       });
 
       const candleSeries = chart.addSeries(CandlestickSeries, {
@@ -200,7 +200,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
       cleanupRef.current?.();
       cleanupRef.current = null;
     };
-  }, [selectedSymbol, selectedTimeframe, fullscreen, landscapeFullscreen]);
+  }, [selectedSymbol, selectedTimeframe, fullscreen, landscapeFullscreen, marketRegion]);
 
   // Apply candlestick pattern markers
   useEffect(() => {
@@ -292,7 +292,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
         <div style={fullscreenToolbarInsetStyle} className="flex shrink-0 items-center justify-between px-1.5 py-0.5 bg-panel-header border-b border-border gap-1">
           <div className="flex items-center gap-1.5 min-w-0">
             <h2 className="font-mono text-[9px] font-semibold text-foreground truncate max-w-[80px]">
-              {selectedSymbol === 'NIFTY 50' ? 'NIFTY 50' : `${selectedSymbol}.NS`}
+              {selectedSymbol === 'NIFTY 50' ? 'NIFTY 50' : marketRegion === 'US' ? selectedSymbol : `${selectedSymbol}.NS`}
             </h2>
             {loading && <span className="text-[8px] text-primary animate-pulse">...</span>}
           </div>
@@ -524,7 +524,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             {!toolbarBottom && (
               <h2 className="font-mono text-xs sm:text-sm font-semibold text-foreground truncate">
-                {selectedSymbol === 'NIFTY 50' ? 'NIFTY 50' : `${selectedSymbol}.NS`}
+                {selectedSymbol === 'NIFTY 50' ? 'NIFTY 50' : marketRegion === 'US' ? selectedSymbol : `${selectedSymbol}.NS`}
               </h2>
             )}
             {loading && <span className="text-[10px] text-primary animate-pulse">Loading...</span>}

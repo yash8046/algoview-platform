@@ -168,8 +168,9 @@ function UpdatedAgo({ timestamp }: { timestamp: number }) {
 }
 
 export default function AISignals() {
-  const { selectedSymbol, selectedTimeframe } = useTradingStore();
-  const { result, loading, error, refresh } = useStockAIAnalysis(selectedSymbol, selectedTimeframe);
+  const { selectedSymbol, selectedTimeframe, marketRegion } = useTradingStore();
+  const currencySymbol = marketRegion === 'US' ? '$' : '₹';
+  const { result, loading, error, refresh } = useStockAIAnalysis(selectedSymbol, selectedTimeframe, marketRegion);
   const { gateWithAd } = useRewardedAd('AI Insight');
 
   const detailedKey = result?.detailedSignal || result?.signal || 'hold';
@@ -260,7 +261,7 @@ export default function AISignals() {
                     </div>
                     <div className="flex justify-between text-[10px]">
                       <span className="text-muted-foreground">Range</span>
-                      <span className="font-mono text-foreground">₹{result.priceRange.low.toFixed(2)} – ₹{result.priceRange.high.toFixed(2)}</span>
+                      <span className="font-mono text-foreground">{currencySymbol}{result.priceRange.low.toFixed(2)} – {currencySymbol}{result.priceRange.high.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-[10px]">
                       <span className="text-muted-foreground">% Move</span>
@@ -312,19 +313,19 @@ export default function AISignals() {
                 <span className={`text-[11px] font-mono font-semibold ${
                   result.prediction.direction === 'up' ? 'text-gain' : result.prediction.direction === 'down' ? 'text-loss' : 'text-muted-foreground'
                 }`}>
-                  {result.prediction.direction === 'up' ? '↑ Positive' : result.prediction.direction === 'down' ? '↓ Negative' : '→ Neutral'} · ₹{result.prediction.predicted.toFixed(2)}
+                  {result.prediction.direction === 'up' ? '↑ Positive' : result.prediction.direction === 'down' ? '↓ Negative' : '→ Neutral'} · {currencySymbol}{result.prediction.predicted.toFixed(2)}
                 </span>
               </div>
               {result.targetPrice && (
                 <div className="flex justify-between mt-1.5 text-[10px]">
                   <span className="text-muted-foreground">Projected Level</span>
-                  <span className="font-mono text-gain">₹{result.targetPrice.toFixed(2)}</span>
+                  <span className="font-mono text-gain">{currencySymbol}{result.targetPrice.toFixed(2)}</span>
                 </div>
               )}
               {result.stopLoss && (
                 <div className="flex justify-between mt-0.5 text-[10px]">
                   <span className="text-muted-foreground">Support Level</span>
-                  <span className="font-mono text-loss">₹{result.stopLoss.toFixed(2)}</span>
+                  <span className="font-mono text-loss">{currencySymbol}{result.stopLoss.toFixed(2)}</span>
                 </div>
               )}
             </div>
@@ -347,11 +348,11 @@ export default function AISignals() {
                   <>
                     <div className="flex justify-between text-[10px]">
                       <span className="text-muted-foreground">Support Level</span>
-                      <span className="font-mono text-loss">₹{result.riskMetrics.suggestedStopLoss.toFixed(2)}</span>
+                      <span className="font-mono text-loss">{currencySymbol}{result.riskMetrics.suggestedStopLoss.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-[10px]">
                       <span className="text-muted-foreground">Resistance Level</span>
-                      <span className="font-mono text-gain">₹{result.riskMetrics.suggestedTakeProfit.toFixed(2)}</span>
+                      <span className="font-mono text-gain">{currencySymbol}{result.riskMetrics.suggestedTakeProfit.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-[10px]">
                       <span className="text-muted-foreground">Risk:Reward</span>

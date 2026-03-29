@@ -1106,8 +1106,9 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       }
     }
 
-    // === CROSSHAIR ===
-    if (crosshairPos.current && (isDrawing.current || drawingModeRef.current !== 'none')) {
+    // === CROSSHAIR === (show during drawing, or when a drawing is selected for repositioning)
+    const showCrosshair = isDrawing.current || drawingModeRef.current !== 'none' || selectedDrawingId !== null;
+    if (crosshairPos.current && showCrosshair) {
       const cx = crosshairPos.current.x;
       const cy = crosshairPos.current.y;
       ctx.save();
@@ -1356,6 +1357,9 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         return;
       }
 
+      // Prevent browser from intercepting this touch for scrolling/panning
+      e.preventDefault();
+      e.stopPropagation();
       setSelectedDrawingId(id);
 
       // Start drag if we found a drawing
@@ -1512,8 +1516,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     }
 
     if (mode === 'none' || mode === 'eraser' || !isDrawing.current) {
-      // Still schedule render for crosshair update
-      if (mode !== 'none') scheduleRender();
+      // Schedule render for crosshair update when drawing is selected or in drawing mode
+      if (mode !== 'none' || selectedDrawingId !== null) scheduleRender();
       return;
     }
     if (!canvas) return;
@@ -1617,7 +1621,11 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   }, [chart, scheduleRender]);
 
   // Force immediate render when drawings change (fixes "drawing only appears after next interaction")
-  useEffect(() => { renderImmediate(); }, [drawings, renderImmediate]);
+  useEffect(() => {
+    // Use RAF to ensure canvas is sized before rendering
+    const id = requestAnimationFrame(() => renderImmediate());
+    return () => cancelAnimationFrame(id);
+  }, [drawings, renderImmediate, selectedDrawingId]);
   useEffect(() => () => {
     cancelAnimationFrame(laserRaf.current);
     cancelAnimationFrame(renderRafRef.current);
@@ -1655,7 +1663,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerLeave}
-        style={{ touchAction: isActive || isDraggingState ? 'none' : 'auto' }}
+        style={{ touchAction: isActive || isDraggingState || hasDrawings ? 'none' : 'auto' }}
       />
       {/* Floating selection toolbar */}
       {selectedDrawingId && selectedPos && (

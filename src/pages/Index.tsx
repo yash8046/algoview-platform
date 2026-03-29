@@ -114,8 +114,8 @@ const Index = () => {
         <div className="flex-shrink-0 sticky top-0 z-30">
           <TopBar />
         </div>
-        <PullToRefresh onRefresh={handleRefresh} className="flex-1 pb-20">
-          <div className="p-2.5 space-y-2.5">
+        <PullToRefresh onRefresh={handleRefresh} className="flex-1">
+          <div className="p-2.5 space-y-2.5 pb-24">
             {/* Portfolio summary + Region toggle */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex-1" data-tour="portfolio"><PortfolioSummary /></div>
