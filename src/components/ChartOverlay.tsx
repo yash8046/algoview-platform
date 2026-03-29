@@ -1603,7 +1603,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     }
     currentPixel.current = { x, y };
     scheduleRender();
-  }, [fromPixel, scheduleRender, drawingModeRef, magnetMode, snapToOHLC, toPixel, selectedDrawingId, onUpdateDrawing, drawings]);
+  }, [fromPixel, fromPixelUnclamped, scheduleRender, drawingModeRef, magnetMode, snapToOHLC, toPixel, selectedDrawingId, onUpdateDrawing, drawings]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     const mode = drawingModeRef.current;
