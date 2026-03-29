@@ -1513,8 +1513,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     }
 
     if (mode === 'none' || mode === 'eraser' || !isDrawing.current) {
-      // Still schedule render for crosshair update
-      if (mode !== 'none') scheduleRender();
+      // Schedule render for crosshair update when drawing is selected or in drawing mode
+      if (mode !== 'none' || selectedDrawingId !== null) scheduleRender();
       return;
     }
     if (!canvas) return;
