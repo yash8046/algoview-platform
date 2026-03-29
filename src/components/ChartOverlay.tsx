@@ -1539,6 +1539,10 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     'gann_fan', 'gann_box', 'gann_square',
   ];
 
+  // Gann tool modes for preview rendering
+  const gannLineModes: DrawingMode[] = ['gann_fan'];
+  const gannRectModes: DrawingMode[] = ['gann_box', 'gann_square'];
+
   const defaultColors: Record<string, string> = {
     trendline: '#22c55e', ray: '#22c55e', extended_line: '#22c55e', arrow_line: '#22c55e',
     info_line: '#06b6d4', trend_angle: '#f59e0b', h_segment: '#f59e0b',
