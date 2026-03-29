@@ -1097,6 +1097,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
+
+    for (const d of drawings) {
       if (d.visible === false) continue;
       const isSel = d.id === selectedDrawingId;
       try {
