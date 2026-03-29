@@ -170,7 +170,7 @@ function UpdatedAgo({ timestamp }: { timestamp: number }) {
 export default function AISignals() {
   const { selectedSymbol, selectedTimeframe, marketRegion } = useTradingStore();
   const currencySymbol = marketRegion === 'US' ? '$' : '₹';
-  const { result, loading, error, refresh } = useStockAIAnalysis(selectedSymbol, selectedTimeframe);
+  const { result, loading, error, refresh } = useStockAIAnalysis(selectedSymbol, selectedTimeframe, marketRegion);
   const { gateWithAd } = useRewardedAd('AI Insight');
 
   const detailedKey = result?.detailedSignal || result?.signal || 'hold';
