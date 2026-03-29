@@ -18,51 +18,74 @@ export default function AuthPage() {
     setGoogleLoading(true);
     try {
       if (Capacitor.isNativePlatform()) {
-        // On native Android/iOS: open OAuth in system browser, handle deep link callback
+        // Native Android/iOS: use skipBrowserRedirect + open in system browser
         const { Browser } = await import('@capacitor/browser');
         const { App: CapApp } = await import('@capacitor/app');
 
-        const publishedUrl = 'https://robo-chart-pal.lovable.app';
+        // Use the app's custom scheme for deep link redirect
+        const redirectUrl = 'https://robo-chart-pal.lovable.app/~oauth';
 
-        // Listen for deep link callback when OAuth completes
+        // Listen for deep link callback BEFORE opening browser
         const urlListener = await CapApp.addListener('appUrlOpen', async ({ url }) => {
-          if (url.includes('/~oauth') || url.includes('access_token') || url.includes('code=')) {
+          console.log('[OAuth] appUrlOpen received:', url);
+          try {
             await Browser.close().catch(() => {});
-            urlListener.remove();
+          } catch {}
+          urlListener.remove();
 
-            // Extract hash or query params for session
-            const hashParams = new URLSearchParams(url.split('#')[1] || '');
-            const accessToken = hashParams.get('access_token');
-            const refreshToken = hashParams.get('refresh_token');
+          // Extract tokens from hash fragment
+          const hashPart = url.split('#')[1];
+          const queryPart = url.split('?')[1]?.split('#')[0];
 
+          if (hashPart) {
+            const params = new URLSearchParams(hashPart);
+            const accessToken = params.get('access_token');
+            const refreshToken = params.get('refresh_token');
             if (accessToken && refreshToken) {
               const { error } = await supabase.auth.setSession({
                 access_token: accessToken,
                 refresh_token: refreshToken,
               });
-              if (error) {
-                toast.error('Failed to complete sign-in');
-              } else {
-                toast.success('Welcome!');
-              }
-            } else {
-              // Try to get session - it may have been set via the OAuth callback
-              const { data } = await supabase.auth.getSession();
-              if (data.session) {
-                toast.success('Welcome!');
-              }
+              if (error) toast.error('Sign-in failed');
+              else toast.success('Welcome!');
+              return;
             }
           }
+
+          // Try code exchange if query has code=
+          if (queryPart) {
+            const params = new URLSearchParams(queryPart);
+            const code = params.get('code');
+            if (code) {
+              const { error } = await supabase.auth.exchangeCodeForSession(code);
+              if (error) toast.error('Sign-in failed');
+              else toast.success('Welcome!');
+              return;
+            }
+          }
+
+          // Fallback: check if session was set
+          const { data } = await supabase.auth.getSession();
+          if (data.session) toast.success('Welcome!');
+          else toast.error('Could not complete sign-in');
         });
 
-        // Trigger the OAuth flow - this will redirect the WebView
-        // Instead, we want to open in external browser
-        const { error } = await lovable.auth.signInWithOAuth("google", {
-          redirect_uri: publishedUrl,
+        // Get the OAuth URL but don't redirect - we'll open it ourselves
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: redirectUrl,
+            skipBrowserRedirect: true,
+          },
         });
         if (error) throw error;
+
+        if (data?.url) {
+          // Open in external system browser (not in-app WebView)
+          await Browser.open({ url: data.url, presentationStyle: 'popover' });
+        }
       } else {
-        // Web: standard flow
+        // Web: standard Lovable Cloud flow
         const { error } = await lovable.auth.signInWithOAuth("google", {
           redirect_uri: window.location.origin,
         });
