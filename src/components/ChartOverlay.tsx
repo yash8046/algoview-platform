@@ -155,15 +155,16 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     if (d.price == null || !series) return;
     const y = series.priceToCoordinate(d.price);
     if (y === null) return;
+    const lw = d.lineWidth || 1;
     ctx.beginPath();
     ctx.strokeStyle = d.color;
-    ctx.lineWidth = d.lineWidth || 1;
+    ctx.lineWidth = lw;
     ctx.setLineDash([6, 3]);
-    ctx.moveTo(0, y); ctx.lineTo(w, y);
+    ctx.moveTo(0, px(y, lw)); ctx.lineTo(w, px(y, lw));
     ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle = d.color;
     ctx.font = '10px "JetBrains Mono", monospace';
-    ctx.fillText(d.price.toFixed(2), 4, y - 4);
+    ctx.fillText(d.price.toFixed(2), 4, px(y, lw) - 4);
   }, [series]);
 
   const renderVLine = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine, h: number) => {
