@@ -1616,7 +1616,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     return () => { chart.timeScale().unsubscribeVisibleLogicalRangeChange(handler); };
   }, [chart, scheduleRender]);
 
-  useEffect(() => { scheduleRender(); }, [drawings, scheduleRender]);
+  // Force immediate render when drawings change (fixes "drawing only appears after next interaction")
+  useEffect(() => { renderImmediate(); }, [drawings, renderImmediate]);
   useEffect(() => () => {
     cancelAnimationFrame(laserRaf.current);
     cancelAnimationFrame(renderRafRef.current);
