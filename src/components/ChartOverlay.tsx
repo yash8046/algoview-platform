@@ -1363,6 +1363,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         const drawing = drawings.find(d => d.id === id);
         if (drawing && !drawing.locked) {
           isDragging.current = true;
+          setIsDraggingState(true);
           dragStartCoord.current = { time: coord.time, price: coord.price };
           dragSnapshotRef.current = drawings.map(d => ({ ...d, points: d.points?.map(p => ({ ...p })) }));
 
