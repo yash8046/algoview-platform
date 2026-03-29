@@ -1586,15 +1586,17 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       isDrawing.current = false;
       if (penCoords.current.length > 1) {
         const color = defaultColors[mode] || '#22c55e';
+        const newId = `${mode}_${Date.now()}`;
         onAddDrawing({
-          id: `${mode}_${Date.now()}`, type: mode,
+          id: newId, type: mode,
           points: penCoords.current.map(p => ({ time: p.time as number, price: p.price })),
           color,
           lineWidth: mode === 'brush' ? 3 : mode === 'highlighter' ? 12 : 1.5,
         });
+        setSelectedDrawingId(newId);
       }
       penCoords.current = [];
-      onFinishDrawing(); scheduleRender(); return;
+      onFinishDrawing(); renderImmediate(); return;
     }
     if (!isDrawing.current || !startCoord.current) return;
     isDrawing.current = false;
