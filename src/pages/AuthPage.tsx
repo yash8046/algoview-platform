@@ -17,80 +17,10 @@ export default function AuthPage() {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
-      if (Capacitor.isNativePlatform()) {
-        // Native Android/iOS: use skipBrowserRedirect + open in system browser
-        const { Browser } = await import('@capacitor/browser');
-        const { App: CapApp } = await import('@capacitor/app');
-
-        // Use the app's custom scheme for deep link redirect
-        const redirectUrl = 'https://robo-chart-pal.lovable.app/~oauth';
-
-        // Listen for deep link callback BEFORE opening browser
-        const urlListener = await CapApp.addListener('appUrlOpen', async ({ url }) => {
-          console.log('[OAuth] appUrlOpen received:', url);
-          try {
-            await Browser.close().catch(() => {});
-          } catch {}
-          urlListener.remove();
-
-          // Extract tokens from hash fragment
-          const hashPart = url.split('#')[1];
-          const queryPart = url.split('?')[1]?.split('#')[0];
-
-          if (hashPart) {
-            const params = new URLSearchParams(hashPart);
-            const accessToken = params.get('access_token');
-            const refreshToken = params.get('refresh_token');
-            if (accessToken && refreshToken) {
-              const { error } = await supabase.auth.setSession({
-                access_token: accessToken,
-                refresh_token: refreshToken,
-              });
-              if (error) toast.error('Sign-in failed');
-              else toast.success('Welcome!');
-              return;
-            }
-          }
-
-          // Try code exchange if query has code=
-          if (queryPart) {
-            const params = new URLSearchParams(queryPart);
-            const code = params.get('code');
-            if (code) {
-              const { error } = await supabase.auth.exchangeCodeForSession(code);
-              if (error) toast.error('Sign-in failed');
-              else toast.success('Welcome!');
-              return;
-            }
-          }
-
-          // Fallback: check if session was set
-          const { data } = await supabase.auth.getSession();
-          if (data.session) toast.success('Welcome!');
-          else toast.error('Could not complete sign-in');
-        });
-
-        // Get the OAuth URL but don't redirect - we'll open it ourselves
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: redirectUrl,
-            skipBrowserRedirect: true,
-          },
-        });
-        if (error) throw error;
-
-        if (data?.url) {
-          // Open in external system browser (not in-app WebView)
-          await Browser.open({ url: data.url, presentationStyle: 'popover' });
-        }
-      } else {
-        // Web: standard Lovable Cloud flow
-        const { error } = await lovable.auth.signInWithOAuth("google", {
-          redirect_uri: window.location.origin,
-        });
-        if (error) throw error;
-      }
+      const { error } = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (error) throw error;
     } catch (error: any) {
       toast.error(error.message || 'Google sign-in failed');
     } finally {
