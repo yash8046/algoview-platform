@@ -3,12 +3,7 @@ import type { IChartApi, Time } from 'lightweight-charts';
 import type { DrawingMode, DrawingLine } from './ChartDrawingTools';
 import DrawingToolbar from './DrawingToolbar';
 
-// Pixel-snap: aligns coordinate to device-pixel boundary to prevent sub-pixel blur/flicker.
-// Uses live dpr captured each frame via updateDpr().
-let _dpr = window.devicePixelRatio || 1;
-const updateDpr = () => { _dpr = window.devicePixelRatio || 1; };
-const px = (n: number, lineW: number = 1.5) =>
-  (Math.round(n * _dpr) + ((Math.round(lineW * _dpr) & 1) ? 0.5 : 0)) / _dpr;
+
 
 const FIB_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
 const FIB_EXT_LEVELS = [0, 0.618, 1, 1.382, 1.618, 2, 2.618];
@@ -156,16 +151,15 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     if (d.price == null || !series) return;
     const y = series.priceToCoordinate(d.price);
     if (y === null) return;
-    const lw = d.lineWidth || 1;
     ctx.beginPath();
     ctx.strokeStyle = d.color;
-    ctx.lineWidth = lw;
+    ctx.lineWidth = d.lineWidth || 1;
     ctx.setLineDash([6, 3]);
-    ctx.moveTo(0, px(y, lw)); ctx.lineTo(w, px(y, lw));
+    ctx.moveTo(0, y); ctx.lineTo(w, y);
     ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle = d.color;
     ctx.font = '10px "JetBrains Mono", monospace';
-    ctx.fillText(d.price.toFixed(2), 4, px(y, lw) - 4);
+    ctx.fillText(d.price.toFixed(2), 4, y - 4);
   }, [series]);
 
   const renderVLine = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine, h: number) => {
@@ -184,10 +178,9 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
     const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
-    const lw = d.lineWidth || 1.5;
     ctx.beginPath();
-    ctx.strokeStyle = d.color; ctx.lineWidth = lw;
-    ctx.moveTo(px(p1.x, lw), px(p1.y, lw)); ctx.lineTo(px(p2.x, lw), px(p2.y, lw));
+    ctx.strokeStyle = d.color; ctx.lineWidth = d.lineWidth || 1.5;
+    ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
     ctx.stroke();
     // Anchor points
     const anchorSize = isSelected ? 5 : 3;
@@ -212,11 +205,10 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     const len = Math.sqrt(dx * dx + dy * dy);
     if (len === 0) return;
     const scale = Math.max(w, h) * 3 / len;
-    const lw = d.lineWidth || 1.5;
     ctx.beginPath();
-    ctx.strokeStyle = d.color; ctx.lineWidth = lw;
-    ctx.moveTo(px(p1.x, lw), px(p1.y, lw));
-    ctx.lineTo(px(p1.x + dx * scale, lw), px(p1.y + dy * scale, lw));
+    ctx.strokeStyle = d.color; ctx.lineWidth = d.lineWidth || 1.5;
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p1.x + dx * scale, p1.y + dy * scale);
     ctx.stroke();
     ctx.beginPath(); ctx.arc(p1.x, p1.y, 3, 0, Math.PI * 2);
     ctx.fillStyle = d.color; ctx.fill();
@@ -1079,24 +1071,13 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const rect = canvas.getBoundingClientRect();
-    updateDpr();
-    const dpr = _dpr;
-
-    // Hard-reset canvas every frame: prevents stale transform/path state leaking
-    // across frames (causes stray lines to top-right corner on orientation change)
-    const cw = Math.round(rect.width * dpr);
-    const ch = Math.round(rect.height * dpr);
-    canvas.width = cw;
-    canvas.height = ch;
-    canvas.style.width = `${rect.width}px`;
-    canvas.style.height = `${rect.height}px`;
-
-    // Reset transform fully, clear, then set CSS-pixel coordinate system
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, cw, ch);
+    const dpr = window.devicePixelRatio || 1;
+    if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+    }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+    ctx.clearRect(0, 0, rect.width, rect.height);
 
     for (const d of drawings) {
       if (d.visible === false) continue;
