@@ -51,6 +51,29 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     return { x, y };
   }, [chart, series]);
 
+  // Unclamped: returns pixel even for off-screen times (used in rendering to avoid vanishing)
+  const toPixelUnclamped = useCallback((time: Time, price: number) => {
+    if (!chart || !series) return null;
+    const y = series.priceToCoordinate(price);
+    if (y === null) return null;
+    let x = chart.timeScale().timeToCoordinate(time);
+    if (x === null) {
+      // Extrapolate: find two on-screen points to derive scale
+      const vr = chart.timeScale().getVisibleLogicalRange();
+      if (vr) {
+        const canvas = canvasRef.current;
+        if (!canvas) return null;
+        const w = canvas.getBoundingClientRect().width;
+        const barsPerPx = (vr.to - vr.from) / w;
+        // Approximate: treat time as a logical index
+        const logicalPos = time as unknown as number;
+        x = (logicalPos - vr.from) / barsPerPx;
+      }
+    }
+    if (x === null) return null;
+    return { x, y };
+  }, [chart, series]);
+
   const fromPixel = useCallback((clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
     if (!canvas || !chart || !series) return null;
@@ -60,6 +83,34 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     const time = chart.timeScale().coordinateToTime(x);
     const price = series.coordinateToPrice(y);
     if (time === null || price === null) return null;
+    return { time, price, x, y };
+  }, [chart, series]);
+
+  // Unclamped version: extrapolates when pointer goes outside chart bounds (used during drag)
+  const fromPixelUnclamped = useCallback((clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas || !chart || !series) return null;
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    // Price axis is continuous, always works
+    const price = series.coordinateToPrice(y);
+    if (price === null) return null;
+    // Time axis: try direct, fallback to linear extrapolation
+    let time = chart.timeScale().coordinateToTime(x);
+    if (time === null) {
+      const vr = chart.timeScale().getVisibleLogicalRange();
+      if (vr) {
+        const w = rect.width;
+        const visFrom = vr.from;
+        const visTo = vr.to;
+        const barsPerPx = (visTo - visFrom) / w;
+        const logicalIdx = visFrom + x * barsPerPx;
+        // Use logical index as time approximation (works for uniform time series)
+        time = logicalIdx as unknown as Time;
+      }
+    }
+    if (time === null) return null;
     return { time, price, x, y };
   }, [chart, series]);
 

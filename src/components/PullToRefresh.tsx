@@ -49,7 +49,7 @@ export default function PullToRefresh({ onRefresh, children, className = '' }: P
   const progress = Math.min(pullDistance / THRESHOLD, 1);
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative min-h-0 overflow-hidden ${className}`}>
       {/* Pull indicator */}
       <div
         className="absolute left-0 right-0 flex items-center justify-center z-10 transition-opacity pointer-events-none"
