@@ -16,8 +16,11 @@ export default function AuthPage() {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
+      // Use published URL for Capacitor native builds, otherwise current origin
+      const isNative = typeof (window as any)?.Capacitor !== 'undefined' && (window as any)?.Capacitor?.isNativePlatform?.();
+      const redirectUri = isNative ? 'https://robo-chart-pal.lovable.app' : window.location.origin;
       const { error } = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: redirectUri,
       });
       if (error) throw error;
     } catch (error: any) {
