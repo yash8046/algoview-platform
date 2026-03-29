@@ -76,7 +76,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
 
   const {
     drawingMode, setDrawingMode, drawingModeRef,
-    drawings, addDrawing, removeDrawing, updateDrawing, clearAllDrawings, finishDrawing,
+    drawings, addDrawing, removeDrawing, updateDrawing, commitDragUndo, clearAllDrawings, finishDrawing,
     undo, redo, canUndo, canRedo,
   } = useChartDrawings(selectedSymbol);
 
@@ -382,6 +382,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
               onAddDrawing={addDrawing}
               onRemoveDrawing={removeDrawing}
               onUpdateDrawing={updateDrawing}
+              onCommitDragUndo={commitDragUndo}
               onFinishDrawing={finishDrawing}
               magnetMode={magnetMode}
               candleData={candleDataRef.current}
@@ -691,6 +692,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
                 onAddDrawing={addDrawing}
                 onRemoveDrawing={removeDrawing}
                 onUpdateDrawing={updateDrawing}
+                onCommitDragUndo={commitDragUndo}
                 onFinishDrawing={finishDrawing}
                 magnetMode={magnetMode}
                 candleData={candleDataRef.current}

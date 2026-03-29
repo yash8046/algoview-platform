@@ -85,7 +85,7 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
 
   const {
     drawingMode, setDrawingMode, drawingModeRef,
-    drawings, addDrawing, removeDrawing, updateDrawing, clearAllDrawings, finishDrawing,
+    drawings, addDrawing, removeDrawing, updateDrawing, commitDragUndo, clearAllDrawings, finishDrawing,
     undo, redo, canUndo, canRedo,
   } = useChartDrawings(selectedPair);
 
@@ -362,6 +362,7 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
               onAddDrawing={addDrawing}
               onRemoveDrawing={removeDrawing}
               onUpdateDrawing={updateDrawing}
+              onCommitDragUndo={commitDragUndo}
               onFinishDrawing={finishDrawing}
               magnetMode={magnetMode}
               candleData={formattedCandlesRef.current}
@@ -680,6 +681,7 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
                 onAddDrawing={addDrawing}
                 onRemoveDrawing={removeDrawing}
                 onUpdateDrawing={updateDrawing}
+                onCommitDragUndo={commitDragUndo}
                 onFinishDrawing={finishDrawing}
                 magnetMode={magnetMode}
                 candleData={formattedCandlesRef.current}
