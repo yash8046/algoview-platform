@@ -362,6 +362,7 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
               onAddDrawing={addDrawing}
               onRemoveDrawing={removeDrawing}
               onUpdateDrawing={updateDrawing}
+              onCommitDragUndo={commitDragUndo}
               onFinishDrawing={finishDrawing}
               magnetMode={magnetMode}
               candleData={formattedCandlesRef.current}
