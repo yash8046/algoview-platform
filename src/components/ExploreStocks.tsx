@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useTradingStore } from '@/stores/tradingStore';
 
 interface MarketStock {
   symbol: string;
@@ -10,38 +11,58 @@ interface MarketStock {
   change: number;
 }
 
+// Module-level cache that persists across remounts
+const moversCache: Record<string, { gainers: MarketStock[]; losers: MarketStock[]; ts: number }> = {};
+const CACHE_TTL = 3 * 60_000; // 3 minutes
+
 export default function ExploreStocks() {
   const navigate = useNavigate();
+  const { marketRegion } = useTradingStore();
   const [gainers, setGainers] = useState<MarketStock[]>([]);
   const [losers, setLosers] = useState<MarketStock[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function fetchMovers() {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase.functions.invoke('market-movers', {
-          body: { count: 10 },
-        });
-        if (!cancelled && data) {
-          if (data.gainers?.length) setGainers(data.gainers);
-          if (data.losers?.length) setLosers(data.losers);
-        }
-      } catch (e) {
-        console.warn('Failed to fetch market movers:', e);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+  const fetchMovers = useCallback(async (force = false) => {
+    const cached = moversCache[marketRegion];
+    if (!force && cached && Date.now() - cached.ts < CACHE_TTL) {
+      setGainers(cached.gainers);
+      setLosers(cached.losers);
+      setLoading(false);
+      return;
     }
 
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('market-movers', {
+        body: { count: 10, market: marketRegion },
+      });
+      if (data) {
+        const g = data.gainers?.length ? data.gainers : [];
+        const l = data.losers?.length ? data.losers : [];
+        setGainers(g);
+        setLosers(l);
+        moversCache[marketRegion] = { gainers: g, losers: l, ts: Date.now() };
+      }
+    } catch (e) {
+      console.warn('Failed to fetch market movers:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [marketRegion]);
+
+  useEffect(() => {
     fetchMovers();
-    const interval = setInterval(fetchMovers, 5 * 60_000);
-    return () => { cancelled = true; clearInterval(interval); };
-  }, []);
+    const interval = setInterval(() => fetchMovers(), 5 * 60_000);
+    return () => clearInterval(interval);
+  }, [fetchMovers]);
+
+  // Expose refresh for pull-to-refresh
+  (ExploreStocks as any).__refresh = () => fetchMovers(true);
 
   if (!loading && gainers.length === 0 && losers.length === 0) return null;
+
+  const currencySymbol = marketRegion === 'IN' ? '₹' : '$';
+  const exchangeLabel = marketRegion === 'IN' ? 'NSE' : 'US';
 
   const SkeletonCards = () => (
     <>
@@ -63,7 +84,7 @@ export default function ExploreStocks() {
       <div className="font-mono text-[11px] font-semibold text-foreground truncate">{s.symbol}</div>
       <div className="text-[9px] text-muted-foreground truncate mb-0.5">{s.name}</div>
       <div className="font-mono text-[10px] text-foreground">
-        ₹{s.price.toLocaleString('en-IN', { maximumFractionDigits: 1 })}
+        {currencySymbol}{s.price.toLocaleString(marketRegion === 'IN' ? 'en-IN' : 'en-US', { maximumFractionDigits: 1 })}
       </div>
       <div className={`font-mono text-[10px] font-medium ${s.change >= 0 ? 'text-gain' : 'text-loss'}`}>
         {s.change >= 0 ? '+' : ''}{s.change.toFixed(2)}%
@@ -80,7 +101,7 @@ export default function ExploreStocks() {
             <TrendingUp className="w-3.5 h-3.5 text-gain" />
             <span className="text-[11px] font-bold text-foreground tracking-wide uppercase">Market Movers ↑</span>
           </div>
-          <span className="text-[9px] text-muted-foreground font-mono">Live · NSE</span>
+          <span className="text-[9px] text-muted-foreground font-mono">Live · {exchangeLabel}</span>
         </div>
         <div className="flex gap-2 overflow-x-auto scrollbar-thin p-2.5 pb-2">
           {loading ? <SkeletonCards /> : gainers.map(s => <StockCard key={s.symbol} s={s} />)}
@@ -95,7 +116,7 @@ export default function ExploreStocks() {
               <TrendingDown className="w-3.5 h-3.5 text-loss" />
               <span className="text-[11px] font-bold text-foreground tracking-wide uppercase">Market Movers ↓</span>
             </div>
-            <span className="text-[9px] text-muted-foreground font-mono">Live · NSE</span>
+            <span className="text-[9px] text-muted-foreground font-mono">Live · {exchangeLabel}</span>
           </div>
           <div className="flex gap-2 overflow-x-auto scrollbar-thin p-2.5 pb-2">
             {loading ? <SkeletonCards /> : losers.map(s => <StockCard key={s.symbol} s={s} />)}
