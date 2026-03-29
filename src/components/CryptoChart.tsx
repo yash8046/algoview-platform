@@ -218,6 +218,13 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
     }
   }, [overlayIndicators, chartApi, candles, usdToInr]);
 
+  const initialFitDone = useRef(false);
+
+  // Reset fit flag when pair/interval changes (new chart)
+  useEffect(() => {
+    initialFitDone.current = false;
+  }, [selectedPair, selectedInterval]);
+
   useEffect(() => {
     if (!candleSeriesRef.current || candles.length === 0) return;
 
@@ -235,8 +242,6 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
     volumeSeriesRef.current.setData(volumes);
     formattedCandlesRef.current = formatted;
 
-    // Indicators managed by overlay system, not hardcoded
-
     if (markersRef.current) {
       markersRef.current.detach();
       markersRef.current = null;
@@ -248,7 +253,11 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
       }
     }
 
-    chartApi?.timeScale().fitContent();
+    // Only fitContent on first load, not on every WebSocket tick
+    if (!initialFitDone.current) {
+      chartApi?.timeScale().fitContent();
+      initialFitDone.current = true;
+    }
   }, [candles, usdToInr, showPatterns, chartApi]);
 
   const livePriceINR = livePrice * usdToInr;
