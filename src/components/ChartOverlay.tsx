@@ -1640,6 +1640,11 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     return null;
   })();
 
+  const handlePointerLeave = useCallback(() => {
+    crosshairPos.current = null;
+    scheduleRender();
+  }, [scheduleRender]);
+
   return (
     <div className="relative w-full h-full">
       <canvas
@@ -1648,7 +1653,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        style={{ touchAction: isActive || isDragging.current ? 'none' : 'auto' }}
+        onPointerLeave={handlePointerLeave}
+        style={{ touchAction: isActive || isDraggingState ? 'none' : 'auto' }}
       />
       {/* Floating selection toolbar */}
       {selectedDrawingId && selectedPos && (
