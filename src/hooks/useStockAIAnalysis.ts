@@ -91,7 +91,7 @@ export function useStockAIAnalysis(symbol: string, timeframe: string, marketRegi
     setError(null);
 
     try {
-      const data = await fetchYahooFinanceData(symbol, timeframe);
+      const data = await fetchYahooFinanceData(symbol, timeframe, false, marketRegion);
       if (!data.candles || data.candles.length < 50) {
         setError('Insufficient candle data');
         setLoading(false);
