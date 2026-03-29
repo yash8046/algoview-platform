@@ -1066,16 +1066,20 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const renderImmediate = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || !chart || !series) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: true, desynchronized: true });
     if (!ctx) return;
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
-    if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
-      canvas.width = Math.round(rect.width * dpr);
-      canvas.height = Math.round(rect.height * dpr);
+    const w = Math.round(rect.width * dpr);
+    const h = Math.round(rect.height * dpr);
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, rect.width, rect.height);
+    // Optimize for Android: disable image smoothing for crisp lines at all widths
+    ctx.imageSmoothingEnabled = false;
 
     for (const d of drawings) {
       if (d.visible === false) continue;
@@ -1723,7 +1727,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerLeave}
-        style={{ touchAction: isActive || isDraggingState || hasDrawings ? 'none' : 'auto' }}
+        style={{ touchAction: isActive || isDraggingState || hasDrawings ? 'none' : 'auto', willChange: 'transform' }}
       />
       {/* Floating selection toolbar with color/size */}
       {selectedDrawingId && selectedPos && selectedDrawing && (
