@@ -1434,7 +1434,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
             dragOriginalPoints.current = drawing.points.map(p => ({ ...p }));
             dragPointIndex.current = null;
             for (let i = 0; i < drawing.points.length; i++) {
-              const pp = toPixel(drawing.points[i].time as unknown as Time, drawing.points[i].price);
+              const pp = toPixelUnclamped(drawing.points[i].time as unknown as Time, drawing.points[i].price);
               if (pp && Math.abs(coord.x - pp.x) < 14 && Math.abs(coord.y - pp.y) < 14) {
                 dragPointIndex.current = i;
                 break;
