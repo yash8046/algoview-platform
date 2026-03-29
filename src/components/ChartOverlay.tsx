@@ -1560,12 +1560,32 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
           });
           onUpdateDrawing(selectedDrawingId, { points: newPoints });
         } else {
-          // Whole-object drag: use delta from drag start (stable)
-          const deltaTime = (coord.time as number) - (dragStartCoord.current.time as number);
-          const deltaPrice = coord.price - dragStartCoord.current.price;
-          const newPoints = dragOriginalPoints.current.map(p => ({
-            time: p.time + deltaTime, price: p.price + deltaPrice,
-          }));
+          // Whole-object drag (midpoint): compute each point's new position
+          // by translating its pixel position by the pointer's pixel delta,
+          // then converting back to chart coords. This avoids the time-axis
+          // extrapolation that degenerates at extreme drag distances.
+          const canvas = canvasRef.current;
+          if (!canvas) return;
+          const rect = canvas.getBoundingClientRect();
+          const pointerX = e.clientX - rect.left;
+          const pointerY = e.clientY - rect.top;
+          // Pixel position of drag start
+          const startPx = toPixelUnclamped(dragStartCoord.current.time, dragStartCoord.current.price);
+          if (!startPx) return;
+          const dxPx = pointerX - startPx.x;
+          const dyPx = pointerY - startPx.y;
+
+          const newPoints = dragOriginalPoints.current.map(p => {
+            const origPx = toPixelUnclamped(p.time as unknown as Time, p.price);
+            if (!origPx) return { ...p };
+            // Translate in pixel space
+            const newScreenX = origPx.x + dxPx;
+            const newScreenY = origPx.y + dyPx;
+            // Convert back to chart coordinates using the canvas-relative position
+            const newCoord = fromPixelUnclamped(newScreenX + rect.left, newScreenY + rect.top);
+            if (!newCoord) return { ...p };
+            return { time: newCoord.time as number, price: newCoord.price };
+          });
           onUpdateDrawing(selectedDrawingId, { points: newPoints });
         }
       } else if (drawing.price != null && dragOriginalPrice.current != null) {
