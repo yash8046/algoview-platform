@@ -52,26 +52,24 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   }, [chart, series]);
 
   // Unclamped: returns pixel even for off-screen times (used in rendering to avoid vanishing)
-  const toPixelUnclamped = useCallback((time: Time, price: number) => {
+  const toPixelUnclamped = useCallback((time: Time, price: number): { x: number; y: number } | null => {
     if (!chart || !series) return null;
     const y = series.priceToCoordinate(price);
     if (y === null) return null;
-    let x = chart.timeScale().timeToCoordinate(time);
-    if (x === null) {
-      // Extrapolate: find two on-screen points to derive scale
-      const vr = chart.timeScale().getVisibleLogicalRange();
-      if (vr) {
-        const canvas = canvasRef.current;
-        if (!canvas) return null;
-        const w = canvas.getBoundingClientRect().width;
-        const barsPerPx = (vr.to - vr.from) / w;
-        // Approximate: treat time as a logical index
-        const logicalPos = time as unknown as number;
-        x = (logicalPos - vr.from) / barsPerPx;
-      }
+    const xCoord = chart.timeScale().timeToCoordinate(time);
+    if (xCoord !== null) return { x: xCoord as number, y: y as number };
+    // Extrapolate x for off-screen times
+    const vr = chart.timeScale().getVisibleLogicalRange();
+    if (vr) {
+      const canvas = canvasRef.current;
+      if (!canvas) return null;
+      const w = canvas.getBoundingClientRect().width;
+      const barsPerPx = (vr.to - vr.from) / w;
+      const logicalPos = time as unknown as number;
+      const xApprox = (logicalPos - vr.from) / barsPerPx;
+      return { x: xApprox, y: y as number };
     }
-    if (x === null) return null;
-    return { x, y };
+    return null;
   }, [chart, series]);
 
   const fromPixel = useCallback((clientX: number, clientY: number) => {
