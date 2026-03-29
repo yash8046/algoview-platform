@@ -348,11 +348,11 @@ export default function AISignals() {
                   <>
                     <div className="flex justify-between text-[10px]">
                       <span className="text-muted-foreground">Support Level</span>
-                      <span className="font-mono text-loss">₹{result.riskMetrics.suggestedStopLoss.toFixed(2)}</span>
+                      <span className="font-mono text-loss">{currencySymbol}{result.riskMetrics.suggestedStopLoss.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-[10px]">
                       <span className="text-muted-foreground">Resistance Level</span>
-                      <span className="font-mono text-gain">₹{result.riskMetrics.suggestedTakeProfit.toFixed(2)}</span>
+                      <span className="font-mono text-gain">{currencySymbol}{result.riskMetrics.suggestedTakeProfit.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-[10px]">
                       <span className="text-muted-foreground">Risk:Reward</span>

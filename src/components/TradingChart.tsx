@@ -292,7 +292,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
         <div style={fullscreenToolbarInsetStyle} className="flex shrink-0 items-center justify-between px-1.5 py-0.5 bg-panel-header border-b border-border gap-1">
           <div className="flex items-center gap-1.5 min-w-0">
             <h2 className="font-mono text-[9px] font-semibold text-foreground truncate max-w-[80px]">
-              {selectedSymbol === 'NIFTY 50' ? 'NIFTY 50' : `${selectedSymbol}.NS`}
+              {selectedSymbol === 'NIFTY 50' ? 'NIFTY 50' : marketRegion === 'US' ? selectedSymbol : `${selectedSymbol}.NS`}
             </h2>
             {loading && <span className="text-[8px] text-primary animate-pulse">...</span>}
           </div>
@@ -524,7 +524,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             {!toolbarBottom && (
               <h2 className="font-mono text-xs sm:text-sm font-semibold text-foreground truncate">
-                {selectedSymbol === 'NIFTY 50' ? 'NIFTY 50' : `${selectedSymbol}.NS`}
+                {selectedSymbol === 'NIFTY 50' ? 'NIFTY 50' : marketRegion === 'US' ? selectedSymbol : `${selectedSymbol}.NS`}
               </h2>
             )}
             {loading && <span className="text-[10px] text-primary animate-pulse">Loading...</span>}
