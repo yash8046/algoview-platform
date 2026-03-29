@@ -5,6 +5,7 @@ import { useStockAIAnalysis } from '@/hooks/useStockAIAnalysis';
 import { useRewardedAd } from '@/hooks/useRewardedAd';
 import { timeAgo } from '@/lib/cacheUtils';
 import type { SentimentData } from '@/hooks/useAIAnalysis';
+import ConfidenceGauge from '@/components/ConfidenceGauge';
 
 const signalConfig = {
   strong_buy: { icon: TrendingUp, color: 'text-gain', bg: 'bg-gain/15', border: 'border-gain/30', label: 'STRONG BULLISH' },
@@ -214,6 +215,9 @@ export default function AISignals() {
 
         {result && (
           <div className="space-y-3">
+            {/* Confidence Speedometer - on top */}
+            <ConfidenceGauge value={result.confidence} label="Model Confidence" size={110} />
+
             {/* AI Insight label */}
             <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground">
               <Info className="w-3 h-3" />
@@ -330,8 +334,7 @@ export default function AISignals() {
               )}
             </div>
 
-            {/* Confidence */}
-            <ConfidenceBar value={result.confidence} label="Model Confidence" />
+            {/* Confidence removed - speedometer shown at top */}
 
             {/* Regime & Risk */}
             {result.regime && (
