@@ -15,11 +15,12 @@ interface ChartOverlayProps {
   onAddDrawing: (drawing: DrawingLine) => void;
   onFinishDrawing: () => void;
   onRemoveDrawing?: (id: string) => void;
+  onUpdateDrawing?: (id: string, updates: Partial<DrawingLine>) => void;
   magnetMode?: boolean;
   candleData?: { time: any; open: number; high: number; low: number; close: number }[];
 }
 
-export default function ChartOverlay({ chart, series, drawingMode, drawingModeRef, drawings, onAddDrawing, onFinishDrawing, onRemoveDrawing, magnetMode = false, candleData = [] }: ChartOverlayProps) {
+export default function ChartOverlay({ chart, series, drawingMode, drawingModeRef, drawings, onAddDrawing, onFinishDrawing, onRemoveDrawing, onUpdateDrawing, magnetMode = false, candleData = [] }: ChartOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawing = useRef(false);
   const startCoord = useRef<{ time: Time; price: number } | null>(null);
@@ -28,6 +29,11 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const laserPixels = useRef<{ x: number; y: number; t: number }[]>([]);
   const laserRaf = useRef<number>(0);
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null);
+  const isDragging = useRef(false);
+  const dragPointIndex = useRef<number | null>(null);
+  const dragStartCoord = useRef<{ time: Time; price: number } | null>(null);
+  const dragOriginalPoints = useRef<{ time: number; price: number }[] | null>(null);
+  const dragOriginalPrice = useRef<number | null>(null);
 
   const toPixel = useCallback((time: Time, price: number) => {
     if (!chart || !series) return null;
@@ -1411,8 +1417,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         const cp = currentPixel.current;
         const mode = drawingModeRef.current;
         ctx.globalAlpha = 0.6;
-        const lineModes: DrawingMode[] = ['trendline', 'ray', 'extended_line', 'arrow_line', 'info_line', 'trend_angle', 'h_segment'];
-        const rectModes: DrawingMode[] = ['rectangle', 'rotated_rectangle', 'parallel_channel', 'disjoint_channel', 'pitchfork', 'fib_channel', 'regression_channel', 'flat_channel', 'schiff_pitchfork', 'inside_pitchfork', 'bars_pattern'];
+        const lineModes: DrawingMode[] = ['trendline', 'ray', 'extended_line', 'arrow_line', 'info_line', 'trend_angle', 'h_segment', 'gann_fan'];
+        const rectModes: DrawingMode[] = ['rectangle', 'rotated_rectangle', 'parallel_channel', 'disjoint_channel', 'pitchfork', 'fib_channel', 'regression_channel', 'flat_channel', 'schiff_pitchfork', 'inside_pitchfork', 'bars_pattern', 'gann_box', 'gann_square'];
         const fibModes: DrawingMode[] = ['fib_retracement', 'fib_extension', 'fib_trend_based', 'fib_fan', 'fib_speed_resistance', 'fib_wedge'];
 
         if (lineModes.includes(mode)) {
@@ -1590,11 +1596,37 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     const mode = drawingModeRef.current;
     if (mode === 'none') {
-      // Selection mode: tap near a drawing to select it
+      // Selection mode: tap near a drawing to select/drag it
       const coord = fromPixel(e.clientX, e.clientY);
       if (!coord) { setSelectedDrawingId(null); return; }
       const id = findNearestDrawing(coord.x, coord.y);
       setSelectedDrawingId(id);
+      
+      // Start drag if we found a drawing and have update capability
+      if (id && onUpdateDrawing) {
+        const drawing = drawings.find(d => d.id === id);
+        if (drawing && !drawing.locked) {
+          isDragging.current = true;
+          dragStartCoord.current = { time: coord.time, price: coord.price };
+          
+          // Check if near a specific endpoint (for endpoint dragging)
+          if (drawing.points) {
+            dragOriginalPoints.current = drawing.points.map(p => ({ ...p }));
+            for (let i = 0; i < drawing.points.length; i++) {
+              const pp = toPixel(drawing.points[i].time as unknown as Time, drawing.points[i].price);
+              if (pp && Math.abs(coord.x - pp.x) < 12 && Math.abs(coord.y - pp.y) < 12) {
+                dragPointIndex.current = i;
+                break;
+              }
+            }
+          }
+          if (drawing.price != null) {
+            dragOriginalPrice.current = drawing.price;
+          }
+          (e.target as HTMLElement)?.setPointerCapture?.(e.pointerId);
+        }
+      }
+      
       render();
       return;
     }
