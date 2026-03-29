@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import type { IChartApi, Time } from 'lightweight-charts';
 import type { DrawingMode, DrawingLine } from './ChartDrawingTools';
+import DrawingToolbar from './DrawingToolbar';
 
 const FIB_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
 const FIB_EXT_LEVELS = [0, 0.618, 1, 1.382, 1.618, 2, 2.618];
@@ -1501,7 +1502,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
               ? { time: p.time + deltaTime, price: p.price + deltaPrice }
               : { ...p }
           );
-          onUpdateDrawing(selectedDrawingId, { points: newPoints });
+      onUpdateDrawing(selectedDrawingId, { points: newPoints });
         } else {
           const newPoints = dragOriginalPoints.current.map(p => ({
             time: p.time + deltaTime, price: p.price + deltaPrice,
@@ -1511,7 +1512,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       } else if (drawing.price != null && dragOriginalPrice.current != null) {
         onUpdateDrawing(selectedDrawingId, { price: dragOriginalPrice.current + deltaPrice });
       }
-      scheduleRender();
+      // Use immediate render during drag to prevent flickering
+      renderImmediate();
       return;
     }
 
@@ -1599,8 +1601,9 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
     const snapped = snapToOHLC(coord.time, coord.price);
     const color = defaultColors[mode] || '#ffffff';
+    const newId = `${mode}_${Date.now()}`;
     onAddDrawing({
-      id: `${mode}_${Date.now()}`, type: mode as any,
+      id: newId, type: mode as any,
       points: [
         { time: startCoord.current.time as number, price: startCoord.current.price },
         { time: snapped.time as number, price: snapped.price },
@@ -1609,7 +1612,9 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     });
     startCoord.current = null;
     currentPixel.current = null;
-    onFinishDrawing(); scheduleRender();
+    // Auto-select the just-drawn tool for immediate resize/reposition
+    setSelectedDrawingId(newId);
+    onFinishDrawing(); renderImmediate();
   }, [fromPixel, onAddDrawing, onFinishDrawing, scheduleRender, drawingModeRef, snapToOHLC, onCommitDragUndo]);
 
   // Subscribe to chart visible range changes
@@ -1665,39 +1670,18 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         onPointerLeave={handlePointerLeave}
         style={{ touchAction: isActive || isDraggingState || hasDrawings ? 'none' : 'auto' }}
       />
-      {/* Floating selection toolbar */}
-      {selectedDrawingId && selectedPos && (
-        <div
-          className="absolute z-50 flex items-center gap-1 bg-card border border-border rounded-lg shadow-lg px-2 py-1"
-          style={{ left: Math.max(4, selectedPos.x - 60), top: Math.max(4, selectedPos.y - 44) }}
-        >
-          <button
-            onClick={() => {
-              if (onRemoveDrawing) onRemoveDrawing(selectedDrawingId);
-              setSelectedDrawingId(null);
-            }}
-            className="px-2 py-1 text-[10px] font-mono text-loss hover:bg-loss/10 rounded active:scale-95"
-          >
-            Delete
-          </button>
-          <button
-            onClick={() => {
-              if (selectedDrawing) {
-                onAddDrawing({ ...selectedDrawing, id: `${selectedDrawing.type}_clone_${Date.now()}` });
-              }
-              setSelectedDrawingId(null);
-            }}
-            className="px-2 py-1 text-[10px] font-mono text-muted-foreground hover:bg-accent rounded active:scale-95"
-          >
-            Clone
-          </button>
-          <button
-            onClick={() => setSelectedDrawingId(null)}
-            className="px-1 py-1 text-[10px] font-mono text-muted-foreground hover:bg-accent rounded active:scale-95"
-          >
-            ✕
-          </button>
-        </div>
+      {/* Floating selection toolbar with color/size */}
+      {selectedDrawingId && selectedPos && selectedDrawing && (
+        <DrawingToolbar
+          color={selectedDrawing.color}
+          lineWidth={selectedDrawing.lineWidth || 1.5}
+          onColorChange={(c) => { if (onUpdateDrawing) onUpdateDrawing(selectedDrawingId, { color: c }); }}
+          onLineWidthChange={(w) => { if (onUpdateDrawing) onUpdateDrawing(selectedDrawingId, { lineWidth: w }); }}
+          onDelete={() => { if (onRemoveDrawing) onRemoveDrawing(selectedDrawingId); setSelectedDrawingId(null); }}
+          onClone={() => { if (selectedDrawing) onAddDrawing({ ...selectedDrawing, id: `${selectedDrawing.type}_clone_${Date.now()}` }); setSelectedDrawingId(null); }}
+          onClose={() => setSelectedDrawingId(null)}
+          style={{ left: Math.max(4, selectedPos.x - 80), top: Math.max(4, selectedPos.y - 48) }}
+        />
       )}
     </div>
   );
