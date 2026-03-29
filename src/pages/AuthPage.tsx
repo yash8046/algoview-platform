@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
-import { Capacitor } from '@capacitor/core';
 import { Zap, Mail, Lock, User, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
