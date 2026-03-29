@@ -32,7 +32,7 @@ function StatusBarGuard() {
 
 const App = () => {
   useEffect(() => {
-    document.title = "AlgoInsight — AI Market Analysis";
+    document.title = "AlgoInsight v1.1 — AI Market Analysis";
   }, []);
 
   return (
