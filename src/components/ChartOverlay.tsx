@@ -1418,8 +1418,9 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     if (singleClickModes.includes(mode)) {
       const color = defaultColors[mode] || '#ffffff';
       const snapped = snapToOHLC(coord.time, coord.price);
+      const newId = `${mode}_${Date.now()}`;
       if (mode === 'hline') {
-        onAddDrawing({ id: `${mode}_${Date.now()}`, type: mode, price: snapped.price, color });
+        onAddDrawing({ id: newId, type: mode, price: snapped.price, color });
       } else {
         const textModes: DrawingMode[] = ['text', 'anchored_text', 'note_box', 'callout'];
         let text: string | undefined;
@@ -1427,12 +1428,13 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
           text = prompt('Enter text:') || 'Note';
         }
         onAddDrawing({
-          id: `${mode}_${Date.now()}`, type: mode,
+          id: newId, type: mode,
           points: [{ time: snapped.time as number, price: snapped.price }],
           color, text,
         });
       }
-      onFinishDrawing(); scheduleRender();
+      setSelectedDrawingId(newId);
+      onFinishDrawing(); renderImmediate();
       return;
     }
 
