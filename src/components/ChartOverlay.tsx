@@ -3,6 +3,14 @@ import type { IChartApi, Time } from 'lightweight-charts';
 import type { DrawingMode, DrawingLine } from './ChartDrawingTools';
 import DrawingToolbar from './DrawingToolbar';
 
+// Pixel-alignment helpers: snap line widths and coordinates to device-pixel grid
+// This prevents sub-pixel anti-aliasing that causes flickering/invisibility on Android
+const strokePx = (w: number, dpr: number = window.devicePixelRatio || 1) => Math.round(w * dpr) / dpr;
+const alignPx = (n: number, w: number, dpr: number = window.devicePixelRatio || 1) => {
+  const px = strokePx(w, dpr) * dpr;
+  return (Math.round(n * dpr) + (px % 2 ? 0.5 : 0)) / dpr;
+};
+
 const FIB_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
 const FIB_EXT_LEVELS = [0, 0.618, 1, 1.382, 1.618, 2, 2.618];
 const FIB_COLORS = ['#ef4444', '#f59e0b', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6'];
@@ -1076,6 +1084,19 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, rect.width, rect.height);
+
+    // Patch ctx for pixel-crisp lines on all DPR screens (fixes flickering on Android for all line widths)
+    const origMoveTo = ctx.moveTo.bind(ctx);
+    const origLineTo = ctx.lineTo.bind(ctx);
+    let _crispLW = 1.5;
+    const lwDesc = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, 'lineWidth')!;
+    Object.defineProperty(ctx, 'lineWidth', {
+      configurable: true,
+      get: () => _crispLW,
+      set: (v: number) => { _crispLW = v; lwDesc.set!.call(ctx, strokePx(v, dpr)); },
+    });
+    ctx.moveTo = (x: number, y: number) => origMoveTo(alignPx(x, _crispLW, dpr), alignPx(y, _crispLW, dpr));
+    ctx.lineTo = (x: number, y: number) => origLineTo(alignPx(x, _crispLW, dpr), alignPx(y, _crispLW, dpr));
 
     for (const d of drawings) {
       if (d.visible === false) continue;
