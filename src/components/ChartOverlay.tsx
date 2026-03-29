@@ -1762,6 +1762,15 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     const mode = drawingModeRef.current;
+    // Finish drag
+    if (isDragging.current) {
+      isDragging.current = false;
+      dragPointIndex.current = null;
+      dragStartCoord.current = null;
+      dragOriginalPoints.current = null;
+      dragOriginalPrice.current = null;
+      return;
+    }
     if (mode === 'eraser') return;
     if (mode === 'laser') {
       isDrawing.current = false;
