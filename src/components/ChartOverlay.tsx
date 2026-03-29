@@ -211,14 +211,15 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     const len = Math.sqrt(dx * dx + dy * dy);
     if (len === 0) return;
     const scale = Math.max(w, h) * 3 / len;
+    const lw = d.lineWidth || 1.5;
     ctx.beginPath();
-    ctx.strokeStyle = d.color; ctx.lineWidth = d.lineWidth || 1.5;
-    ctx.moveTo(p1.x, p1.y);
-    ctx.lineTo(p1.x + dx * scale, p1.y + dy * scale);
+    ctx.strokeStyle = d.color; ctx.lineWidth = lw;
+    ctx.moveTo(px(p1.x, lw), px(p1.y, lw));
+    ctx.lineTo(px(p1.x + dx * scale, lw), px(p1.y + dy * scale, lw));
     ctx.stroke();
     ctx.beginPath(); ctx.arc(p1.x, p1.y, 3, 0, Math.PI * 2);
     ctx.fillStyle = d.color; ctx.fill();
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderExtendedLine = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine, w: number, h: number) => {
     if (!d.points || d.points.length < 2) return;
