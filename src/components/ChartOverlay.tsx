@@ -960,6 +960,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   // === DRAW ANCHOR POINTS for selected drawing ===
   const drawAnchors = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points) return;
+    // Draw individual point anchors
     for (const pt of d.points) {
       const p = toPixel(pt.time as unknown as Time, pt.price);
       if (!p) continue;
@@ -974,6 +975,22 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
       ctx.fillStyle = d.color;
       ctx.fill();
+    }
+    // Draw midpoint anchor (for dragging whole object)
+    if (d.points.length >= 2) {
+      const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+      const p2 = toPixel(d.points[d.points.length - 1].time as unknown as Time, d.points[d.points.length - 1].price);
+      if (p1 && p2) {
+        const mx = (p1.x + p2.x) / 2;
+        const my = (p1.y + p2.y) / 2;
+        ctx.beginPath();
+        ctx.arc(mx, my, 5, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.fill();
+        ctx.strokeStyle = d.color;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
     }
     // For hline, show a price anchor
     if (d.price != null && series) {
@@ -1087,6 +1104,35 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
           ctx.stroke(); ctx.setLineDash([]);
         }
       }
+    }
+
+    // === CROSSHAIR ===
+    if (crosshairPos.current && (isDrawing.current || drawingModeRef.current !== 'none')) {
+      const cx = crosshairPos.current.x;
+      const cy = crosshairPos.current.y;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(38, 198, 218, 0.5)';
+      ctx.lineWidth = 0.8;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(cx, 0); ctx.lineTo(cx, rect.height);
+      ctx.moveTo(0, cy); ctx.lineTo(rect.width, cy);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Crosshair price/time labels
+      if (series) {
+        const price = series.coordinateToPrice(cy);
+        if (price !== null) {
+          const text = price.toFixed(2);
+          const tw = ctx.measureText(text).width + 8;
+          ctx.fillStyle = 'rgba(38, 198, 218, 0.85)';
+          ctx.fillRect(rect.width - tw - 2, cy - 9, tw, 18);
+          ctx.fillStyle = '#0a0f1a';
+          ctx.font = '9px "JetBrains Mono", monospace';
+          ctx.fillText(text, rect.width - tw + 2, cy + 3);
+        }
+      }
+      ctx.restore();
     }
 
     // Drawing preview (in-progress)
