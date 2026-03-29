@@ -30,6 +30,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const laserPixels = useRef<{ x: number; y: number; t: number }[]>([]);
   const laserRaf = useRef<number>(0);
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null);
+  const [isDraggingState, setIsDraggingState] = useState(false);
   const isDragging = useRef(false);
   const dragPointIndex = useRef<number | null>(null);
   const dragStartCoord = useRef<{ time: Time; price: number } | null>(null);
@@ -38,6 +39,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const dragSnapshotRef = useRef<DrawingLine[] | null>(null);
   const renderRafRef = useRef<number>(0);
   const renderScheduled = useRef(false);
+  const crosshairPos = useRef<{ x: number; y: number } | null>(null);
+  const lastMoveTime = useRef(0);
 
   const toPixel = useCallback((time: Time, price: number) => {
     if (!chart || !series) return null;
@@ -957,6 +960,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   // === DRAW ANCHOR POINTS for selected drawing ===
   const drawAnchors = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points) return;
+    // Draw individual point anchors
     for (const pt of d.points) {
       const p = toPixel(pt.time as unknown as Time, pt.price);
       if (!p) continue;
@@ -971,6 +975,22 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
       ctx.fillStyle = d.color;
       ctx.fill();
+    }
+    // Draw midpoint anchor (for dragging whole object)
+    if (d.points.length >= 2) {
+      const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+      const p2 = toPixel(d.points[d.points.length - 1].time as unknown as Time, d.points[d.points.length - 1].price);
+      if (p1 && p2) {
+        const mx = (p1.x + p2.x) / 2;
+        const my = (p1.y + p2.y) / 2;
+        ctx.beginPath();
+        ctx.arc(mx, my, 5, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.fill();
+        ctx.strokeStyle = d.color;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
     }
     // For hline, show a price anchor
     if (d.price != null && series) {
@@ -1084,6 +1104,35 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
           ctx.stroke(); ctx.setLineDash([]);
         }
       }
+    }
+
+    // === CROSSHAIR ===
+    if (crosshairPos.current && (isDrawing.current || drawingModeRef.current !== 'none')) {
+      const cx = crosshairPos.current.x;
+      const cy = crosshairPos.current.y;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(38, 198, 218, 0.5)';
+      ctx.lineWidth = 0.8;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(cx, 0); ctx.lineTo(cx, rect.height);
+      ctx.moveTo(0, cy); ctx.lineTo(rect.width, cy);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Crosshair price/time labels
+      if (series) {
+        const price = series.coordinateToPrice(cy);
+        if (price !== null) {
+          const text = price.toFixed(2);
+          const tw = ctx.measureText(text).width + 8;
+          ctx.fillStyle = 'rgba(38, 198, 218, 0.85)';
+          ctx.fillRect(rect.width - tw - 2, cy - 9, tw, 18);
+          ctx.fillStyle = '#0a0f1a';
+          ctx.font = '9px "JetBrains Mono", monospace';
+          ctx.fillText(text, rect.width - tw + 2, cy + 3);
+        }
+      }
+      ctx.restore();
     }
 
     // Drawing preview (in-progress)
@@ -1314,6 +1363,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         const drawing = drawings.find(d => d.id === id);
         if (drawing && !drawing.locked) {
           isDragging.current = true;
+          setIsDraggingState(true);
           dragStartCoord.current = { time: coord.time, price: coord.price };
           dragSnapshotRef.current = drawings.map(d => ({ ...d, points: d.points?.map(p => ({ ...p })) }));
 
@@ -1418,6 +1468,18 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     const mode = drawingModeRef.current;
+    // Throttle move events to ~60fps
+    const now = performance.now();
+    if (now - lastMoveTime.current < 16) return;
+    lastMoveTime.current = now;
+
+    // Update crosshair position
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const rect = canvas.getBoundingClientRect();
+      crosshairPos.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+
     // Handle drag in selection mode
     if (mode === 'none' && isDragging.current && selectedDrawingId && onUpdateDrawing) {
       const coord = fromPixel(e.clientX, e.clientY);
@@ -1449,8 +1511,11 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       return;
     }
 
-    if (mode === 'none' || mode === 'eraser' || !isDrawing.current) return;
-    const canvas = canvasRef.current;
+    if (mode === 'none' || mode === 'eraser' || !isDrawing.current) {
+      // Still schedule render for crosshair update
+      if (mode !== 'none') scheduleRender();
+      return;
+    }
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left; const y = e.clientY - rect.top;
@@ -1487,6 +1552,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     // Finish drag - commit undo snapshot
     if (isDragging.current) {
       isDragging.current = false;
+      setIsDraggingState(false);
       if (dragSnapshotRef.current && onCommitDragUndo) {
         onCommitDragUndo(dragSnapshotRef.current);
       }
@@ -1550,7 +1616,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     return () => { chart.timeScale().unsubscribeVisibleLogicalRangeChange(handler); };
   }, [chart, scheduleRender]);
 
-  useEffect(() => { scheduleRender(); }, [drawings, scheduleRender]);
+  // Force immediate render when drawings change (fixes "drawing only appears after next interaction")
+  useEffect(() => { renderImmediate(); }, [drawings, renderImmediate]);
   useEffect(() => () => {
     cancelAnimationFrame(laserRaf.current);
     cancelAnimationFrame(renderRafRef.current);
@@ -1574,6 +1641,11 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     return null;
   })();
 
+  const handlePointerLeave = useCallback(() => {
+    crosshairPos.current = null;
+    scheduleRender();
+  }, [scheduleRender]);
+
   return (
     <div className="relative w-full h-full">
       <canvas
@@ -1582,7 +1654,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        style={{ touchAction: isActive || isDragging.current ? 'none' : 'auto' }}
+        onPointerLeave={handlePointerLeave}
+        style={{ touchAction: isActive || isDraggingState ? 'none' : 'auto' }}
       />
       {/* Floating selection toolbar */}
       {selectedDrawingId && selectedPos && (
