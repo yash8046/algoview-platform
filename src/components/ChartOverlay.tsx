@@ -1357,6 +1357,9 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         return;
       }
 
+      // Prevent browser from intercepting this touch for scrolling/panning
+      e.preventDefault();
+      e.stopPropagation();
       setSelectedDrawingId(id);
 
       // Start drag if we found a drawing
