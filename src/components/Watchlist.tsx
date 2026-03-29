@@ -123,7 +123,7 @@ export default function Watchlist() {
 
   // Convert US stock prices to INR for display
   const displayPrice = (item: { price: number; yahooSymbol?: string }) => {
-    const isUS = !(item.yahooSymbol?.endsWith('.NS') || item.yahooSymbol?.endsWith('.BO'));
+    const isUS = !isIndianSymbol(item.yahooSymbol);
     const price = isUS ? item.price * usdToInr : item.price;
     return '₹' + price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
