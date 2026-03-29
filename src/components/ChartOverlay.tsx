@@ -196,8 +196,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderRay = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine, w: number, h: number) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const dx = p2.x - p1.x; const dy = p2.y - p1.y;
     const len = Math.sqrt(dx * dx + dy * dy);
@@ -214,8 +214,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderExtendedLine = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine, w: number, h: number) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const dx = p2.x - p1.x; const dy = p2.y - p1.y;
     const len = Math.sqrt(dx * dx + dy * dy);
@@ -230,8 +230,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderArrowLine = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     ctx.beginPath();
     ctx.strokeStyle = d.color; ctx.lineWidth = d.lineWidth || 1.5;
@@ -278,8 +278,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderInfoLine = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     ctx.beginPath();
     ctx.strokeStyle = d.color; ctx.lineWidth = 1.5;
@@ -296,8 +296,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderFib = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2 || !series) return;
-    const fp1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const fp2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const fp1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const fp2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!fp1 || !fp2) return;
     const levels = d.type === 'fib_extension' ? FIB_EXT_LEVELS : FIB_LEVELS;
     const priceDiff = d.points[1].price - d.points[0].price;
@@ -315,12 +315,12 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       ctx.font = '9px "JetBrains Mono", monospace';
       ctx.fillText(`${(level * 100).toFixed(1)}% ${price.toFixed(2)}`, minX + 4, y - 3);
     });
-  }, [series, toPixel]);
+  }, [series, toPixelUnclamped]);
 
   const renderFibFan = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine, w: number) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const fanLevels = [0.236, 0.382, 0.5, 0.618, 0.786];
     fanLevels.forEach((level, idx) => {
@@ -340,8 +340,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderFibArc = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const dist = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
     const arcLevels = [0.236, 0.382, 0.5, 0.618, 0.786];
@@ -374,8 +374,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderFibChannel = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const channelHeight = Math.abs(p2.y - p1.y);
     const levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
@@ -391,8 +391,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderRectangle = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const rx = Math.min(p1.x, p2.x); const ry = Math.min(p1.y, p2.y);
     const rw = Math.abs(p2.x - p1.x); const rh = Math.abs(p2.y - p1.y);
@@ -404,8 +404,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderCircle = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const r = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
     ctx.globalAlpha = d.opacity || 0.1; ctx.fillStyle = d.color;
@@ -416,8 +416,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderEllipse = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const cx = (p1.x + p2.x) / 2; const cy = (p1.y + p2.y) / 2;
     const rx = Math.abs(p2.x - p1.x) / 2; const ry = Math.abs(p2.y - p1.y) / 2;
@@ -429,8 +429,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderTriangle = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const topX = (p1.x + p2.x) / 2;
     const topY = Math.min(p1.y, p2.y); const botY = Math.max(p1.y, p2.y);
@@ -444,8 +444,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderParallelChannel = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const channelWidth = Math.abs(p2.y - p1.y) * 0.5;
     const dy = p2.y - p1.y;
@@ -466,8 +466,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderPitchfork = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine, w: number) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const midY = (p1.y + p2.y) / 2;
     ctx.beginPath(); ctx.strokeStyle = d.color; ctx.lineWidth = 1.5;
@@ -482,7 +482,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     if (!d.points || d.points.length < 2) return;
     ctx.beginPath(); ctx.strokeStyle = d.color; ctx.lineWidth = d.lineWidth || 1.5;
     d.points.forEach((p, i) => {
-      const px = toPixel(p.time as unknown as Time, p.price);
+      const px = toPixelUnclamped(p.time as unknown as Time, p.price);
       if (!px) return;
       if (i === 0) ctx.moveTo(px.x, px.y); else ctx.lineTo(px.x, px.y);
     });
@@ -494,7 +494,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.beginPath(); ctx.strokeStyle = d.color; ctx.lineWidth = d.lineWidth || 3;
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     d.points.forEach((p, i) => {
-      const px = toPixel(p.time as unknown as Time, p.price);
+      const px = toPixelUnclamped(p.time as unknown as Time, p.price);
       if (!px) return;
       if (i === 0) ctx.moveTo(px.x, px.y); else ctx.lineTo(px.x, px.y);
     });
@@ -508,7 +508,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.lineWidth = d.lineWidth || 12; ctx.globalAlpha = 0.25;
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     d.points.forEach((p, i) => {
-      const px = toPixel(p.time as unknown as Time, p.price);
+      const px = toPixelUnclamped(p.time as unknown as Time, p.price);
       if (!px) return;
       if (i === 0) ctx.moveTo(px.x, px.y); else ctx.lineTo(px.x, px.y);
     });
@@ -517,7 +517,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderText = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points?.[0]) return;
-    const p = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
     if (!p) return;
     ctx.fillStyle = d.color;
     ctx.font = '12px "JetBrains Mono", monospace';
@@ -526,7 +526,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderCallout = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points?.[0]) return;
-    const p = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
     if (!p) return;
     const text = d.text || 'Note';
     const w = ctx.measureText(text).width + 16; const h = 24;
@@ -541,7 +541,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderArrowMarker = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points?.[0]) return;
-    const p = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
     if (!p) return;
     const isUp = d.type === 'arrow_marker_up';
     ctx.fillStyle = isUp ? '#22c55e' : '#ef4444';
@@ -582,8 +582,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderPriceRange = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const midX = (p1.x + p2.x) / 2;
     ctx.beginPath(); ctx.strokeStyle = d.color; ctx.lineWidth = 1.5;
@@ -623,8 +623,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderLongShort = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const isLong = d.type === 'long_position';
     const entry = d.points[0].price; const target = d.points[1].price;
@@ -657,8 +657,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderHSegment = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const y = p1.y;
     ctx.beginPath(); ctx.strokeStyle = d.color; ctx.lineWidth = d.lineWidth || 1.5;
@@ -672,8 +672,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderTrendAngle = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     ctx.beginPath(); ctx.strokeStyle = d.color; ctx.lineWidth = 1.5;
     ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
@@ -690,7 +690,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderArrowMarkerStandalone = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points?.[0]) return;
-    const p = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
     if (!p) return;
     ctx.fillStyle = d.color;
     ctx.beginPath();
@@ -703,8 +703,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderRegressionChannel = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const dy = p2.y - p1.y; const dx = p2.x - p1.x;
     ctx.beginPath(); ctx.strokeStyle = d.color; ctx.lineWidth = 1.5;
@@ -725,8 +725,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderFlatChannel = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const minX = Math.min(p1.x, p2.x); const maxX = Math.max(p1.x, p2.x);
     ctx.beginPath(); ctx.strokeStyle = d.color; ctx.lineWidth = 1.5;
@@ -743,8 +743,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderSchiffPitchfork = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine, w: number) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const startX = (p1.x + p2.x) / 2; const startY = (p1.y + p2.y) / 2;
     ctx.beginPath(); ctx.strokeStyle = d.color; ctx.lineWidth = 1.5;
@@ -757,8 +757,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderFibSpeedResistance = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const levels = [0.236, 0.382, 0.5, 0.618, 0.786];
     levels.forEach((level, idx) => {
@@ -774,8 +774,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderFibSpiral = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const baseR = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
     const phi = 1.618;
@@ -790,8 +790,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderFibWedge = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const levels = [0.236, 0.382, 0.5, 0.618, 0.786];
     const dy = p2.y - p1.y;
@@ -806,8 +806,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderRotatedRectangle = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const cx = (p1.x + p2.x) / 2; const cy = (p1.y + p2.y) / 2;
     const w = Math.abs(p2.x - p1.x); const h = Math.abs(p2.y - p1.y);
@@ -822,8 +822,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderBezierCurve = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const cpX = (p1.x + p2.x) / 2;
     const cpY = Math.min(p1.y, p2.y) - Math.abs(p2.y - p1.y) * 0.5;
@@ -838,7 +838,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderAnchoredText = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points?.[0]) return;
-    const p = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
     if (!p) return;
     const text = d.text || 'Anchored';
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -851,7 +851,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderNoteBox = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points?.[0]) return;
-    const p = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
+    const p = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
     if (!p) return;
     const text = d.text || 'Note';
     const lines = text.split('\n');
@@ -870,8 +870,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderBarsPattern = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     ctx.globalAlpha = 0.08; ctx.fillStyle = d.color;
     ctx.fillRect(Math.min(p1.x, p2.x), Math.min(p1.y, p2.y), Math.abs(p2.x - p1.x), Math.abs(p2.y - p1.y));
@@ -899,8 +899,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     const entryY = series.priceToCoordinate(entry);
     const targetY = series.priceToCoordinate(target);
     const slY = series.priceToCoordinate(stopLoss);
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2 || entryY === null || targetY === null || slY === null) return;
     const left = Math.min(p1.x, p2.x); const right = Math.max(p1.x, p2.x); const width = right - left;
     ctx.globalAlpha = 0.12;
@@ -933,8 +933,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderGannFan = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine, w: number, _h: number) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const angles = [
       { ratio: '1x1', slope: 1 }, { ratio: '1x2', slope: 0.5 }, { ratio: '2x1', slope: 2 },
@@ -959,8 +959,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderGannBox = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const left = Math.min(p1.x, p2.x); const right = Math.max(p1.x, p2.x);
     const top = Math.min(p1.y, p2.y); const bottom = Math.max(p1.y, p2.y);
@@ -986,8 +986,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderGannSquare = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     const size = Math.max(Math.abs(p2.x - p1.x), Math.abs(p2.y - p1.y));
     const cx = p1.x; const cy = p1.y;
@@ -1028,8 +1028,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     }
     // Draw midpoint anchor (for dragging whole object)
     if (d.points.length >= 2) {
-      const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-      const p2 = toPixel(d.points[d.points.length - 1].time as unknown as Time, d.points[d.points.length - 1].price);
+      const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+      const p2 = toPixelUnclamped(d.points[d.points.length - 1].time as unknown as Time, d.points[d.points.length - 1].price);
       if (p1 && p2) {
         const mx = (p1.x + p2.x) / 2;
         const my = (p1.y + p2.y) / 2;
@@ -1259,7 +1259,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       ctx.lineWidth = drawingModeRef.current === 'brush' ? 3 : drawingModeRef.current === 'highlighter' ? 12 : 2;
       if (drawingModeRef.current === 'highlighter') ctx.globalAlpha = 0.25;
       penCoords.current.forEach((p, i) => {
-        const px = toPixel(p.time, p.price);
+        const px = toPixelUnclamped(p.time, p.price);
         if (!px) return;
         if (i === 0) ctx.moveTo(px.x, px.y); else ctx.lineTo(px.x, px.y);
       });
@@ -1364,8 +1364,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         }
         // Also check line segments between points for better hit detection
         if (d.points.length >= 2) {
-          const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-          const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+          const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+          const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
           if (p1 && p2) {
             const dist = pointToSegmentDist(px, py, p1.x, p1.y, p2.x, p2.y);
             if (dist < threshold) return d.id;
@@ -1374,7 +1374,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       }
     }
     return null;
-  }, [drawings, series, toPixel]);
+  }, [drawings, series, toPixelUnclamped]);
 
   // Helper: distance from point to line segment
   const pointToSegmentDist = (px: number, py: number, x1: number, y1: number, x2: number, y2: number) => {
@@ -1494,7 +1494,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       currentPixel.current = { x: coord.x, y: coord.y };
       return;
     }
-  }, [fromPixel, onAddDrawing, onFinishDrawing, onRemoveDrawing, scheduleRender, drawingModeRef, findNearestDrawing, snapToOHLC, onUpdateDrawing, drawings, toPixel]);
+  }, [fromPixel, onAddDrawing, onFinishDrawing, onRemoveDrawing, scheduleRender, drawingModeRef, findNearestDrawing, snapToOHLC, onUpdateDrawing, drawings, toPixelUnclamped]);
 
   // Passthrough: temporarily disable overlay so chart gets the gesture
   const passthroughToChart = useCallback((e: React.PointerEvent) => {
