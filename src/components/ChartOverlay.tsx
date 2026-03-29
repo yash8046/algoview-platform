@@ -1083,19 +1083,6 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, rect.width, rect.height);
 
-    // Patch ctx for pixel-crisp lines on all DPR screens (fixes flickering on Android for all line widths)
-    const origMoveTo = ctx.moveTo.bind(ctx);
-    const origLineTo = ctx.lineTo.bind(ctx);
-    let _crispLW = 1.5;
-    const lwDesc = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, 'lineWidth')!;
-    Object.defineProperty(ctx, 'lineWidth', {
-      configurable: true,
-      get: () => _crispLW,
-      set: (v: number) => { _crispLW = v; lwDesc.set!.call(ctx, strokePx(v, dpr)); },
-    });
-    ctx.moveTo = (x: number, y: number) => origMoveTo(alignPx(x, _crispLW, dpr), alignPx(y, _crispLW, dpr));
-    ctx.lineTo = (x: number, y: number) => origLineTo(alignPx(x, _crispLW, dpr), alignPx(y, _crispLW, dpr));
-
     for (const d of drawings) {
       if (d.visible === false) continue;
       const isSel = d.id === selectedDrawingId;
