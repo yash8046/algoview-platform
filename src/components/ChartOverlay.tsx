@@ -1663,7 +1663,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerLeave}
-        style={{ touchAction: isActive || isDraggingState || selectedDrawingId !== null ? 'none' : 'auto' }}
+        style={{ touchAction: isActive || isDraggingState || hasDrawings ? 'none' : 'auto' }}
       />
       {/* Floating selection toolbar */}
       {selectedDrawingId && selectedPos && (
