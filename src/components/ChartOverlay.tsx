@@ -1106,8 +1106,9 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       }
     }
 
-    // === CROSSHAIR ===
-    if (crosshairPos.current && (isDrawing.current || drawingModeRef.current !== 'none')) {
+    // === CROSSHAIR === (show during drawing, or when a drawing is selected for repositioning)
+    const showCrosshair = isDrawing.current || drawingModeRef.current !== 'none' || selectedDrawingId !== null;
+    if (crosshairPos.current && showCrosshair) {
       const cx = crosshairPos.current.x;
       const cy = crosshairPos.current.y;
       ctx.save();
