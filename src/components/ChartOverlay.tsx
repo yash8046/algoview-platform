@@ -173,8 +173,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const renderTrendline = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine, isSelected: boolean) => {
     if (!d.points || d.points.length < 2) return;
-    const p1 = toPixel(d.points[0].time as unknown as Time, d.points[0].price);
-    const p2 = toPixel(d.points[1].time as unknown as Time, d.points[1].price);
+    const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
+    const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
     ctx.beginPath();
     ctx.strokeStyle = d.color; ctx.lineWidth = d.lineWidth || 1.5;
@@ -1538,7 +1538,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
     // Handle drag in selection mode
     if (mode === 'none' && isDragging.current && selectedDrawingId && onUpdateDrawing) {
-      const coord = fromPixel(e.clientX, e.clientY);
+      // Use unclamped to prevent vanishing when dragging off-screen
+      const coord = fromPixelUnclamped(e.clientX, e.clientY);
       if (!coord || !dragStartCoord.current) return;
       const drawing = drawings.find(d => d.id === selectedDrawingId);
       if (!drawing) return;
