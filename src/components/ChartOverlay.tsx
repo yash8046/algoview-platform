@@ -1078,8 +1078,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, rect.width, rect.height);
-
-    for (const d of drawings) {
+    ctx.beginPath(); // flush any stale path state from previous frame
       if (d.visible === false) continue;
       const isSel = d.id === selectedDrawingId;
       try {
@@ -1546,24 +1545,29 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       const drawing = drawings.find(d => d.id === selectedDrawingId);
       if (!drawing) return;
 
-      const deltaTime = (coord.time as number) - (dragStartCoord.current.time as number);
-      const deltaPrice = coord.price - dragStartCoord.current.price;
-
       if (drawing.points && dragOriginalPoints.current) {
         if (dragPointIndex.current !== null) {
-          const newPoints = dragOriginalPoints.current.map((p, i) =>
-            i === dragPointIndex.current
-              ? { time: p.time + deltaTime, price: p.price + deltaPrice }
-              : { ...p }
-          );
-      onUpdateDrawing(selectedDrawingId, { points: newPoints });
+          // Single anchor drag: set the dragged point directly to the pointer's
+          // chart coordinates. This avoids delta-based math that degenerates
+          // (flattens to horizontal) when dragged at extreme angles (180°/360°).
+          const newPoints = dragOriginalPoints.current.map((p, i) => {
+            if (i === dragPointIndex.current) {
+              return { time: coord.time as number, price: coord.price };
+            }
+            return { ...p };
+          });
+          onUpdateDrawing(selectedDrawingId, { points: newPoints });
         } else {
+          // Whole-object drag: use delta from drag start (stable)
+          const deltaTime = (coord.time as number) - (dragStartCoord.current.time as number);
+          const deltaPrice = coord.price - dragStartCoord.current.price;
           const newPoints = dragOriginalPoints.current.map(p => ({
             time: p.time + deltaTime, price: p.price + deltaPrice,
           }));
           onUpdateDrawing(selectedDrawingId, { points: newPoints });
         }
       } else if (drawing.price != null && dragOriginalPrice.current != null) {
+        const deltaPrice = coord.price - dragStartCoord.current.price;
         onUpdateDrawing(selectedDrawingId, { price: dragOriginalPrice.current + deltaPrice });
       }
       // Use immediate render during drag to prevent flickering
