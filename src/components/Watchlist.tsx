@@ -13,7 +13,7 @@ interface MasterStock {
 }
 
 export default function Watchlist() {
-  const { watchlist, selectedSymbol, setSelectedSymbol, updatePrice, loadUserWatchlist, watchlistLoaded } = useTradingStore();
+  const { watchlist, selectedSymbol, setSelectedSymbol, updatePrice, loadUserWatchlist, watchlistLoaded, marketRegion } = useTradingStore();
   const [search, setSearch] = useState('');
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [masterStocks, setMasterStocks] = useState<MasterStock[]>([]);
@@ -83,9 +83,15 @@ export default function Watchlist() {
     await loadUserWatchlist();
   };
 
+  // Filter by market region: .NS suffix = Indian, else US
+  const regionFiltered = watchlist.filter(item => {
+    const isIndian = item.yahooSymbol?.endsWith('.NS') || item.yahooSymbol?.endsWith('.BO');
+    return marketRegion === 'IN' ? isIndian : !isIndian;
+  });
+
   const filtered = search
-    ? watchlist.filter(i => i.symbol.toLowerCase().includes(search.toLowerCase()) || i.name.toLowerCase().includes(search.toLowerCase()))
-    : watchlist;
+    ? regionFiltered.filter(i => i.symbol.toLowerCase().includes(search.toLowerCase()) || i.name.toLowerCase().includes(search.toLowerCase()))
+    : regionFiltered;
 
   const filteredMaster = modalSearch
     ? masterStocks.filter(s => s.symbol.toLowerCase().includes(modalSearch.toLowerCase()) || s.name.toLowerCase().includes(modalSearch.toLowerCase()))
@@ -94,7 +100,9 @@ export default function Watchlist() {
   return (
     <div className="flex flex-col h-full bg-card rounded-lg border border-border overflow-hidden">
       <div className="px-4 py-2 bg-panel-header border-b border-border flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-foreground">Watchlist</h2>
+        <h2 className="text-sm font-semibold text-foreground">
+          Watchlist <span className="text-[9px] text-muted-foreground font-mono ml-1">{marketRegion === 'IN' ? '🇮🇳 NSE' : '🇺🇸 US'}</span>
+        </h2>
         <button
           onClick={() => setShowSearchModal(true)}
           className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
@@ -105,7 +113,7 @@ export default function Watchlist() {
       </div>
 
       {/* Quick filter within watchlist */}
-      {watchlist.length > 0 && (
+      {regionFiltered.length > 0 && (
         <div className="px-3 py-2 border-b border-border">
           <div className="flex items-center gap-2 bg-secondary rounded px-2 py-1">
             <Search className="w-3 h-3 text-muted-foreground" />
@@ -121,15 +129,17 @@ export default function Watchlist() {
       )}
 
       <div className="flex-1 overflow-y-auto scrollbar-thin">
-        {watchlist.length === 0 && (
+        {regionFiltered.length === 0 && (
           <div className="p-6 text-center">
             <Star className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
-            <p className="text-xs text-muted-foreground mb-2">Your watchlist is empty</p>
+            <p className="text-xs text-muted-foreground mb-2">
+              No {marketRegion === 'IN' ? 'Indian' : 'US'} stocks in your watchlist
+            </p>
             <button
               onClick={() => setShowSearchModal(true)}
               className="text-xs text-primary hover:underline font-medium"
             >
-              Search & add stocks
+              Search & add {marketRegion === 'IN' ? 'NSE' : 'US'} stocks
             </button>
           </div>
         )}
@@ -152,7 +162,7 @@ export default function Watchlist() {
                 ) : (
                   <>
                     <div className="font-mono text-[11px] font-medium text-foreground">
-                      ₹{item.price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {marketRegion === 'IN' ? '₹' : '$'}{item.price.toLocaleString(marketRegion === 'IN' ? 'en-IN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                     <div className={`font-mono text-[10px] font-medium ${item.change >= 0 ? 'text-gain' : 'text-loss'}`}>
                       {item.change >= 0 ? '+' : ''}{item.changePercent.toFixed(2)}%
@@ -170,7 +180,7 @@ export default function Watchlist() {
             </div>
           </div>
         ))}
-        {filtered.length === 0 && watchlist.length > 0 && (
+        {filtered.length === 0 && regionFiltered.length > 0 && (
           <div className="p-4 text-center text-xs text-muted-foreground">No matching stocks</div>
         )}
       </div>
