@@ -1689,6 +1689,40 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     const mode = drawingModeRef.current;
+    // Handle drag in selection mode
+    if (mode === 'none' && isDragging.current && selectedDrawingId && onUpdateDrawing) {
+      const coord = fromPixel(e.clientX, e.clientY);
+      if (!coord || !dragStartCoord.current) return;
+      const drawing = drawings.find(d => d.id === selectedDrawingId);
+      if (!drawing) return;
+      
+      const deltaTime = (coord.time as number) - (dragStartCoord.current.time as number);
+      const deltaPrice = coord.price - dragStartCoord.current.price;
+      
+      if (drawing.points && dragOriginalPoints.current) {
+        if (dragPointIndex.current !== null) {
+          // Drag single endpoint
+          const newPoints = dragOriginalPoints.current.map((p, i) => 
+            i === dragPointIndex.current
+              ? { time: p.time + deltaTime, price: p.price + deltaPrice }
+              : { ...p }
+          );
+          onUpdateDrawing(selectedDrawingId, { points: newPoints });
+        } else {
+          // Drag entire drawing
+          const newPoints = dragOriginalPoints.current.map(p => ({
+            time: p.time + deltaTime,
+            price: p.price + deltaPrice,
+          }));
+          onUpdateDrawing(selectedDrawingId, { points: newPoints });
+        }
+      } else if (drawing.price != null && dragOriginalPrice.current != null) {
+        onUpdateDrawing(selectedDrawingId, { price: dragOriginalPrice.current + deltaPrice });
+      }
+      render();
+      return;
+    }
+    
     if (mode === 'none' || mode === 'eraser' || !isDrawing.current) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -1724,7 +1758,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     }
     currentPixel.current = { x, y };
     render();
-  }, [fromPixel, render, drawingModeRef, magnetMode, snapToOHLC, toPixel]);
+  }, [fromPixel, render, drawingModeRef, magnetMode, snapToOHLC, toPixel, selectedDrawingId, onUpdateDrawing, drawings]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     const mode = drawingModeRef.current;
