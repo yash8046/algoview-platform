@@ -381,6 +381,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
               drawings={drawings}
               onAddDrawing={addDrawing}
               onRemoveDrawing={removeDrawing}
+              onUpdateDrawing={updateDrawing}
               onFinishDrawing={finishDrawing}
               magnetMode={magnetMode}
               candleData={candleDataRef.current}
@@ -689,6 +690,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
                 drawings={drawings}
                 onAddDrawing={addDrawing}
                 onRemoveDrawing={removeDrawing}
+                onUpdateDrawing={updateDrawing}
                 onFinishDrawing={finishDrawing}
                 magnetMode={magnetMode}
                 candleData={candleDataRef.current}
