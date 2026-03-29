@@ -30,6 +30,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const laserPixels = useRef<{ x: number; y: number; t: number }[]>([]);
   const laserRaf = useRef<number>(0);
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null);
+  const [isDraggingState, setIsDraggingState] = useState(false);
   const isDragging = useRef(false);
   const dragPointIndex = useRef<number | null>(null);
   const dragStartCoord = useRef<{ time: Time; price: number } | null>(null);
@@ -38,6 +39,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const dragSnapshotRef = useRef<DrawingLine[] | null>(null);
   const renderRafRef = useRef<number>(0);
   const renderScheduled = useRef(false);
+  const crosshairPos = useRef<{ x: number; y: number } | null>(null);
+  const lastMoveTime = useRef(0);
 
   const toPixel = useCallback((time: Time, price: number) => {
     if (!chart || !series) return null;
