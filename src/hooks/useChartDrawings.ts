@@ -101,7 +101,8 @@ export function useChartDrawings(symbol: string) {
   }, []);
 
   const finishDrawing = useCallback(() => {
-    setDrawingMode((prev) => (prev === 'laser' ? 'none' : prev));
+    // After drawing completion, switch to select mode so user can immediately reposition
+    setDrawingMode('none');
   }, []);
 
   return {
