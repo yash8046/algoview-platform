@@ -1708,7 +1708,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const selectedPos = (() => {
     if (!selectedDrawing || !canvasRef.current) return null;
     if (selectedDrawing.points && selectedDrawing.points.length > 0) {
-      const p = toPixel(selectedDrawing.points[0].time as unknown as Time, selectedDrawing.points[0].price);
+      const p = toPixelUnclamped(selectedDrawing.points[0].time as unknown as Time, selectedDrawing.points[0].price);
       if (p) return { x: p.x, y: p.y };
     }
     if (selectedDrawing.price != null && series) {
