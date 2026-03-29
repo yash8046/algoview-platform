@@ -13,6 +13,13 @@ interface MasterStock {
   stock_type: string;
 }
 
+
+const INDIAN_INDICES = ['^NSEI', '^BSESN', '^NSEBANK'];
+const isIndianSymbol = (yahooSymbol?: string) => {
+  if (!yahooSymbol) return false;
+  return yahooSymbol.endsWith('.NS') || yahooSymbol.endsWith('.BO') || INDIAN_INDICES.includes(yahooSymbol);
+};
+
 export default function Watchlist() {
   const { watchlist, selectedSymbol, setSelectedSymbol, updatePrice, loadUserWatchlist, watchlistLoaded, marketRegion } = useTradingStore();
   const [search, setSearch] = useState('');
@@ -76,7 +83,7 @@ export default function Watchlist() {
       if (data) {
         // Filter master stocks by region: Indian stocks have .NS or .BO suffix in yahoo_symbol
         const filtered = data.filter(s => {
-          const isIndianStock = s.yahoo_symbol.endsWith('.NS') || s.yahoo_symbol.endsWith('.BO');
+          const isIndianStock = isIndianSymbol(s.yahoo_symbol);
           return isIndian ? isIndianStock : !isIndianStock;
         });
         setMasterStocks(filtered);
@@ -100,9 +107,9 @@ export default function Watchlist() {
     await loadUserWatchlist();
   };
 
-  // Filter by market region: .NS/.BO suffix = Indian, else US
+  // Filter by market region
   const regionFiltered = watchlist.filter(item => {
-    const isIndian = item.yahooSymbol?.endsWith('.NS') || item.yahooSymbol?.endsWith('.BO');
+    const isIndian = isIndianSymbol(item.yahooSymbol);
     return marketRegion === 'IN' ? isIndian : !isIndian;
   });
 
