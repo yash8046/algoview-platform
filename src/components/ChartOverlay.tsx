@@ -235,7 +235,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.moveTo(p1.x - dx * scale, p1.y - dy * scale);
     ctx.lineTo(p1.x + dx * scale, p1.y + dy * scale);
     ctx.stroke();
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderArrowLine = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
@@ -252,7 +252,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.lineTo(p2.x - headLen * Math.cos(angle - 0.4), p2.y - headLen * Math.sin(angle - 0.4));
     ctx.lineTo(p2.x - headLen * Math.cos(angle + 0.4), p2.y - headLen * Math.sin(angle + 0.4));
     ctx.closePath(); ctx.fill();
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderCrossLine = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine, w: number, h: number) => {
     if (!d.points?.[0] || !chart || !series) return;
@@ -301,7 +301,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.fillStyle = priceDiff >= 0 ? '#22c55e' : '#ef4444';
     ctx.font = '10px "JetBrains Mono", monospace';
     ctx.fillText(`${priceDiff >= 0 ? '+' : ''}${priceDiff.toFixed(2)} (${pctChange}%)`, midX + 2, midY - 8);
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderFib = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2 || !series) return;
@@ -345,7 +345,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       ctx.font = '9px "JetBrains Mono", monospace';
       ctx.fillText(`${(level * 100).toFixed(1)}%`, p2.x + 4, p1.y + dy - 2);
     });
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderFibArc = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
@@ -361,7 +361,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       ctx.arc(p2.x, p2.y, r, 0, Math.PI, p2.y > p1.y);
       ctx.stroke();
     });
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderFibTimeZones = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine, h: number) => {
     if (!d.points || d.points.length < 2 || !chart) return;
@@ -396,7 +396,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       ctx.moveTo(p1.x, p1.y + offsetY); ctx.lineTo(p2.x, p1.y + offsetY);
       ctx.stroke();
     });
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderRectangle = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
@@ -409,7 +409,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.fillRect(rx, ry, rw, rh);
     ctx.globalAlpha = 1; ctx.strokeStyle = d.color; ctx.lineWidth = d.lineWidth || 1;
     ctx.strokeRect(rx, ry, rw, rh);
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderCircle = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
@@ -421,7 +421,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.beginPath(); ctx.arc(p1.x, p1.y, r, 0, Math.PI * 2); ctx.fill();
     ctx.globalAlpha = 1; ctx.strokeStyle = d.color; ctx.lineWidth = d.lineWidth || 1;
     ctx.beginPath(); ctx.arc(p1.x, p1.y, r, 0, Math.PI * 2); ctx.stroke();
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderEllipse = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
@@ -434,7 +434,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
     ctx.globalAlpha = 1; ctx.strokeStyle = d.color; ctx.lineWidth = d.lineWidth || 1;
     ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderTriangle = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
@@ -449,7 +449,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.globalAlpha = 1; ctx.strokeStyle = d.color; ctx.lineWidth = d.lineWidth || 1;
     ctx.beginPath(); ctx.moveTo(topX, topY); ctx.lineTo(p1.x, botY); ctx.lineTo(p2.x, botY);
     ctx.closePath(); ctx.stroke();
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderParallelChannel = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
@@ -471,7 +471,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
     ctx.lineTo(p2.x, p2.y + perpY); ctx.lineTo(p1.x, p1.y + perpY);
     ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderPitchfork = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine, w: number) => {
     if (!d.points || d.points.length < 2) return;
@@ -485,7 +485,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.moveTo(p1.x, p1.y); ctx.lineTo(w, Math.min(p1.y, p2.y)); ctx.stroke();
     ctx.beginPath();
     ctx.moveTo(p2.x, p2.y); ctx.lineTo(w, Math.max(p1.y, p2.y)); ctx.stroke();
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderPen = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
@@ -496,7 +496,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       if (i === 0) ctx.moveTo(px.x, px.y); else ctx.lineTo(px.x, px.y);
     });
     ctx.stroke();
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderBrush = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
@@ -509,7 +509,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     });
     ctx.stroke();
     ctx.lineCap = 'butt'; ctx.lineJoin = 'miter';
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderHighlighter = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
@@ -522,7 +522,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       if (i === 0) ctx.moveTo(px.x, px.y); else ctx.lineTo(px.x, px.y);
     });
     ctx.stroke(); ctx.globalAlpha = 1; ctx.lineCap = 'butt'; ctx.lineJoin = 'miter';
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderText = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points?.[0]) return;
@@ -531,7 +531,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.fillStyle = d.color;
     ctx.font = '12px "JetBrains Mono", monospace';
     ctx.fillText(d.text || 'Text', p.x, p.y);
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderCallout = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points?.[0]) return;
@@ -546,7 +546,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.fillStyle = d.color;
     ctx.font = '11px "JetBrains Mono", monospace';
     ctx.fillText(text, p.x + 8, p.y - h + 8);
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderArrowMarker = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points?.[0]) return;
@@ -561,7 +561,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       ctx.moveTo(p.x, p.y + 12); ctx.lineTo(p.x - 6, p.y); ctx.lineTo(p.x + 6, p.y);
     }
     ctx.closePath(); ctx.fill();
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderFlag = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points?.[0] || !chart || !series) return;
@@ -608,7 +608,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.font = '10px "JetBrains Mono", monospace';
     ctx.fillText(`${diff >= 0 ? '+' : ''}${diff.toFixed(2)}`, midX + 12, (p1.y + p2.y) / 2 - 4);
     ctx.fillText(`${pct}%`, midX + 12, (p1.y + p2.y) / 2 + 10);
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderDateRange = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2 || !chart) return;
@@ -652,7 +652,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.fillStyle = color;
     ctx.font = '10px "JetBrains Mono", monospace';
     ctx.fillText(`${isLong ? 'Long' : 'Short'} ${pct}%`, p2.x + 8, p2.y + 4);
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderVRay = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine, h: number) => {
     if (!d.points?.[0] || !chart || !series) return;
@@ -677,7 +677,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     });
     ctx.fillStyle = d.color; ctx.font = '9px "JetBrains Mono", monospace';
     ctx.fillText(d.points[0].price.toFixed(2), p1.x + 4, y - 6);
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderTrendAngle = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
@@ -695,7 +695,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle = d.color; ctx.font = '10px "JetBrains Mono", monospace';
     ctx.fillText(`${angleDeg}°`, p1.x + 24, p1.y - 8);
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderArrowMarkerStandalone = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points?.[0]) return;
@@ -708,7 +708,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.lineTo(p.x - 3, p.y + 22); ctx.lineTo(p.x + 3, p.y + 22);
     ctx.lineTo(p.x + 3, p.y + 10); ctx.lineTo(p.x + 8, p.y + 14);
     ctx.closePath(); ctx.fill();
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderRegressionChannel = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
@@ -730,7 +730,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.moveTo(p1.x + perpX, p1.y + perpY); ctx.lineTo(p2.x + perpX, p2.y + perpY);
     ctx.lineTo(p2.x - perpX, p2.y - perpY); ctx.lineTo(p1.x - perpX, p1.y - perpY);
     ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderFlatChannel = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
@@ -748,7 +748,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.fillStyle = d.color; ctx.font = '9px "JetBrains Mono", monospace';
     ctx.fillText(d.points[0].price.toFixed(2), minX + 4, p1.y - 3);
     ctx.fillText(d.points[1].price.toFixed(2), minX + 4, p2.y - 3);
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderSchiffPitchfork = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine, w: number) => {
     if (!d.points || d.points.length < 2) return;
@@ -762,7 +762,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.moveTo(p1.x, p1.y); ctx.lineTo(w, Math.min(p1.y, p2.y)); ctx.stroke();
     ctx.beginPath();
     ctx.moveTo(p2.x, p2.y); ctx.lineTo(w, Math.max(p1.y, p2.y)); ctx.stroke();
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderFibSpeedResistance = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
@@ -779,7 +779,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, targetY);
       ctx.stroke(); ctx.setLineDash([]);
     });
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderFibSpiral = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
@@ -795,7 +795,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       if (t === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
     ctx.stroke();
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderFibWedge = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
@@ -811,7 +811,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       ctx.beginPath();
       ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, endY2); ctx.stroke();
     });
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderRotatedRectangle = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
@@ -827,7 +827,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.globalAlpha = 1; ctx.strokeStyle = d.color; ctx.lineWidth = d.lineWidth || 1;
     ctx.strokeRect(-w / 2, -h / 4, w, h / 2);
     ctx.restore();
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderBezierCurve = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
@@ -843,7 +843,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.stroke(); ctx.setLineDash([]);
     ctx.beginPath(); ctx.arc(cpX, cpY, 3, 0, Math.PI * 2);
     ctx.fillStyle = d.color; ctx.fill();
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderAnchoredText = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points?.[0]) return;
@@ -856,7 +856,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.fillStyle = d.color; ctx.font = '11px "JetBrains Mono", monospace';
     ctx.fillText(text, p.x + 2, p.y);
     ctx.beginPath(); ctx.arc(p.x, p.y + 6, 2, 0, Math.PI * 2); ctx.fill();
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderNoteBox = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points?.[0]) return;
@@ -875,7 +875,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     lines.forEach((line, i) => {
       ctx.fillText(line, p.x + 8, p.y - boxH + 14 + i * lineHeight);
     });
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderBarsPattern = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
@@ -899,7 +899,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.fillStyle = '#6b7a99';
     ctx.fillText(`${hours}h ${mins}m`, cx - 44, cy + 4);
     ctx.fillText(`${priceDiff >= 0 ? '+' : ''}${priceDiff.toFixed(2)}`, cx - 44, cy + 16);
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderRiskReward = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2 || !series) return;
@@ -964,7 +964,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         ctx.fillText(a.ratio, Math.min(p1.x + 60 + idx * 30, w - 30), p1.y + dy * (60 + idx * 30) - 3);
       }
     });
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderGannBox = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
@@ -991,7 +991,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.moveTo(right, top); ctx.lineTo(left, bottom); ctx.stroke();
     ctx.globalAlpha = 0.03; ctx.fillStyle = d.color;
     ctx.fillRect(left, top, w, h); ctx.globalAlpha = 1;
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderGannSquare = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points || d.points.length < 2) return;
@@ -1014,7 +1014,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       ctx.beginPath(); ctx.strokeStyle = '#6b7a99'; ctx.lineWidth = 0.4;
       ctx.arc(cx, cy, size/2 * f, 0, Math.PI * 2); ctx.stroke();
     });
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   // === DRAW ANCHOR POINTS for selected drawing ===
   const drawAnchors = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
