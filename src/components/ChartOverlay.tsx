@@ -183,9 +183,10 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     const p1 = toPixelUnclamped(d.points[0].time as unknown as Time, d.points[0].price);
     const p2 = toPixelUnclamped(d.points[1].time as unknown as Time, d.points[1].price);
     if (!p1 || !p2) return;
+    const lw = d.lineWidth || 1.5;
     ctx.beginPath();
-    ctx.strokeStyle = d.color; ctx.lineWidth = d.lineWidth || 1.5;
-    ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
+    ctx.strokeStyle = d.color; ctx.lineWidth = lw;
+    ctx.moveTo(px(p1.x, lw), px(p1.y, lw)); ctx.lineTo(px(p2.x, lw), px(p2.y, lw));
     ctx.stroke();
     // Anchor points
     const anchorSize = isSelected ? 5 : 3;
@@ -199,7 +200,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         ctx.stroke();
       }
     });
-  }, [toPixel]);
+  }, [toPixelUnclamped]);
 
   const renderRay = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine, w: number, h: number) => {
     if (!d.points || d.points.length < 2) return;
