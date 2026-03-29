@@ -85,7 +85,7 @@ export default function CryptoChart({ minimal = false, toolbarBottom = false, to
 
   const {
     drawingMode, setDrawingMode, drawingModeRef,
-    drawings, addDrawing, removeDrawing, clearAllDrawings, finishDrawing,
+    drawings, addDrawing, removeDrawing, updateDrawing, clearAllDrawings, finishDrawing,
     undo, redo, canUndo, canRedo,
   } = useChartDrawings(selectedPair);
 
