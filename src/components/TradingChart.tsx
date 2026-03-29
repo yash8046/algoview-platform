@@ -76,7 +76,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
 
   const {
     drawingMode, setDrawingMode, drawingModeRef,
-    drawings, addDrawing, removeDrawing, updateDrawing, clearAllDrawings, finishDrawing,
+    drawings, addDrawing, removeDrawing, updateDrawing, commitDragUndo, clearAllDrawings, finishDrawing,
     undo, redo, canUndo, canRedo,
   } = useChartDrawings(selectedSymbol);
 
