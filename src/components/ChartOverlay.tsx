@@ -1019,9 +1019,9 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   // === DRAW ANCHOR POINTS for selected drawing ===
   const drawAnchors = useCallback((ctx: CanvasRenderingContext2D, d: DrawingLine) => {
     if (!d.points) return;
-    // Draw individual point anchors
+    // Draw individual point anchors — use toPixelUnclamped so they stay on the line
     for (const pt of d.points) {
-      const p = toPixel(pt.time as unknown as Time, pt.price);
+      const p = toPixelUnclamped(pt.time as unknown as Time, pt.price);
       if (!p) continue;
       // Outer ring
       ctx.beginPath();
@@ -1068,7 +1068,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         });
       }
     }
-  }, [toPixel, series]);
+  }, [toPixelUnclamped, series]);
 
   // === MAIN RENDER (RAF-throttled) ===
 
