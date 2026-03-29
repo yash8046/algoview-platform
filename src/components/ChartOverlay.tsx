@@ -1552,6 +1552,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     // Finish drag - commit undo snapshot
     if (isDragging.current) {
       isDragging.current = false;
+      setIsDraggingState(false);
       if (dragSnapshotRef.current && onCommitDragUndo) {
         onCommitDragUndo(dragSnapshotRef.current);
       }
