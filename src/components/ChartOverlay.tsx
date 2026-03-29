@@ -1079,6 +1079,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, rect.width, rect.height);
     ctx.beginPath(); // flush any stale path state from previous frame
+
+    for (const d of drawings) {
       if (d.visible === false) continue;
       const isSel = d.id === selectedDrawingId;
       try {
