@@ -1,18 +1,34 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTradingStore } from '@/stores/tradingStore';
 import { supabase } from '@/integrations/supabase/client';
+import { getUsdToInrRate, subscribeToRate } from '@/lib/exchangeRate';
 import { BookmarkPlus, BookmarkCheck, FlaskConical, TrendingUp, TrendingDown, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 
+const INDIAN_INDICES = ['^NSEI', '^BSESN', '^NSEBANK'];
+const isIndianSymbol = (yahooSymbol?: string) => {
+  if (!yahooSymbol) return true;
+  return yahooSymbol.endsWith('.NS') || yahooSymbol.endsWith('.BO') || INDIAN_INDICES.includes(yahooSymbol);
+};
+
 export default function TradePanel() {
-  const { selectedSymbol, watchlist, executeTrade, balance, positions, loadUserWatchlist, currentChartPrice } = useTradingStore();
+  const { selectedSymbol, watchlist, executeTrade, balance, positions, loadUserWatchlist, currentChartPrice, marketRegion } = useTradingStore();
   const [quantity, setQuantity] = useState('1');
   const [orderType, setOrderType] = useState<'market' | 'limit'>('market');
   const [addingToWatchlist, setAddingToWatchlist] = useState(false);
+  const [usdToInr, setUsdToInr] = useState(85.5);
+
+  useEffect(() => {
+    getUsdToInrRate().then(setUsdToInr);
+    const unsub = subscribeToRate(setUsdToInr);
+    return unsub;
+  }, []);
 
   const currentAsset = watchlist.find(w => w.symbol === selectedSymbol);
   const isInWatchlist = !!currentAsset;
-  const price = currentAsset?.price || currentChartPrice || 0;
+  const rawPrice = currentAsset?.price || currentChartPrice || 0;
+  const isUS = marketRegion === 'US' || (currentAsset && !isIndianSymbol(currentAsset.yahooSymbol));
+  const price = isUS ? rawPrice * usdToInr : rawPrice;
   const total = price * Number(quantity);
   const canBuy = total <= balance && Number(quantity) > 0 && price > 0;
 
