@@ -3,13 +3,11 @@ import type { IChartApi, Time } from 'lightweight-charts';
 import type { DrawingMode, DrawingLine } from './ChartDrawingTools';
 import DrawingToolbar from './DrawingToolbar';
 
-// Pixel-alignment helpers: snap line widths and coordinates to device-pixel grid
-// This prevents sub-pixel anti-aliasing that causes flickering/invisibility on Android
-const strokePx = (w: number, dpr: number = window.devicePixelRatio || 1) => Math.round(w * dpr) / dpr;
-const alignPx = (n: number, w: number, dpr: number = window.devicePixelRatio || 1) => {
-  const px = strokePx(w, dpr) * dpr;
-  return (Math.round(n * dpr) + (px % 2 ? 0.5 : 0)) / dpr;
-};
+// Pixel-snap helper: aligns a CSS-pixel coordinate to the nearest device pixel
+// so strokes land on exact pixel boundaries, preventing Android flicker/blur.
+// After ctx.setTransform(DPR,...) all drawing is in CSS pixels; this just rounds + half-pixel offsets.
+const px = (v: number, lineW: number = 1.5) =>
+  Math.round(v) + ((Math.round(lineW) % 2) ? 0.5 : 0);
 
 const FIB_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
 const FIB_EXT_LEVELS = [0, 0.618, 1, 1.382, 1.618, 2, 2.618];
