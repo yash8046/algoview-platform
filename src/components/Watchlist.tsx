@@ -1,6 +1,7 @@
 import { useTradingStore } from '@/stores/tradingStore';
 import { useEffect, useState } from 'react';
 import { fetchYahooFinanceData } from '@/lib/yahooFinance';
+import { getUsdToInrRate } from '@/lib/exchangeRate';
 import { Search, X, Star, BookmarkPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -20,6 +21,7 @@ export default function Watchlist() {
   const [modalSearch, setModalSearch] = useState('');
   const [userSymbols, setUserSymbols] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState<string | null>(null);
+  const [usdToInr, setUsdToInr] = useState<number>(85.5);
 
   useEffect(() => {
     if (!watchlistLoaded) loadUserWatchlist();
@@ -28,6 +30,13 @@ export default function Watchlist() {
   useEffect(() => {
     setUserSymbols(new Set(watchlist.map(w => w.symbol)));
   }, [watchlist]);
+
+  // Load live USD→INR rate
+  useEffect(() => {
+    getUsdToInrRate().then(setUsdToInr);
+    const id = setInterval(() => getUsdToInrRate().then(setUsdToInr), 60000);
+    return () => clearInterval(id);
+  }, []);
 
   // Fetch prices
   useEffect(() => {
@@ -54,18 +63,26 @@ export default function Watchlist() {
     return () => clearInterval(interval);
   }, [watchlist.length]);
 
-  // Load master stocks when modal opens
+  // Load master stocks filtered by market region when modal opens
   useEffect(() => {
     if (!showSearchModal) return;
     (async () => {
+      const isIndian = marketRegion === 'IN';
       const { data } = await supabase
         .from('watchlist_stocks')
         .select('symbol, name, yahoo_symbol, stock_type')
         .eq('is_active', true)
         .order('symbol');
-      if (data) setMasterStocks(data);
+      if (data) {
+        // Filter master stocks by region: Indian stocks have .NS or .BO suffix in yahoo_symbol
+        const filtered = data.filter(s => {
+          const isIndianStock = s.yahoo_symbol.endsWith('.NS') || s.yahoo_symbol.endsWith('.BO');
+          return isIndian ? isIndianStock : !isIndianStock;
+        });
+        setMasterStocks(filtered);
+      }
     })();
-  }, [showSearchModal]);
+  }, [showSearchModal, marketRegion]);
 
   const handleAdd = async (stock: MasterStock) => {
     setAdding(stock.symbol);
@@ -83,7 +100,7 @@ export default function Watchlist() {
     await loadUserWatchlist();
   };
 
-  // Filter by market region: .NS suffix = Indian, else US
+  // Filter by market region: .NS/.BO suffix = Indian, else US
   const regionFiltered = watchlist.filter(item => {
     const isIndian = item.yahooSymbol?.endsWith('.NS') || item.yahooSymbol?.endsWith('.BO');
     return marketRegion === 'IN' ? isIndian : !isIndian;
@@ -97,19 +114,31 @@ export default function Watchlist() {
     ? masterStocks.filter(s => s.symbol.toLowerCase().includes(modalSearch.toLowerCase()) || s.name.toLowerCase().includes(modalSearch.toLowerCase()))
     : masterStocks;
 
+  // Convert US stock prices to INR for display
+  const displayPrice = (item: { price: number; yahooSymbol?: string }) => {
+    const isUS = !(item.yahooSymbol?.endsWith('.NS') || item.yahooSymbol?.endsWith('.BO'));
+    const price = isUS ? item.price * usdToInr : item.price;
+    return '₹' + price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
   return (
     <div className="flex flex-col h-full bg-card rounded-lg border border-border overflow-hidden">
       <div className="px-4 py-2 bg-panel-header border-b border-border flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">
           Watchlist <span className="text-[9px] text-muted-foreground font-mono ml-1">{marketRegion === 'IN' ? '🇮🇳 NSE' : '🇺🇸 US'}</span>
         </h2>
-        <button
-          onClick={() => setShowSearchModal(true)}
-          className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
-          title="Search & add stocks"
-        >
-          <Search className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          {marketRegion === 'US' && (
+            <span className="text-[8px] text-muted-foreground font-mono">1 USD = ₹{usdToInr.toFixed(2)}</span>
+          )}
+          <button
+            onClick={() => setShowSearchModal(true)}
+            className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+            title="Search & add stocks"
+          >
+            <Search className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Quick filter within watchlist */}
@@ -162,7 +191,7 @@ export default function Watchlist() {
                 ) : (
                   <>
                     <div className="font-mono text-[11px] font-medium text-foreground">
-                      {marketRegion === 'IN' ? '₹' : '$'}{item.price.toLocaleString(marketRegion === 'IN' ? 'en-IN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {displayPrice(item)}
                     </div>
                     <div className={`font-mono text-[10px] font-medium ${item.change >= 0 ? 'text-gain' : 'text-loss'}`}>
                       {item.change >= 0 ? '+' : ''}{item.changePercent.toFixed(2)}%
@@ -185,11 +214,13 @@ export default function Watchlist() {
         )}
       </div>
 
-      {/* Search & Add Modal */}
+      {/* Search & Add Modal - filtered by market region */}
       <Dialog open={showSearchModal} onOpenChange={setShowSearchModal}>
         <DialogContent className="max-w-md max-h-[70vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle className="text-base">Search Stocks</DialogTitle>
+            <DialogTitle className="text-base">
+              Search {marketRegion === 'IN' ? 'Indian (NSE)' : 'US'} Stocks
+            </DialogTitle>
           </DialogHeader>
           <div className="flex items-center gap-2 bg-secondary rounded-md px-3 py-2">
             <Search className="w-4 h-4 text-muted-foreground" />
@@ -202,7 +233,7 @@ export default function Watchlist() {
               autoFocus
             />
           </div>
-          <p className="text-[11px] text-muted-foreground">{masterStocks.length} stocks available</p>
+          <p className="text-[11px] text-muted-foreground">{masterStocks.length} {marketRegion === 'IN' ? 'NSE' : 'US'} stocks available</p>
           <div className="flex-1 overflow-y-auto -mx-6 px-6 space-y-0.5 min-h-0">
             {filteredMaster.map(stock => {
               const isAdded = userSymbols.has(stock.symbol);
@@ -237,7 +268,9 @@ export default function Watchlist() {
               );
             })}
             {filteredMaster.length === 0 && (
-              <div className="py-8 text-center text-sm text-muted-foreground">No stocks found</div>
+              <div className="py-8 text-center text-sm text-muted-foreground">
+                No {marketRegion === 'IN' ? 'NSE' : 'US'} stocks found
+              </div>
             )}
           </div>
         </DialogContent>
