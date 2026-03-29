@@ -1618,7 +1618,11 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   }, [chart, scheduleRender]);
 
   // Force immediate render when drawings change (fixes "drawing only appears after next interaction")
-  useEffect(() => { renderImmediate(); }, [drawings, renderImmediate]);
+  useEffect(() => {
+    // Use RAF to ensure canvas is sized before rendering
+    const id = requestAnimationFrame(() => renderImmediate());
+    return () => cancelAnimationFrame(id);
+  }, [drawings, renderImmediate, selectedDrawingId]);
   useEffect(() => () => {
     cancelAnimationFrame(laserRaf.current);
     cancelAnimationFrame(renderRafRef.current);
