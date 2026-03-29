@@ -45,8 +45,10 @@ interface TradingState {
   watchlist: WatchlistItem[];
   watchlistLoaded: boolean;
   currentChartPrice: number;
+  marketRegion: 'IN' | 'US';
   setSelectedSymbol: (symbol: string) => void;
   setSelectedTimeframe: (tf: string) => void;
+  setMarketRegion: (region: 'IN' | 'US') => void;
   executeTrade: (symbol: string, side: 'buy' | 'sell', price: number, quantity: number) => void;
   closePosition: (positionId: string) => void;
   updatePrice: (symbol: string, price: number, prevClose: number) => void;
@@ -72,9 +74,11 @@ export const useTradingStore = create<TradingState>((set, get) => ({
   watchlist: [],
   watchlistLoaded: false,
   currentChartPrice: 0,
+  marketRegion: 'IN',
 
   setSelectedSymbol: (symbol) => set({ selectedSymbol: symbol, currentChartPrice: 0 }),
   setSelectedTimeframe: (tf) => set({ selectedTimeframe: tf }),
+  setMarketRegion: (region) => set({ marketRegion: region }),
 
   loadWatchlistFromDB: async () => {
     try {

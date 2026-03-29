@@ -19,7 +19,7 @@ const NSE_POOL = [
   "BANKBARODA","PNB","IOC","GAIL"
 ];
 
-const NAMES: Record<string, string> = {
+const NSE_NAMES: Record<string, string> = {
   RELIANCE:"Reliance",TCS:"TCS",HDFCBANK:"HDFC Bank",INFY:"Infosys",ICICIBANK:"ICICI Bank",
   HINDUNILVR:"Hindustan Unilever",SBIN:"SBI",BHARTIARTL:"Bharti Airtel",ITC:"ITC",
   KOTAKBANK:"Kotak Bank",LT:"L&T",AXISBANK:"Axis Bank",BAJFINANCE:"Bajaj Finance",
@@ -37,16 +37,42 @@ const NAMES: Record<string, string> = {
   BANKBARODA:"Bank of Baroda",PNB:"PNB",IOC:"IOC",GAIL:"GAIL"
 };
 
+// Popular US stocks
+const US_POOL = [
+  "AAPL","MSFT","GOOGL","AMZN","NVDA","META","TSLA","BRK-B","JPM","V",
+  "UNH","MA","JNJ","PG","HD","XOM","AVGO","LLY","COST","ABBV",
+  "MRK","PEP","KO","ADBE","CRM","WMT","BAC","NFLX","AMD","INTC",
+  "DIS","CSCO","PFE","CMCSA","VZ","T","NKE","MCD","PYPL","QCOM",
+  "AMAT","UBER","SQ","SNAP","COIN","PLTR","SOFI","RIVN","LCID","HOOD"
+];
+
+const US_NAMES: Record<string, string> = {
+  AAPL:"Apple",MSFT:"Microsoft",GOOGL:"Alphabet",AMZN:"Amazon",NVDA:"NVIDIA",
+  META:"Meta",TSLA:"Tesla","BRK-B":"Berkshire",JPM:"JPMorgan",V:"Visa",
+  UNH:"UnitedHealth",MA:"Mastercard",JNJ:"J&J",PG:"P&G",HD:"Home Depot",
+  XOM:"Exxon",AVGO:"Broadcom",LLY:"Eli Lilly",COST:"Costco",ABBV:"AbbVie",
+  MRK:"Merck",PEP:"PepsiCo",KO:"Coca-Cola",ADBE:"Adobe",CRM:"Salesforce",
+  WMT:"Walmart",BAC:"Bank of America",NFLX:"Netflix",AMD:"AMD",INTC:"Intel",
+  DIS:"Disney",CSCO:"Cisco",PFE:"Pfizer",CMCSA:"Comcast",VZ:"Verizon",
+  T:"AT&T",NKE:"Nike",MCD:"McDonald's",PYPL:"PayPal",QCOM:"Qualcomm",
+  AMAT:"Applied Materials",UBER:"Uber",SQ:"Block",SNAP:"Snap",COIN:"Coinbase",
+  PLTR:"Palantir",SOFI:"SoFi",RIVN:"Rivian",LCID:"Lucid",HOOD:"Robinhood"
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { count = 10 } = await req.json().catch(() => ({}));
+    const { count = 10, market = 'IN' } = await req.json().catch(() => ({}));
 
-    // Use v8 chart API in batch — fetch 1d data for each symbol via spark
-    const symbols = NSE_POOL.map(s => `${s}.NS`).join(",");
+    const isUS = market === 'US';
+    const pool = isUS ? US_POOL : NSE_POOL;
+    const names = isUS ? US_NAMES : NSE_NAMES;
+    const suffix = isUS ? '' : '.NS';
+
+    const symbols = pool.map(s => `${s}${suffix}`).join(",");
     const url = `https://query1.finance.yahoo.com/v8/finance/spark?symbols=${symbols}&range=1d&interval=1d`;
 
     const response = await fetch(url, {
@@ -56,9 +82,8 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      // Fallback: fetch individual charts for a smaller set
       console.log("Spark API failed, using individual chart fallback");
-      const results = await fetchIndividual(NSE_POOL.slice(0, 20));
+      const results = await fetchIndividual(pool.slice(0, 20), suffix, names);
       results.sort((a: any, b: any) => b.change - a.change);
       const losers = [...results].reverse().filter((r: any) => r.change < 0).slice(0, count);
       return new Response(
@@ -70,8 +95,8 @@ serve(async (req) => {
     const data = await response.json();
     const results: any[] = [];
 
-    for (const sym of NSE_POOL) {
-      const yahooSym = `${sym}.NS`;
+    for (const sym of pool) {
+      const yahooSym = `${sym}${suffix}`;
       const sparkData = data?.spark?.result?.find((r: any) => r.symbol === yahooSym);
       if (!sparkData?.response?.[0]) continue;
 
@@ -83,7 +108,7 @@ serve(async (req) => {
         const change = ((price - prevClose) / prevClose) * 100;
         results.push({
           symbol: sym,
-          name: NAMES[sym] || sym,
+          name: names[sym] || sym,
           price,
           change: Math.round(change * 100) / 100,
         });
@@ -91,8 +116,6 @@ serve(async (req) => {
     }
 
     results.sort((a, b) => b.change - a.change);
-
-    // Top gainers and losers
     const losers = [...results].reverse().filter(r => r.change < 0).slice(0, count);
 
     return new Response(
@@ -108,11 +131,11 @@ serve(async (req) => {
   }
 });
 
-async function fetchIndividual(symbols: string[]) {
+async function fetchIndividual(symbols: string[], suffix: string, names: Record<string, string>) {
   const results: any[] = [];
   const fetches = symbols.map(async (sym) => {
     try {
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${sym}.NS?interval=1d&range=1d`;
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${sym}${suffix}?interval=1d&range=1d`;
       const resp = await fetch(url, {
         headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
       });
@@ -125,7 +148,7 @@ async function fetchIndividual(symbols: string[]) {
       if (price && prevClose && prevClose > 0) {
         results.push({
           symbol: sym,
-          name: NAMES[sym] || sym,
+          name: names[sym] || sym,
           price,
           change: Math.round(((price - prevClose) / prevClose) * 10000) / 100,
         });

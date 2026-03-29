@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Capacitor } from '@capacitor/core';
 import TopBar from '@/components/TopBar';
 import TradingChart from '@/components/TradingChart';
@@ -10,6 +10,8 @@ import TradeHistory from '@/components/TradeHistory';
 import AISignals from '@/components/AISignals';
 import TopPerformers from '@/components/TopPerformers';
 import ExploreStocks from '@/components/ExploreStocks';
+import MarketRegionToggle from '@/components/MarketRegionToggle';
+import PullToRefresh from '@/components/PullToRefresh';
 import { useTradingStore } from '@/stores/tradingStore';
 import { useIsMobile } from '@/hooks/use-mobile';
 import GuidedTour from '@/components/GuidedTour';
@@ -56,13 +58,12 @@ function CollapsibleSection({ title, icon: Icon, count, defaultOpen = false, chi
 }
 
 const Index = () => {
-  const { loadFromDB, positions, trades } = useTradingStore();
+  const { loadFromDB, positions, trades, loadUserWatchlist } = useTradingStore();
   const isMobile = useIsMobile();
   const isLandscape = useIsLandscape();
 
   useEffect(() => {
     loadFromDB();
-    // Lock portrait on Android for dashboard
     if (Capacitor.isNativePlatform()) {
       import('@capacitor/screen-orientation').then(({ ScreenOrientation }) => {
         ScreenOrientation.lock({ orientation: 'portrait' }).catch(() => {});
@@ -74,6 +75,15 @@ const Index = () => {
       };
     }
   }, []);
+
+  const handleRefresh = useCallback(async () => {
+    // Refresh market movers + watchlist data
+    const refreshExplore = (ExploreStocks as any).__refresh;
+    await Promise.all([
+      refreshExplore?.(),
+      loadUserWatchlist(),
+    ]);
+  }, [loadUserWatchlist]);
 
   // Mobile landscape
   if (isMobile && isLandscape) {
@@ -104,15 +114,23 @@ const Index = () => {
         <div className="flex-shrink-0 sticky top-0 z-30">
           <TopBar />
         </div>
-        <div className="flex-1 overflow-y-auto scrollbar-thin pb-20">
+        <PullToRefresh onRefresh={handleRefresh} className="flex-1 pb-20">
           <div className="p-2.5 space-y-2.5">
-            {/* Portfolio summary */}
-            <div data-tour="portfolio"><PortfolioSummary /></div>
+            {/* Portfolio summary + Region toggle */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex-1" data-tour="portfolio"><PortfolioSummary /></div>
+            </div>
 
-            {/* Market movers (dynamic gainers + losers) — TOP */}
+            {/* Region toggle row */}
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">Market</span>
+              <MarketRegionToggle />
+            </div>
+
+            {/* Market movers (dynamic gainers + losers) */}
             <ExploreStocks />
 
-            {/* Watchlist movers (from user's watchlist) */}
+            {/* Watchlist movers */}
             <TopPerformers />
 
             {/* Chart */}
@@ -137,7 +155,7 @@ const Index = () => {
               <TradeHistory />
             </CollapsibleSection>
           </div>
-        </div>
+        </PullToRefresh>
         <GuidedTour />
       </div>
     );
@@ -149,8 +167,11 @@ const Index = () => {
       <TopBar />
 
       <div className="flex-1 flex flex-col gap-2 p-2.5 overflow-hidden">
-        {/* Portfolio summary */}
-        <div data-tour="portfolio"><PortfolioSummary /></div>
+        {/* Portfolio summary + region toggle */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1" data-tour="portfolio"><PortfolioSummary /></div>
+          <MarketRegionToggle />
+        </div>
 
         {/* Main content */}
         <div className="flex-1 flex gap-2.5 min-h-0">
