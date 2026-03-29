@@ -1079,15 +1079,24 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
-      canvas.width = Math.round(rect.width * dpr);
-      canvas.height = Math.round(rect.height * dpr);
-    }
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, rect.width, rect.height);
+    updateDpr();
+    const dpr = _dpr;
 
-    for (const d of drawings) {
+    // Hard-reset canvas every frame: prevents stale transform/path state leaking
+    // across frames (causes stray lines to top-right corner on orientation change)
+    const cw = Math.round(rect.width * dpr);
+    const ch = Math.round(rect.height * dpr);
+    canvas.width = cw;
+    canvas.height = ch;
+    canvas.style.width = `${rect.width}px`;
+    canvas.style.height = `${rect.height}px`;
+
+    // Reset transform fully, clear, then set CSS-pixel coordinate system
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, cw, ch);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
       if (d.visible === false) continue;
       const isSel = d.id === selectedDrawingId;
       try {
