@@ -34,42 +34,45 @@ export default function DrawingToolbar({
       <div className="relative">
         <button
           onClick={() => { setShowColors(p => !p); setShowWidths(false); }}
-          className="w-6 h-6 rounded border border-border active:scale-90 transition-transform"
-          style={{ backgroundColor: color }}
+          className="w-7 h-7 rounded border border-border active:scale-90 transition-transform"
+          style={{ backgroundColor: color, minWidth: 28, minHeight: 28 }}
           title="Color"
         />
         {showColors && (
-          <div className="absolute top-full left-0 mt-1 grid grid-cols-5 gap-1 bg-card border border-border rounded-lg p-1.5 shadow-xl z-50">
+          <div className="absolute bottom-full left-0 mb-1 grid grid-cols-5 gap-1.5 bg-card border border-border rounded-lg p-2 shadow-xl z-50 min-w-[160px]">
             {PALETTE.map(c => (
               <button
                 key={c}
                 onClick={() => { onColorChange(c); setShowColors(false); }}
-                className={`w-6 h-6 rounded-sm border transition-transform active:scale-90 ${c === color ? 'border-primary ring-1 ring-primary' : 'border-border/50'}`}
-                style={{ backgroundColor: c }}
+                className={`w-7 h-7 rounded-sm border transition-transform active:scale-90 ${c === color ? 'border-primary ring-2 ring-primary' : 'border-border/50'}`}
+                style={{ backgroundColor: c, minWidth: 28, minHeight: 28 }}
               />
             ))}
           </div>
         )}
       </div>
 
-      {/* Line width button */}
+      {/* Line width button - shows current px */}
       <div className="relative">
         <button
           onClick={() => { setShowWidths(p => !p); setShowColors(false); }}
-          className="flex items-center justify-center w-6 h-6 rounded border border-border text-[9px] font-mono text-foreground hover:bg-accent active:scale-90 transition-transform"
+          className="flex items-center justify-center gap-1 px-2 h-7 rounded border border-border text-[10px] font-mono text-foreground hover:bg-accent active:scale-90 transition-transform"
+          style={{ minWidth: 44, minHeight: 28 }}
           title="Line width"
         >
           <div className="rounded-full bg-foreground" style={{ width: Math.max(8, lineWidth * 4), height: Math.min(lineWidth * 1.5, 6) }} />
+          <span className="text-[9px] text-muted-foreground">{lineWidth}px</span>
         </button>
         {showWidths && (
-          <div className="absolute top-full left-0 mt-1 flex flex-col gap-0.5 bg-card border border-border rounded-lg p-1.5 shadow-xl z-50">
+          <div className="absolute bottom-full left-0 mb-1 flex flex-col gap-0.5 bg-card border border-border rounded-lg p-1.5 shadow-xl z-50 min-w-[100px]">
             {LINE_WIDTHS.map(w => (
               <button
                 key={w}
                 onClick={() => { onLineWidthChange(w); setShowWidths(false); }}
-                className={`flex items-center gap-2 px-2 py-1 rounded text-[10px] font-mono transition-colors active:scale-95 ${w === lineWidth ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:bg-accent'}`}
+                className={`flex items-center gap-2 px-2 py-1.5 rounded text-[11px] font-mono transition-colors active:scale-95 ${w === lineWidth ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:bg-accent'}`}
+                style={{ minHeight: 36 }}
               >
-                <div className="rounded-full bg-current" style={{ width: 20, height: Math.max(1, w) }} />
+                <div className="rounded-full bg-current" style={{ width: 20, height: Math.max(1.5, w) }} />
                 <span>{w}px</span>
               </button>
             ))}
@@ -81,19 +84,22 @@ export default function DrawingToolbar({
 
       <button
         onClick={onClone}
-        className="px-1.5 py-1 text-[10px] font-mono text-muted-foreground hover:bg-accent rounded active:scale-95"
+        className="px-2 py-1.5 text-[10px] font-mono text-muted-foreground hover:bg-accent rounded active:scale-95"
+        style={{ minHeight: 28 }}
       >
         Clone
       </button>
       <button
         onClick={onDelete}
-        className="px-1.5 py-1 text-[10px] font-mono text-loss hover:bg-loss/10 rounded active:scale-95"
+        className="px-2 py-1.5 text-[10px] font-mono text-loss hover:bg-loss/10 rounded active:scale-95"
+        style={{ minHeight: 28 }}
       >
         Delete
       </button>
       <button
         onClick={onClose}
-        className="px-1 py-1 text-[10px] font-mono text-muted-foreground hover:bg-accent rounded active:scale-95"
+        className="px-1.5 py-1.5 text-[10px] font-mono text-muted-foreground hover:bg-accent rounded active:scale-95"
+        style={{ minHeight: 28 }}
       >
         ✕
       </button>
