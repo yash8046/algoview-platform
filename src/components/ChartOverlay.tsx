@@ -15,11 +15,12 @@ interface ChartOverlayProps {
   onAddDrawing: (drawing: DrawingLine) => void;
   onFinishDrawing: () => void;
   onRemoveDrawing?: (id: string) => void;
+  onUpdateDrawing?: (id: string, updates: Partial<DrawingLine>) => void;
   magnetMode?: boolean;
   candleData?: { time: any; open: number; high: number; low: number; close: number }[];
 }
 
-export default function ChartOverlay({ chart, series, drawingMode, drawingModeRef, drawings, onAddDrawing, onFinishDrawing, onRemoveDrawing, magnetMode = false, candleData = [] }: ChartOverlayProps) {
+export default function ChartOverlay({ chart, series, drawingMode, drawingModeRef, drawings, onAddDrawing, onFinishDrawing, onRemoveDrawing, onUpdateDrawing, magnetMode = false, candleData = [] }: ChartOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawing = useRef(false);
   const startCoord = useRef<{ time: Time; price: number } | null>(null);
@@ -28,6 +29,11 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const laserPixels = useRef<{ x: number; y: number; t: number }[]>([]);
   const laserRaf = useRef<number>(0);
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null);
+  const isDragging = useRef(false);
+  const dragPointIndex = useRef<number | null>(null);
+  const dragStartCoord = useRef<{ time: Time; price: number } | null>(null);
+  const dragOriginalPoints = useRef<{ time: number; price: number }[] | null>(null);
+  const dragOriginalPrice = useRef<number | null>(null);
 
   const toPixel = useCallback((time: Time, price: number) => {
     if (!chart || !series) return null;
@@ -1411,8 +1417,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         const cp = currentPixel.current;
         const mode = drawingModeRef.current;
         ctx.globalAlpha = 0.6;
-        const lineModes: DrawingMode[] = ['trendline', 'ray', 'extended_line', 'arrow_line', 'info_line', 'trend_angle', 'h_segment'];
-        const rectModes: DrawingMode[] = ['rectangle', 'rotated_rectangle', 'parallel_channel', 'disjoint_channel', 'pitchfork', 'fib_channel', 'regression_channel', 'flat_channel', 'schiff_pitchfork', 'inside_pitchfork', 'bars_pattern'];
+        const lineModes: DrawingMode[] = ['trendline', 'ray', 'extended_line', 'arrow_line', 'info_line', 'trend_angle', 'h_segment', 'gann_fan'];
+        const rectModes: DrawingMode[] = ['rectangle', 'rotated_rectangle', 'parallel_channel', 'disjoint_channel', 'pitchfork', 'fib_channel', 'regression_channel', 'flat_channel', 'schiff_pitchfork', 'inside_pitchfork', 'bars_pattern', 'gann_box', 'gann_square'];
         const fibModes: DrawingMode[] = ['fib_retracement', 'fib_extension', 'fib_trend_based', 'fib_fan', 'fib_speed_resistance', 'fib_wedge'];
 
         if (lineModes.includes(mode)) {
@@ -1539,6 +1545,10 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     'gann_fan', 'gann_box', 'gann_square',
   ];
 
+  // Gann tool modes for preview rendering
+  const gannLineModes: DrawingMode[] = ['gann_fan'];
+  const gannRectModes: DrawingMode[] = ['gann_box', 'gann_square'];
+
   const defaultColors: Record<string, string> = {
     trendline: '#22c55e', ray: '#22c55e', extended_line: '#22c55e', arrow_line: '#22c55e',
     info_line: '#06b6d4', trend_angle: '#f59e0b', h_segment: '#f59e0b',
@@ -1586,11 +1596,37 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     const mode = drawingModeRef.current;
     if (mode === 'none') {
-      // Selection mode: tap near a drawing to select it
+      // Selection mode: tap near a drawing to select/drag it
       const coord = fromPixel(e.clientX, e.clientY);
       if (!coord) { setSelectedDrawingId(null); return; }
       const id = findNearestDrawing(coord.x, coord.y);
       setSelectedDrawingId(id);
+      
+      // Start drag if we found a drawing and have update capability
+      if (id && onUpdateDrawing) {
+        const drawing = drawings.find(d => d.id === id);
+        if (drawing && !drawing.locked) {
+          isDragging.current = true;
+          dragStartCoord.current = { time: coord.time, price: coord.price };
+          
+          // Check if near a specific endpoint (for endpoint dragging)
+          if (drawing.points) {
+            dragOriginalPoints.current = drawing.points.map(p => ({ ...p }));
+            for (let i = 0; i < drawing.points.length; i++) {
+              const pp = toPixel(drawing.points[i].time as unknown as Time, drawing.points[i].price);
+              if (pp && Math.abs(coord.x - pp.x) < 12 && Math.abs(coord.y - pp.y) < 12) {
+                dragPointIndex.current = i;
+                break;
+              }
+            }
+          }
+          if (drawing.price != null) {
+            dragOriginalPrice.current = drawing.price;
+          }
+          (e.target as HTMLElement)?.setPointerCapture?.(e.pointerId);
+        }
+      }
+      
       render();
       return;
     }
@@ -1653,6 +1689,40 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     const mode = drawingModeRef.current;
+    // Handle drag in selection mode
+    if (mode === 'none' && isDragging.current && selectedDrawingId && onUpdateDrawing) {
+      const coord = fromPixel(e.clientX, e.clientY);
+      if (!coord || !dragStartCoord.current) return;
+      const drawing = drawings.find(d => d.id === selectedDrawingId);
+      if (!drawing) return;
+      
+      const deltaTime = (coord.time as number) - (dragStartCoord.current.time as number);
+      const deltaPrice = coord.price - dragStartCoord.current.price;
+      
+      if (drawing.points && dragOriginalPoints.current) {
+        if (dragPointIndex.current !== null) {
+          // Drag single endpoint
+          const newPoints = dragOriginalPoints.current.map((p, i) => 
+            i === dragPointIndex.current
+              ? { time: p.time + deltaTime, price: p.price + deltaPrice }
+              : { ...p }
+          );
+          onUpdateDrawing(selectedDrawingId, { points: newPoints });
+        } else {
+          // Drag entire drawing
+          const newPoints = dragOriginalPoints.current.map(p => ({
+            time: p.time + deltaTime,
+            price: p.price + deltaPrice,
+          }));
+          onUpdateDrawing(selectedDrawingId, { points: newPoints });
+        }
+      } else if (drawing.price != null && dragOriginalPrice.current != null) {
+        onUpdateDrawing(selectedDrawingId, { price: dragOriginalPrice.current + deltaPrice });
+      }
+      render();
+      return;
+    }
+    
     if (mode === 'none' || mode === 'eraser' || !isDrawing.current) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -1688,10 +1758,19 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     }
     currentPixel.current = { x, y };
     render();
-  }, [fromPixel, render, drawingModeRef, magnetMode, snapToOHLC, toPixel]);
+  }, [fromPixel, render, drawingModeRef, magnetMode, snapToOHLC, toPixel, selectedDrawingId, onUpdateDrawing, drawings]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     const mode = drawingModeRef.current;
+    // Finish drag
+    if (isDragging.current) {
+      isDragging.current = false;
+      dragPointIndex.current = null;
+      dragStartCoord.current = null;
+      dragOriginalPoints.current = null;
+      dragOriginalPrice.current = null;
+      return;
+    }
     if (mode === 'eraser') return;
     if (mode === 'laser') {
       isDrawing.current = false;

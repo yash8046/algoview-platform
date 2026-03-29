@@ -65,6 +65,16 @@ export function useChartDrawings(symbol: string) {
     });
   }, [pushUndo]);
 
+  const updateDrawing = useCallback((id: string, updates: Partial<DrawingLine>) => {
+    setDrawings((prev) => {
+      const idx = prev.findIndex(d => d.id === id);
+      if (idx === -1) return prev;
+      const updated = [...prev];
+      updated[idx] = { ...updated[idx], ...updates };
+      return updated;
+    });
+  }, []);
+
   const undo = useCallback(() => {
     if (undoStack.current.length === 0) return;
     const prev = undoStack.current.pop()!;
@@ -94,6 +104,7 @@ export function useChartDrawings(symbol: string) {
     drawings,
     addDrawing,
     removeDrawing,
+    updateDrawing,
     clearAllDrawings,
     finishDrawing,
     undo,
