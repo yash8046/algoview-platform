@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { symbol, interval, range } = await req.json();
+    const { symbol, interval, range, region } = await req.json();
 
     if (!symbol) {
       return new Response(JSON.stringify({ error: "symbol is required" }), {
@@ -28,7 +28,8 @@ serve(async (req) => {
       'SENSEX': '^BSESN',
       'BANKNIFTY': '^NSEBANK',
     };
-    const yahooSymbol = INDEX_MAP[symbol] || (symbol.includes(".") || symbol.startsWith("^") ? symbol : `${symbol}.NS`);
+    // For US region, use symbol directly; for IN region, append .NS
+    const yahooSymbol = INDEX_MAP[symbol] || (symbol.includes(".") || symbol.startsWith("^") ? symbol : (region === 'US' ? symbol : `${symbol}.NS`));
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=${interval || "1d"}&range=${range || "6mo"}&includePrePost=false`;
 
     const response = await fetch(url, {

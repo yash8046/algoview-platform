@@ -132,7 +132,7 @@ export default function TradingChart({ minimal = false, toolbarBottom = false, t
       setLoading(true);
       setError(null);
 
-      fetchYahooFinanceData(selectedSymbol, selectedTimeframe)
+      fetchYahooFinanceData(selectedSymbol, selectedTimeframe, false, marketRegion)
         .then((resp) => {
           if (cancelled) return;
           const candleData = resp.candles.map(c => ({

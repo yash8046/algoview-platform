@@ -1680,8 +1680,9 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   }, [chart, scheduleRender]);
 
   // Force immediate render when drawings change (fixes "drawing only appears after next interaction")
+  // Skip during active drag — the drag handler already calls renderImmediate synchronously
   useEffect(() => {
-    // Use RAF to ensure canvas is sized before rendering
+    if (isDragging.current) return;
     const id = requestAnimationFrame(() => renderImmediate());
     return () => cancelAnimationFrame(id);
   }, [drawings, renderImmediate, selectedDrawingId]);

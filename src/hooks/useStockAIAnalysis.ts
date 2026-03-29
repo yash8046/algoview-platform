@@ -91,7 +91,7 @@ export function useStockAIAnalysis(symbol: string, timeframe: string, marketRegi
     setError(null);
 
     try {
-      const data = await fetchYahooFinanceData(symbol, timeframe);
+      const data = await fetchYahooFinanceData(symbol, timeframe, false, marketRegion);
       if (!data.candles || data.candles.length < 50) {
         setError('Insufficient candle data');
         setLoading(false);
@@ -153,7 +153,7 @@ export function useStockAIAnalysis(symbol: string, timeframe: string, marketRegi
     } catch (e: any) {
       console.error(`Stock AI analysis error (${symbol}):`, e);
       try {
-        const data = await fetchYahooFinanceData(symbol, timeframe);
+        const data = await fetchYahooFinanceData(symbol, timeframe, false, marketRegion);
         const candles: OHLCV[] = data.candles.map(c => ({
           time: c.time, open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume,
         }));
