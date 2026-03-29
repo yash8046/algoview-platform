@@ -3,12 +3,7 @@ import type { IChartApi, Time } from 'lightweight-charts';
 import type { DrawingMode, DrawingLine } from './ChartDrawingTools';
 import DrawingToolbar from './DrawingToolbar';
 
-// Pixel-snap: aligns coordinate to device-pixel boundary to prevent sub-pixel blur/flicker.
-// Uses live dpr captured each frame via updateDpr().
-let _dpr = window.devicePixelRatio || 1;
-const updateDpr = () => { _dpr = window.devicePixelRatio || 1; };
-const px = (n: number, lineW: number = 1.5) =>
-  (Math.round(n * _dpr) + ((Math.round(lineW * _dpr) & 1) ? 0.5 : 0)) / _dpr;
+
 
 const FIB_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
 const FIB_EXT_LEVELS = [0, 0.618, 1, 1.382, 1.618, 2, 2.618];
