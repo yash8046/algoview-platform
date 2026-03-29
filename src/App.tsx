@@ -57,6 +57,8 @@ const App = () => {
             <Route path="/privacy" element={<ProtectedRoute><PrivacyPolicy /></ProtectedRoute>} />
             <Route path="/terms" element={<ProtectedRoute><TermsOfService /></ProtectedRoute>} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            {/* Let Lovable Cloud handle OAuth callback — render nothing so it doesn't 404 */}
+            <Route path="/~oauth" element={null} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <MobileBottomNav />

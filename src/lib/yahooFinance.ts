@@ -53,9 +53,10 @@ const CACHE_TTL: Record<string, number> = {
 export async function fetchYahooFinanceData(
   symbol: string,
   timeframe: string = '1D',
-  backtest: boolean = false
+  backtest: boolean = false,
+  region?: 'IN' | 'US'
 ): Promise<YahooResponse> {
-  const cacheKey = `${symbol}-${timeframe}-${backtest}`;
+  const cacheKey = `${symbol}-${timeframe}-${backtest}-${region || ''}`;
   const cached = dataCache.get(cacheKey);
   const ttl = CACHE_TTL[timeframe] || 60_000;
 
@@ -67,7 +68,7 @@ export async function fetchYahooFinanceData(
   const params = map[timeframe] || map['1D'];
 
   const { data, error } = await supabase.functions.invoke('yahoo-finance', {
-    body: { symbol, interval: params.interval, range: params.range },
+    body: { symbol, interval: params.interval, range: params.range, region },
   });
 
   if (error) throw new Error(error.message || 'Failed to fetch market data');
