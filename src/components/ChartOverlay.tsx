@@ -1368,7 +1368,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       }
       if (d.points) {
         for (const pt of d.points) {
-          const p = toPixel(pt.time as unknown as Time, pt.price);
+          const p = toPixelUnclamped(pt.time as unknown as Time, pt.price);
           if (p && Math.abs(px - p.x) < threshold && Math.abs(py - p.y) < threshold) return d.id;
         }
         // Also check line segments between points for better hit detection
