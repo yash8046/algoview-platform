@@ -5,6 +5,7 @@ import { useCryptoStore } from '@/stores/cryptoStore';
 import { useRewardedAd } from '@/hooks/useRewardedAd';
 import { useState, useEffect } from 'react';
 import { getUsdToInrRate } from '@/lib/exchangeRate';
+import ConfidenceGauge from '@/components/ConfidenceGauge';
 
 const signalConfig = {
   strong_buy: { icon: TrendingUp, color: 'text-gain', bg: 'bg-gain/15', border: 'border-gain/30', label: 'STRONG BULLISH' },
@@ -140,8 +141,11 @@ function SignalCard({ result }: { result: AIAnalysisResult }) {
   const upProb = Math.round((ensemble.signal === 'buy' || ensemble.signal === 'hold' ? ensemble.confidence : 1 - ensemble.confidence) * 100);
   const downProb = 100 - upProb;
 
-  return (
+    return (
     <div className="space-y-3">
+      {/* Confidence Speedometer - on top */}
+      <ConfidenceGauge value={ensemble.confidence} label="Ensemble Confidence" size={110} />
+
       {/* AI Insight label */}
       <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground">
         <Info className="w-3 h-3" />
@@ -280,11 +284,7 @@ function SignalCard({ result }: { result: AIAnalysisResult }) {
         )}
       </div>
 
-      <div className="space-y-2">
-        <ConfidenceBar value={rule.confidence} label="Technical Analysis" />
-        <ConfidenceBar value={ai.confidence} label="AI + Sentiment" />
-        <ConfidenceBar value={ensemble.confidence} label="Ensemble" />
-      </div>
+      {/* Confidence gauges replaced by speedometer at top */}
 
       <div className="grid grid-cols-2 gap-1.5">
         {[
