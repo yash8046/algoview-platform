@@ -1468,6 +1468,18 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     const mode = drawingModeRef.current;
+    // Throttle move events to ~60fps
+    const now = performance.now();
+    if (now - lastMoveTime.current < 16) return;
+    lastMoveTime.current = now;
+
+    // Update crosshair position
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const rect = canvas.getBoundingClientRect();
+      crosshairPos.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+
     // Handle drag in selection mode
     if (mode === 'none' && isDragging.current && selectedDrawingId && onUpdateDrawing) {
       const coord = fromPixel(e.clientX, e.clientY);
@@ -1499,8 +1511,11 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       return;
     }
 
-    if (mode === 'none' || mode === 'eraser' || !isDrawing.current) return;
-    const canvas = canvasRef.current;
+    if (mode === 'none' || mode === 'eraser' || !isDrawing.current) {
+      // Still schedule render for crosshair update
+      if (mode !== 'none') scheduleRender();
+      return;
+    }
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left; const y = e.clientY - rect.top;
