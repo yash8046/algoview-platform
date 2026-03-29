@@ -118,6 +118,11 @@ export default function TradePanel() {
           <div className="bg-secondary/40 rounded-lg px-3 py-2 font-mono text-sm font-bold text-foreground mt-0.5 border border-border/50">
             {price > 0 ? `₹${price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '...'}
           </div>
+          {isUS && rawPrice > 0 && (
+            <div className="font-mono text-[10px] text-muted-foreground/50 mt-0.5">
+              ${rawPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} · ₹{usdToInr.toFixed(2)}/USD
+            </div>
+          )}
         </div>
 
         {/* Quantity + held info */}
