@@ -3,11 +3,12 @@ import type { IChartApi, Time } from 'lightweight-charts';
 import type { DrawingMode, DrawingLine } from './ChartDrawingTools';
 import DrawingToolbar from './DrawingToolbar';
 
-// Pixel-snap helper: aligns a CSS-pixel coordinate to the nearest device pixel
-// so strokes land on exact pixel boundaries, preventing Android flicker/blur.
-// After ctx.setTransform(DPR,...) all drawing is in CSS pixels; this just rounds + half-pixel offsets.
-const px = (v: number, lineW: number = 1.5) =>
-  Math.round(v) + ((Math.round(lineW) % 2) ? 0.5 : 0);
+// Pixel-snap: aligns coordinate to device-pixel boundary to prevent sub-pixel blur/flicker.
+// Uses live dpr captured each frame via updateDpr().
+let _dpr = window.devicePixelRatio || 1;
+const updateDpr = () => { _dpr = window.devicePixelRatio || 1; };
+const px = (n: number, lineW: number = 1.5) =>
+  (Math.round(n * _dpr) + ((Math.round(lineW * _dpr) & 1) ? 0.5 : 0)) / _dpr;
 
 const FIB_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
 const FIB_EXT_LEVELS = [0, 0.618, 1, 1.382, 1.618, 2, 2.618];
@@ -1078,13 +1079,24 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
-      canvas.width = Math.round(rect.width * dpr);
-      canvas.height = Math.round(rect.height * dpr);
-    }
+    updateDpr();
+    const dpr = _dpr;
+
+    // Hard-reset canvas every frame: prevents stale transform/path state leaking
+    // across frames (causes stray lines to top-right corner on orientation change)
+    const cw = Math.round(rect.width * dpr);
+    const ch = Math.round(rect.height * dpr);
+    canvas.width = cw;
+    canvas.height = ch;
+    canvas.style.width = `${rect.width}px`;
+    canvas.style.height = `${rect.height}px`;
+
+    // Reset transform fully, clear, then set CSS-pixel coordinate system
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, cw, ch);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, rect.width, rect.height);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
 
     for (const d of drawings) {
       if (d.visible === false) continue;
