@@ -65,6 +65,7 @@ export function useChartDrawings(symbol: string) {
     });
   }, [pushUndo]);
 
+  // updateDrawing WITH undo support (for drag completion)
   const updateDrawing = useCallback((id: string, updates: Partial<DrawingLine>) => {
     setDrawings((prev) => {
       const idx = prev.findIndex(d => d.id === id);
@@ -73,6 +74,12 @@ export function useChartDrawings(symbol: string) {
       updated[idx] = { ...updated[idx], ...updates };
       return updated;
     });
+  }, []);
+
+  // Commit undo snapshot after drag ends (call this on pointerUp)
+  const commitDragUndo = useCallback((snapshotBeforeDrag: DrawingLine[]) => {
+    undoStack.current = [...undoStack.current.slice(-MAX_UNDO), snapshotBeforeDrag];
+    redoStack.current = [];
   }, []);
 
   const undo = useCallback(() => {
@@ -105,6 +112,7 @@ export function useChartDrawings(symbol: string) {
     addDrawing,
     removeDrawing,
     updateDrawing,
+    commitDragUndo,
     clearAllDrawings,
     finishDrawing,
     undo,
