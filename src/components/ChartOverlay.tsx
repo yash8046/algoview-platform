@@ -1393,14 +1393,9 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     return Math.sqrt((px - projX) ** 2 + (py - projY) ** 2);
   };
 
-  // Passthrough: disable overlay so chart gets ALL gestures natively (no synthetic dispatch)
-  const passthroughToChart = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      canvas.style.pointerEvents = 'none';
-      canvas.style.touchAction = 'auto';
-    }
-  }, []);
+  // No-op: with touchAction:'auto', the browser handles zoom/pan natively
+  // when we don't preventDefault. Kept for API compatibility.
+  const passthroughToChart = useCallback(() => {}, []);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     activePointerIds.current.add(e.pointerId);
