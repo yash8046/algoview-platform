@@ -1513,6 +1513,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
     if (mode === 'laser') {
       isDrawing.current = true;
+      setIsDrawingState(true);
       laserPixels.current = [{ x: coord.x, y: coord.y, t: Date.now() }];
       cancelAnimationFrame(laserRaf.current);
       scheduleRender();
@@ -1521,6 +1522,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
     if (freeDrawModesInput.includes(mode)) {
       isDrawing.current = true;
+      setIsDrawingState(true);
       penCoords.current = [{ time: coord.time, price: coord.price }];
       return;
     }
