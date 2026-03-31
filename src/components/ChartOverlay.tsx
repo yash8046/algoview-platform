@@ -1435,6 +1435,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       }
       if (isDrawing.current) {
         isDrawing.current = false;
+        setIsDrawingState(false);
         startCoord.current = null;
         currentPixel.current = null;
         penCoords.current = [];
