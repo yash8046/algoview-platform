@@ -1756,6 +1756,10 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const isActive = drawingMode !== 'none';
   const hasDrawings = drawings.length > 0;
 
+  const isDrawingRef = useRef(false);
+  // Keep a ref in sync with isDrawing for the render check
+  useEffect(() => { isDrawingRef.current = isDrawing.current; });
+
   const selectedDrawing = selectedDrawingId ? drawings.find(d => d.id === selectedDrawingId) : null;
 
   const handlePointerLeave = useCallback((e: React.PointerEvent) => {
@@ -1764,16 +1768,81 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     scheduleRender();
   }, [scheduleRender]);
 
+  // Canvas only captures pointer events when actively drawing or dragging.
+  // In idle mode (none + no drag), pointerEvents='none' lets the chart handle
+  // all gestures (pinch zoom, pan) natively on Android.
+  const overlayConsumesTouch = isActive || isDraggingState;
+
+  // For selection in idle mode, we use a transparent hit-test div that only
+  // intercepts single taps (pointerdown→pointerup without movement) to select drawings.
+  const handleSelectionTap = useCallback((e: React.PointerEvent) => {
+    // Only process in idle mode
+    if (drawingModeRef.current !== 'none') return;
+    // Ignore multi-touch
+    if (!e.isPrimary) return;
+    const coord = fromPixel(e.clientX, e.clientY);
+    if (!coord) { setSelectedDrawingId(null); return; }
+    const id = findNearestDrawing(coord.x, coord.y);
+    if (!id) { setSelectedDrawingId(null); return; }
+    // Found a drawing — prevent default to stop chart pan, select it
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedDrawingId(id);
+
+    // Start drag
+    if (onUpdateDrawing) {
+      const drawing = drawings.find(d => d.id === id);
+      if (drawing && !drawing.locked) {
+        isDragging.current = true;
+        setIsDraggingState(true);
+        dragStartCoord.current = { time: coord.time, price: coord.price };
+        dragSnapshotRef.current = drawings.map(d => ({ ...d, points: d.points?.map(p => ({ ...p })) }));
+        if (drawing.points) {
+          dragOriginalPoints.current = drawing.points.map(p => ({ ...p }));
+          dragPointIndex.current = null;
+          for (let i = 0; i < drawing.points.length; i++) {
+            const pp = toPixelUnclamped(drawing.points[i].time as unknown as Time, drawing.points[i].price);
+            if (pp && Math.abs(coord.x - pp.x) < 14 && Math.abs(coord.y - pp.y) < 14) {
+              dragPointIndex.current = i;
+              break;
+            }
+          }
+        }
+        if (drawing.price != null) {
+          dragOriginalPrice.current = drawing.price;
+        }
+        (e.target as HTMLElement)?.setPointerCapture?.(e.pointerId);
+      }
+    }
+    scheduleRender();
+  }, [fromPixel, findNearestDrawing, onUpdateDrawing, drawings, toPixelUnclamped, scheduleRender, drawingModeRef]);
+
   return (
     <div className="relative w-full h-full">
+      {/* Selection hit-test layer: only active in idle mode with drawings.
+          Uses touch-action to allow pinch-zoom to pass through to chart. */}
+      {!overlayConsumesTouch && hasDrawings && (
+        <div
+          className="absolute inset-0 z-10"
+          style={{ touchAction: 'pan-x pan-y pinch-zoom', pointerEvents: 'auto' }}
+          onPointerDown={handleSelectionTap}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerLeave}
+        />
+      )}
       <canvas
         ref={canvasRef}
         className={`w-full h-full ${isActive ? (drawingMode === 'eraser' ? 'cursor-not-allowed' : 'cursor-crosshair') : (hasDrawings ? 'cursor-default' : '')}`}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerLeave}
-        style={{ touchAction: isActive || isDraggingState ? 'none' : 'auto' }}
+        onPointerDown={overlayConsumesTouch ? handlePointerDown : undefined}
+        onPointerMove={overlayConsumesTouch ? handlePointerMove : undefined}
+        onPointerUp={overlayConsumesTouch ? handlePointerUp : undefined}
+        onPointerLeave={overlayConsumesTouch ? handlePointerLeave : undefined}
+        onPointerCancel={handlePointerUp}
+        style={{
+          pointerEvents: overlayConsumesTouch ? 'auto' : 'none',
+          touchAction: overlayConsumesTouch ? 'none' : 'pan-x pan-y pinch-zoom',
+        }}
       />
       {/* Fixed bottom-center floating toolbar (TradingView style) — never overlaps drawings */}
       {selectedDrawingId && selectedDrawing && (
