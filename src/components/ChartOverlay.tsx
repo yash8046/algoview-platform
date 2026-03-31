@@ -1759,6 +1759,32 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     cancelAnimationFrame(renderRafRef.current);
   }, []);
 
+  // Reset selectedDrawingId if the selected drawing no longer exists (e.g. after clear all)
+  useEffect(() => {
+    if (selectedDrawingId && !drawings.find(d => d.id === selectedDrawingId)) {
+      setSelectedDrawingId(null);
+      // Also reset any stale interaction state
+      isDrawing.current = false;
+      setIsDrawingState(false);
+      isDragging.current = false;
+      setIsDraggingState(false);
+      startCoord.current = null;
+      currentPixel.current = null;
+      lastKnownCoord.current = null;
+      dragStartCoord.current = null;
+      dragOriginalPoints.current = null;
+      dragOriginalPrice.current = null;
+      dragSnapshotRef.current = null;
+      activePointerIds.current.clear();
+      // Restore canvas to non-interactive
+      const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.style.pointerEvents = '';
+        canvas.style.touchAction = '';
+      }
+    }
+  }, [drawings, selectedDrawingId]);
+
   const isActive = drawingMode !== 'none';
 
   const selectedDrawing = selectedDrawingId ? drawings.find(d => d.id === selectedDrawingId) : null;
