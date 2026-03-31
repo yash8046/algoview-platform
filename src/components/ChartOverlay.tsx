@@ -27,6 +27,7 @@ interface ChartOverlayProps {
 export default function ChartOverlay({ chart, series, drawingMode, drawingModeRef, drawings, onAddDrawing, onFinishDrawing, onRemoveDrawing, onUpdateDrawing, onCommitDragUndo, magnetMode = false, candleData = [] }: ChartOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawing = useRef(false);
+  const [isDrawingState, setIsDrawingState] = useState(false); // React state mirror for overlay control
   const startCoord = useRef<{ time: Time; price: number } | null>(null);
   const currentPixel = useRef<{ x: number; y: number } | null>(null);
   const penCoords = useRef<{ time: Time; price: number }[]>([]);
