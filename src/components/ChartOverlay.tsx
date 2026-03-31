@@ -1533,31 +1533,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     }
   }, [fromPixel, onAddDrawing, onFinishDrawing, onRemoveDrawing, scheduleRender, drawingModeRef, findNearestDrawing, snapToOHLC, onUpdateDrawing, drawings, toPixelUnclamped, selectedDrawingId, passthroughToChart, renderImmediate]);
 
-  // Passthrough: temporarily disable overlay so chart gets the gesture
-  const passthroughToChart = useCallback((e: React.PointerEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    canvas.style.pointerEvents = 'none';
-    // Re-dispatch event to element underneath
-    const underneath = document.elementFromPoint(e.clientX, e.clientY);
-    if (underneath && underneath !== canvas) {
-      underneath.dispatchEvent(new PointerEvent('pointerdown', {
-        clientX: e.clientX, clientY: e.clientY,
-        pointerId: e.pointerId, pointerType: e.pointerType,
-        bubbles: true, cancelable: true, isPrimary: e.isPrimary,
-      }));
-    }
-    // Restore on gesture end
-    const restore = () => {
-      if (canvas) canvas.style.pointerEvents = '';
-      window.removeEventListener('pointerup', restore);
-      window.removeEventListener('touchend', restore);
-    };
-    window.addEventListener('pointerup', restore, { once: true });
-    window.addEventListener('touchend', restore, { once: true });
-    // Safety timeout
-    setTimeout(restore, 5000);
-  }, []);
+
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     const mode = drawingModeRef.current;
