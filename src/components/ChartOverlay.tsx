@@ -1756,10 +1756,6 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const isActive = drawingMode !== 'none';
   const hasDrawings = drawings.length > 0;
 
-  const isDrawingRef = useRef(false);
-  // Keep a ref in sync with isDrawing for the render check
-  useEffect(() => { isDrawingRef.current = isDrawing.current; });
-
   const selectedDrawing = selectedDrawingId ? drawings.find(d => d.id === selectedDrawingId) : null;
 
   const handlePointerLeave = useCallback((e: React.PointerEvent) => {
@@ -1768,26 +1764,41 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     scheduleRender();
   }, [scheduleRender]);
 
-  // Canvas only captures pointer events when actively drawing or dragging.
-  // In idle mode (none + no drag), pointerEvents='none' lets the chart handle
-  // all gestures (pinch zoom, pan) natively on Android.
-  const overlayConsumesTouch = isActive || isDraggingState;
+  // The overlay canvas consumes ALL touch when actively drawing or dragging.
+  // Otherwise it is pointer-events:none so the chart gets pinch/pan natively.
+  const overlayActive = isActive || isDraggingState;
 
-  // For selection in idle mode, we use a transparent hit-test div that only
-  // intercepts single taps (pointerdown→pointerup without movement) to select drawings.
-  const handleSelectionTap = useCallback((e: React.PointerEvent) => {
-    // Only process in idle mode
+  // When idle (overlayActive=false) and drawings exist, we need a way
+  // to let users tap a drawing to select/drag it WITHOUT blocking zoom.
+  // Solution: a wrapper div with onPointerDown that does a quick hit-test.
+  // If a drawing is hit → enable the canvas and start drag.
+  // If nothing hit → do nothing; the event propagates to the chart for zoom/pan.
+  const handleWrapperPointerDown = useCallback((e: React.PointerEvent) => {
+    // Skip if overlay is already active (canvas handles it)
     if (drawingModeRef.current !== 'none') return;
-    // Ignore multi-touch
+    if (isDragging.current) return;
     if (!e.isPrimary) return;
+
     const coord = fromPixel(e.clientX, e.clientY);
-    if (!coord) { setSelectedDrawingId(null); return; }
+    if (!coord) return;
     const id = findNearestDrawing(coord.x, coord.y);
-    if (!id) { setSelectedDrawingId(null); return; }
-    // Found a drawing — prevent default to stop chart pan, select it
+    if (!id) {
+      // No drawing hit — let the event propagate to chart (zoom/pan)
+      setSelectedDrawingId(null);
+      return;
+    }
+
+    // A drawing was tapped — prevent chart from getting this touch
     e.preventDefault();
     e.stopPropagation();
     setSelectedDrawingId(id);
+
+    // Temporarily enable canvas pointer events for the drag session
+    const canvas = canvasRef.current;
+    if (canvas) {
+      canvas.style.pointerEvents = 'auto';
+      canvas.style.touchAction = 'none';
+    }
 
     // Start drag
     if (onUpdateDrawing) {
@@ -1811,40 +1822,45 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         if (drawing.price != null) {
           dragOriginalPrice.current = drawing.price;
         }
-        (e.target as HTMLElement)?.setPointerCapture?.(e.pointerId);
+        // Capture pointer on the canvas so move/up events go there
+        canvas?.setPointerCapture?.(e.pointerId);
       }
     }
     scheduleRender();
   }, [fromPixel, findNearestDrawing, onUpdateDrawing, drawings, toPixelUnclamped, scheduleRender, drawingModeRef]);
 
+  // Wrap the original pointerUp to also restore canvas pointer-events
+  const handlePointerUpWrapped = useCallback((e: React.PointerEvent) => {
+    handlePointerUp(e);
+    // After drag ends, restore canvas to non-interactive if we're in idle mode
+    if (drawingModeRef.current === 'none' && !isDrawing.current) {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.style.pointerEvents = 'none';
+        canvas.style.touchAction = 'pan-x pan-y pinch-zoom';
+      }
+    }
+  }, [handlePointerUp, drawingModeRef]);
+
   return (
-    <div className="relative w-full h-full">
-      {/* Selection hit-test layer: only active in idle mode with drawings.
-          Uses touch-action to allow pinch-zoom to pass through to chart. */}
-      {!overlayConsumesTouch && hasDrawings && (
-        <div
-          className="absolute inset-0 z-10"
-          style={{ touchAction: 'pan-x pan-y pinch-zoom', pointerEvents: 'auto' }}
-          onPointerDown={handleSelectionTap}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerLeave={handlePointerLeave}
-        />
-      )}
+    <div
+      className="relative w-full h-full"
+      onPointerDown={!overlayActive && hasDrawings ? handleWrapperPointerDown : undefined}
+    >
       <canvas
         ref={canvasRef}
-        className={`w-full h-full ${isActive ? (drawingMode === 'eraser' ? 'cursor-not-allowed' : 'cursor-crosshair') : (hasDrawings ? 'cursor-default' : '')}`}
-        onPointerDown={overlayConsumesTouch ? handlePointerDown : undefined}
-        onPointerMove={overlayConsumesTouch ? handlePointerMove : undefined}
-        onPointerUp={overlayConsumesTouch ? handlePointerUp : undefined}
-        onPointerLeave={overlayConsumesTouch ? handlePointerLeave : undefined}
-        onPointerCancel={handlePointerUp}
+        className={`w-full h-full ${isActive ? (drawingMode === 'eraser' ? 'cursor-not-allowed' : 'cursor-crosshair') : ''}`}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUpWrapped}
+        onPointerLeave={handlePointerLeave}
+        onPointerCancel={handlePointerUpWrapped}
         style={{
-          pointerEvents: overlayConsumesTouch ? 'auto' : 'none',
-          touchAction: overlayConsumesTouch ? 'none' : 'pan-x pan-y pinch-zoom',
+          pointerEvents: overlayActive ? 'auto' : 'none',
+          touchAction: overlayActive ? 'none' : 'pan-x pan-y pinch-zoom',
         }}
       />
-      {/* Fixed bottom-center floating toolbar (TradingView style) — never overlaps drawings */}
+      {/* Fixed bottom-center floating toolbar (TradingView style) */}
       {selectedDrawingId && selectedDrawing && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50" onPointerDown={(e) => e.stopPropagation()}>
           <DrawingToolbar
