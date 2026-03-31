@@ -1756,20 +1756,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const isActive = drawingMode !== 'none';
   const hasDrawings = drawings.length > 0;
 
-  // Get selected drawing pixel position for floating toolbar
   const selectedDrawing = selectedDrawingId ? drawings.find(d => d.id === selectedDrawingId) : null;
-  const selectedPos = (() => {
-    if (!selectedDrawing || !canvasRef.current) return null;
-    if (selectedDrawing.points && selectedDrawing.points.length > 0) {
-      const p = toPixelUnclamped(selectedDrawing.points[0].time as unknown as Time, selectedDrawing.points[0].price);
-      if (p) return { x: p.x, y: p.y };
-    }
-    if (selectedDrawing.price != null && series) {
-      const y = series.priceToCoordinate(selectedDrawing.price);
-      if (y !== null) return { x: 60, y };
-    }
-    return null;
-  })();
 
   const handlePointerLeave = useCallback((e: React.PointerEvent) => {
     activePointerIds.current.delete(e.pointerId);
