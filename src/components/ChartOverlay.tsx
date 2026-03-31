@@ -1731,6 +1731,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     });
     startCoord.current = null;
     currentPixel.current = null;
+    lastKnownCoord.current = null;
+    currentPixel.current = null;
     setSelectedDrawingId(newId);
     renderImmediate();
     // Defer mode reset to next frame so drawing commits before canvas goes inactive
