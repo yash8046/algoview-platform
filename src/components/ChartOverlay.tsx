@@ -1437,16 +1437,14 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       const coord = fromPixel(e.clientX, e.clientY);
       if (!coord) {
         setSelectedDrawingId(null);
-        // Passthrough: let chart handle this event
-        passthroughToChart(e);
+        passthroughToChart();
         return;
       }
       const id = findNearestDrawing(coord.x, coord.y);
 
       if (!id) {
         setSelectedDrawingId(null);
-        // Passthrough: let chart handle zoom/pan
-        passthroughToChart(e);
+        passthroughToChart();
         return;
       }
 
