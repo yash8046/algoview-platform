@@ -1710,8 +1710,12 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     }
     if (!isDrawing.current || !startCoord.current) return;
     isDrawing.current = false;
-    const coord = fromPixel(e.clientX, e.clientY);
-    if (!coord) { startCoord.current = null; setIsDrawingState(false); return; }
+    // Use pointerUp coords, fall back to last known coord from pointerMove (Android fix)
+    let coord = fromPixel(e.clientX, e.clientY);
+    if (!coord && lastKnownCoord.current) {
+      coord = lastKnownCoord.current;
+    }
+    if (!coord) { startCoord.current = null; currentPixel.current = null; lastKnownCoord.current = null; setIsDrawingState(false); return; }
 
     const snapped = snapToOHLC(coord.time, coord.price);
     const color = defaultColors[mode] || '#ffffff';
