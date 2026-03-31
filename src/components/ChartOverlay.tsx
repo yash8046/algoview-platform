@@ -1870,18 +1870,20 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     return () => document.removeEventListener('pointerdown', onPointerDown, { capture: true });
   }, [overlayActive, drawings, fromPixel, findNearestDrawing, onUpdateDrawing, toPixelUnclamped, scheduleRender, drawingModeRef]);
 
-  // After drag ends, restore canvas to non-interactive
+  // After any pointer up, restore canvas to non-interactive if we're idle
   const handlePointerUpFinal = useCallback((e: React.PointerEvent) => {
     handlePointerUp(e);
-    // If we just finished a drag (not a draw), restore canvas immediately
-    if (drawingModeRef.current === 'none' && !isDrawing.current) {
+    activePointerIds.current.delete(e.pointerId);
+    // Restore canvas after drag, multi-touch passthrough, or any non-draw interaction
+    if (!isDrawing.current && !isDragging.current) {
       const canvas = canvasRef.current;
       if (canvas) {
+        // Reset imperative styles so React style prop takes over
         canvas.style.pointerEvents = '';
         canvas.style.touchAction = '';
       }
     }
-  }, [handlePointerUp, drawingModeRef]);
+  }, [handlePointerUp]);
 
   return (
     <>
