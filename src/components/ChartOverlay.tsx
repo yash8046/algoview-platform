@@ -1554,11 +1554,16 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     if (now - lastMoveTime.current < 16) return;
     lastMoveTime.current = now;
 
-    // Update crosshair position
+    // Update crosshair position and store last known coord for pointerUp fallback
     const canvas = canvasRef.current;
     if (canvas) {
       const rect = canvas.getBoundingClientRect();
       crosshairPos.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+    // Store last valid coordinate (used as fallback in pointerUp on Android)
+    const moveCoord = fromPixel(e.clientX, e.clientY);
+    if (moveCoord) {
+      lastKnownCoord.current = moveCoord;
     }
 
     // Handle drag in selection mode
