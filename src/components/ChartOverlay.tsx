@@ -1405,10 +1405,9 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     activePointerIds.current.add(e.pointerId);
 
-    // Multi-touch detection: if 2+ pointers, cancel any drag and passthrough for zoom
+    // Multi-touch detection: if 2+ pointers, cancel any draw/drag and let chart zoom
     if (activePointerIds.current.size > 1) {
       if (isDragging.current) {
-        // Cancel in-progress drag — restore original state
         isDragging.current = false;
         setIsDraggingState(false);
         if (selectedDrawingId && dragOriginalPoints.current && onUpdateDrawing) {
@@ -1427,8 +1426,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         currentPixel.current = null;
         penCoords.current = [];
       }
-      // Let chart handle multi-touch (pinch zoom)
-      passthroughToChart(e);
+      // Disable overlay entirely so native pinch-zoom works
+      passthroughToChart();
       return;
     }
 
