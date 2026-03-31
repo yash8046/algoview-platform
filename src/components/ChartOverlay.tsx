@@ -1764,88 +1764,103 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     scheduleRender();
   }, [scheduleRender]);
 
-  // The overlay canvas consumes ALL touch when actively drawing or dragging.
-  // Otherwise it is pointer-events:none so the chart gets pinch/pan natively.
+  // Canvas is interactive ONLY when actively drawing or dragging.
+  // Otherwise it is completely transparent so chart gets ALL gestures (zoom/pan).
   const overlayActive = isActive || isDraggingState;
 
-  // When idle (overlayActive=false) and drawings exist, we need a way
-  // to let users tap a drawing to select/drag it WITHOUT blocking zoom.
-  // Solution: a wrapper div with onPointerDown that does a quick hit-test.
-  // If a drawing is hit → enable the canvas and start drag.
-  // If nothing hit → do nothing; the event propagates to the chart for zoom/pan.
-  const handleWrapperPointerDown = useCallback((e: React.PointerEvent) => {
-    // Skip if overlay is already active (canvas handles it)
-    if (drawingModeRef.current !== 'none') return;
-    if (isDragging.current) return;
-    if (!e.isPrimary) return;
+  // For selecting drawings in idle mode: use a native touchstart/pointerdown
+  // listener on the wrapper that does a hit-test. If a drawing is found,
+  // it enables the canvas temporarily for the drag session.
+  // This avoids any React div blocking touches.
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
-    const coord = fromPixel(e.clientX, e.clientY);
-    if (!coord) return;
-    const id = findNearestDrawing(coord.x, coord.y);
-    if (!id) {
-      // No drawing hit — let the event propagate to chart (zoom/pan)
-      setSelectedDrawingId(null);
-      return;
-    }
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+    // Only listen in idle mode when drawings exist
+    if (overlayActive || !hasDrawings) return;
 
-    // A drawing was tapped — prevent chart from getting this touch
-    e.preventDefault();
-    e.stopPropagation();
-    setSelectedDrawingId(id);
+    const onTouchOrPointerDown = (e: PointerEvent) => {
+      if (drawingModeRef.current !== 'none') return;
+      if (isDragging.current) return;
+      // Skip non-primary (multi-touch second finger)
+      if (!e.isPrimary) return;
 
-    // Temporarily enable canvas pointer events for the drag session
-    const canvas = canvasRef.current;
-    if (canvas) {
-      canvas.style.pointerEvents = 'auto';
-      canvas.style.touchAction = 'none';
-    }
+      const coord = fromPixel(e.clientX, e.clientY);
+      if (!coord) return;
+      const id = findNearestDrawing(coord.x, coord.y);
+      if (!id) {
+        setSelectedDrawingId(null);
+        // Let event propagate to chart for zoom/pan — do NOT preventDefault
+        return;
+      }
 
-    // Start drag
-    if (onUpdateDrawing) {
-      const drawing = drawings.find(d => d.id === id);
-      if (drawing && !drawing.locked) {
-        isDragging.current = true;
-        setIsDraggingState(true);
-        dragStartCoord.current = { time: coord.time, price: coord.price };
-        dragSnapshotRef.current = drawings.map(d => ({ ...d, points: d.points?.map(p => ({ ...p })) }));
-        if (drawing.points) {
-          dragOriginalPoints.current = drawing.points.map(p => ({ ...p }));
-          dragPointIndex.current = null;
-          for (let i = 0; i < drawing.points.length; i++) {
-            const pp = toPixelUnclamped(drawing.points[i].time as unknown as Time, drawing.points[i].price);
-            if (pp && Math.abs(coord.x - pp.x) < 14 && Math.abs(coord.y - pp.y) < 14) {
-              dragPointIndex.current = i;
-              break;
+      // A drawing was tapped — intercept this touch
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      setSelectedDrawingId(id);
+
+      // Temporarily enable canvas for this drag session
+      const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.style.pointerEvents = 'auto';
+        canvas.style.touchAction = 'none';
+      }
+
+      // Start drag
+      if (onUpdateDrawing) {
+        const drawing = drawings.find(d => d.id === id);
+        if (drawing && !drawing.locked) {
+          isDragging.current = true;
+          setIsDraggingState(true);
+          dragStartCoord.current = { time: coord.time, price: coord.price };
+          dragSnapshotRef.current = drawings.map(d => ({ ...d, points: d.points?.map(p => ({ ...p })) }));
+          if (drawing.points) {
+            dragOriginalPoints.current = drawing.points.map(p => ({ ...p }));
+            dragPointIndex.current = null;
+            for (let i = 0; i < drawing.points.length; i++) {
+              const pp = toPixelUnclamped(drawing.points[i].time as unknown as Time, drawing.points[i].price);
+              if (pp && Math.abs(coord.x - pp.x) < 14 && Math.abs(coord.y - pp.y) < 14) {
+                dragPointIndex.current = i;
+                break;
+              }
             }
           }
+          if (drawing.price != null) {
+            dragOriginalPrice.current = drawing.price;
+          }
+          canvas?.setPointerCapture?.(e.pointerId);
         }
-        if (drawing.price != null) {
-          dragOriginalPrice.current = drawing.price;
-        }
-        // Capture pointer on the canvas so move/up events go there
-        canvas?.setPointerCapture?.(e.pointerId);
       }
-    }
-    scheduleRender();
-  }, [fromPixel, findNearestDrawing, onUpdateDrawing, drawings, toPixelUnclamped, scheduleRender, drawingModeRef]);
+      scheduleRender();
+    };
 
-  // Wrap the original pointerUp to also restore canvas pointer-events
+    // Use capture phase so we get the event before the chart
+    wrapper.addEventListener('pointerdown', onTouchOrPointerDown, { capture: true });
+    return () => {
+      wrapper.removeEventListener('pointerdown', onTouchOrPointerDown, { capture: true });
+    };
+  }, [overlayActive, hasDrawings, fromPixel, findNearestDrawing, onUpdateDrawing, drawings, toPixelUnclamped, scheduleRender, drawingModeRef]);
+
+  // Wrap pointerUp to restore canvas to non-interactive after drag ends
   const handlePointerUpWrapped = useCallback((e: React.PointerEvent) => {
     handlePointerUp(e);
-    // After drag ends, restore canvas to non-interactive if we're in idle mode
+    // After drag/draw ends, restore canvas to transparent
     if (drawingModeRef.current === 'none' && !isDrawing.current) {
       const canvas = canvasRef.current;
       if (canvas) {
         canvas.style.pointerEvents = 'none';
-        canvas.style.touchAction = 'pan-x pan-y pinch-zoom';
+        canvas.style.touchAction = 'auto';
       }
     }
   }, [handlePointerUp, drawingModeRef]);
 
   return (
     <div
+      ref={wrapperRef}
       className="relative w-full h-full"
-      onPointerDown={!overlayActive && hasDrawings ? handleWrapperPointerDown : undefined}
+      style={{ pointerEvents: 'none', touchAction: 'auto' }}
     >
       <canvas
         ref={canvasRef}
@@ -1857,12 +1872,16 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         onPointerCancel={handlePointerUpWrapped}
         style={{
           pointerEvents: overlayActive ? 'auto' : 'none',
-          touchAction: overlayActive ? 'none' : 'pan-x pan-y pinch-zoom',
+          touchAction: overlayActive ? 'none' : 'auto',
         }}
       />
       {/* Fixed bottom-center floating toolbar (TradingView style) */}
       {selectedDrawingId && selectedDrawing && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50" onPointerDown={(e) => e.stopPropagation()}>
+        <div
+          className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50"
+          style={{ pointerEvents: 'auto' }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           <DrawingToolbar
             color={selectedDrawing.color}
             lineWidth={selectedDrawing.lineWidth || 1.5}
