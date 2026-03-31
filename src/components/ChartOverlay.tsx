@@ -46,6 +46,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const crosshairPos = useRef<{ x: number; y: number } | null>(null);
   const lastMoveTime = useRef(0);
   const activePointerIds = useRef<Set<number>>(new Set());
+  const lastKnownCoord = useRef<{ time: Time; price: number; x: number; y: number } | null>(null);
 
   const toPixel = useCallback((time: Time, price: number) => {
     if (!chart || !series) return null;
