@@ -44,6 +44,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const renderScheduled = useRef(false);
   const crosshairPos = useRef<{ x: number; y: number } | null>(null);
   const lastMoveTime = useRef(0);
+  const activePointerIds = useRef<Set<number>>(new Set());
 
   const toPixel = useCallback((time: Time, price: number) => {
     if (!chart || !series) return null;
@@ -1390,7 +1391,58 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     return Math.sqrt((px - projX) ** 2 + (py - projY) ** 2);
   };
 
+  // Passthrough: temporarily disable overlay so chart gets the gesture
+  const passthroughToChart = useCallback((e: React.PointerEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.style.pointerEvents = 'none';
+    const underneath = document.elementFromPoint(e.clientX, e.clientY);
+    if (underneath && underneath !== canvas) {
+      underneath.dispatchEvent(new PointerEvent('pointerdown', {
+        clientX: e.clientX, clientY: e.clientY,
+        pointerId: e.pointerId, pointerType: e.pointerType,
+        bubbles: true, cancelable: true, isPrimary: e.isPrimary,
+      }));
+    }
+    const restore = () => {
+      if (canvas) canvas.style.pointerEvents = '';
+      window.removeEventListener('pointerup', restore);
+      window.removeEventListener('touchend', restore);
+    };
+    window.addEventListener('pointerup', restore, { once: true });
+    window.addEventListener('touchend', restore, { once: true });
+    setTimeout(restore, 5000);
+  }, []);
+
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    activePointerIds.current.add(e.pointerId);
+
+    // Multi-touch detection: if 2+ pointers, cancel any drag and passthrough for zoom
+    if (activePointerIds.current.size > 1) {
+      if (isDragging.current) {
+        // Cancel in-progress drag — restore original state
+        isDragging.current = false;
+        setIsDraggingState(false);
+        if (selectedDrawingId && dragOriginalPoints.current && onUpdateDrawing) {
+          onUpdateDrawing(selectedDrawingId, { points: dragOriginalPoints.current.map(p => ({ ...p })) });
+        }
+        dragPointIndex.current = null;
+        dragStartCoord.current = null;
+        dragOriginalPoints.current = null;
+        dragOriginalPrice.current = null;
+        dragSnapshotRef.current = null;
+      }
+      if (isDrawing.current) {
+        isDrawing.current = false;
+        startCoord.current = null;
+        currentPixel.current = null;
+        penCoords.current = [];
+      }
+      // Let chart handle multi-touch (pinch zoom)
+      passthroughToChart(e);
+      return;
+    }
+
     const mode = drawingModeRef.current;
     if (mode === 'none') {
       // Selection mode: tap near a drawing to select/drag it
@@ -1444,6 +1496,11 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       scheduleRender();
       return;
     }
+
+    // Active drawing mode — preventDefault to ensure Android fires continuous pointermove
+    e.preventDefault();
+    e.stopPropagation();
+
     const coord = fromPixel(e.clientX, e.clientY);
     if (!coord) return;
 
@@ -1497,33 +1554,9 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       currentPixel.current = { x: coord.x, y: coord.y };
       return;
     }
-  }, [fromPixel, onAddDrawing, onFinishDrawing, onRemoveDrawing, scheduleRender, drawingModeRef, findNearestDrawing, snapToOHLC, onUpdateDrawing, drawings, toPixelUnclamped]);
+  }, [fromPixel, onAddDrawing, onFinishDrawing, onRemoveDrawing, scheduleRender, drawingModeRef, findNearestDrawing, snapToOHLC, onUpdateDrawing, drawings, toPixelUnclamped, selectedDrawingId, passthroughToChart, renderImmediate]);
 
-  // Passthrough: temporarily disable overlay so chart gets the gesture
-  const passthroughToChart = useCallback((e: React.PointerEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    canvas.style.pointerEvents = 'none';
-    // Re-dispatch event to element underneath
-    const underneath = document.elementFromPoint(e.clientX, e.clientY);
-    if (underneath && underneath !== canvas) {
-      underneath.dispatchEvent(new PointerEvent('pointerdown', {
-        clientX: e.clientX, clientY: e.clientY,
-        pointerId: e.pointerId, pointerType: e.pointerType,
-        bubbles: true, cancelable: true, isPrimary: e.isPrimary,
-      }));
-    }
-    // Restore on gesture end
-    const restore = () => {
-      if (canvas) canvas.style.pointerEvents = '';
-      window.removeEventListener('pointerup', restore);
-      window.removeEventListener('touchend', restore);
-    };
-    window.addEventListener('pointerup', restore, { once: true });
-    window.addEventListener('touchend', restore, { once: true });
-    // Safety timeout
-    setTimeout(restore, 5000);
-  }, []);
+
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     const mode = drawingModeRef.current;
@@ -1634,6 +1667,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   }, [fromPixel, fromPixelUnclamped, scheduleRender, drawingModeRef, magnetMode, snapToOHLC, toPixel, selectedDrawingId, onUpdateDrawing, drawings]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    activePointerIds.current.delete(e.pointerId);
     const mode = drawingModeRef.current;
     // Finish drag - commit undo snapshot
     if (isDragging.current) {
@@ -1722,22 +1756,10 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const isActive = drawingMode !== 'none';
   const hasDrawings = drawings.length > 0;
 
-  // Get selected drawing pixel position for floating toolbar
   const selectedDrawing = selectedDrawingId ? drawings.find(d => d.id === selectedDrawingId) : null;
-  const selectedPos = (() => {
-    if (!selectedDrawing || !canvasRef.current) return null;
-    if (selectedDrawing.points && selectedDrawing.points.length > 0) {
-      const p = toPixelUnclamped(selectedDrawing.points[0].time as unknown as Time, selectedDrawing.points[0].price);
-      if (p) return { x: p.x, y: p.y };
-    }
-    if (selectedDrawing.price != null && series) {
-      const y = series.priceToCoordinate(selectedDrawing.price);
-      if (y !== null) return { x: 60, y };
-    }
-    return null;
-  })();
 
-  const handlePointerLeave = useCallback(() => {
+  const handlePointerLeave = useCallback((e: React.PointerEvent) => {
+    activePointerIds.current.delete(e.pointerId);
     crosshairPos.current = null;
     scheduleRender();
   }, [scheduleRender]);
@@ -1753,18 +1775,19 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         onPointerLeave={handlePointerLeave}
         style={{ touchAction: isActive || isDraggingState ? 'none' : 'auto' }}
       />
-      {/* Floating selection toolbar with color/size */}
-      {selectedDrawingId && selectedPos && selectedDrawing && (
-        <DrawingToolbar
-          color={selectedDrawing.color}
-          lineWidth={selectedDrawing.lineWidth || 1.5}
-          onColorChange={(c) => { if (onUpdateDrawing) onUpdateDrawing(selectedDrawingId, { color: c }); }}
-          onLineWidthChange={(w) => { if (onUpdateDrawing) onUpdateDrawing(selectedDrawingId, { lineWidth: w }); }}
-          onDelete={() => { if (onRemoveDrawing) onRemoveDrawing(selectedDrawingId); setSelectedDrawingId(null); }}
-          onClone={() => { if (selectedDrawing) onAddDrawing({ ...selectedDrawing, id: `${selectedDrawing.type}_clone_${Date.now()}` }); setSelectedDrawingId(null); }}
-          onClose={() => setSelectedDrawingId(null)}
-          style={{ left: Math.max(4, selectedPos.x - 80), top: Math.max(4, selectedPos.y - 48) }}
-        />
+      {/* Fixed bottom-center floating toolbar (TradingView style) — never overlaps drawings */}
+      {selectedDrawingId && selectedDrawing && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50" onPointerDown={(e) => e.stopPropagation()}>
+          <DrawingToolbar
+            color={selectedDrawing.color}
+            lineWidth={selectedDrawing.lineWidth || 1.5}
+            onColorChange={(c) => { if (onUpdateDrawing) onUpdateDrawing(selectedDrawingId, { color: c }); }}
+            onLineWidthChange={(w) => { if (onUpdateDrawing) onUpdateDrawing(selectedDrawingId, { lineWidth: w }); }}
+            onDelete={() => { if (onRemoveDrawing) onRemoveDrawing(selectedDrawingId); setSelectedDrawingId(null); }}
+            onClone={() => { if (selectedDrawing) onAddDrawing({ ...selectedDrawing, id: `${selectedDrawing.type}_clone_${Date.now()}` }); setSelectedDrawingId(null); }}
+            onClose={() => setSelectedDrawingId(null)}
+          />
+        </div>
       )}
     </div>
   );

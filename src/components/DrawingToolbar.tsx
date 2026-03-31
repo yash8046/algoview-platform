@@ -26,7 +26,7 @@ export default function DrawingToolbar({
 
   return (
     <div
-      className="absolute z-50 flex items-center gap-1 bg-card border border-border rounded-lg shadow-lg px-1.5 py-1"
+      className="flex items-center gap-1 bg-card border border-border rounded-lg shadow-lg px-1.5 py-1"
       style={style}
       onPointerDown={(e) => e.stopPropagation()}
     >
