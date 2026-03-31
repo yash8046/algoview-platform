@@ -1552,6 +1552,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
     if (twoPointModes.includes(mode)) {
       isDrawing.current = true;
+      setIsDrawingState(true);
       const snapped = snapToOHLC(coord.time, coord.price);
       startCoord.current = { time: snapped.time, price: snapped.price };
       currentPixel.current = { x: coord.x, y: coord.y };
