@@ -1758,7 +1758,6 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   useEffect(() => {
     if (selectedDrawingId && !drawings.find(d => d.id === selectedDrawingId)) {
       setSelectedDrawingId(null);
-      // Also reset any stale interaction state
       isDrawing.current = false;
       setIsDrawingState(false);
       isDragging.current = false;
@@ -1771,12 +1770,6 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       dragOriginalPrice.current = null;
       dragSnapshotRef.current = null;
       activePointerIds.current.clear();
-      // Restore canvas to non-interactive
-      const canvas = canvasRef.current;
-      if (canvas) {
-        canvas.style.pointerEvents = '';
-        canvas.style.touchAction = '';
-      }
     }
   }, [drawings, selectedDrawingId]);
 
