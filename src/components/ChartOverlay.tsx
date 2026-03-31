@@ -46,6 +46,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const crosshairPos = useRef<{ x: number; y: number } | null>(null);
   const lastMoveTime = useRef(0);
   const activePointerIds = useRef<Set<number>>(new Set());
+  const lastKnownCoord = useRef<{ time: Time; price: number; x: number; y: number } | null>(null);
 
   const toPixel = useCallback((time: Time, price: number) => {
     if (!chart || !series) return null;
@@ -1392,36 +1393,21 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     return Math.sqrt((px - projX) ** 2 + (py - projY) ** 2);
   };
 
-  // Passthrough: temporarily disable overlay so chart gets the gesture
-  const passthroughToChart = useCallback((e: React.PointerEvent) => {
+  // Passthrough: disable overlay so chart gets ALL gestures natively (no synthetic dispatch)
+  const passthroughToChart = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    canvas.style.pointerEvents = 'none';
-    const underneath = document.elementFromPoint(e.clientX, e.clientY);
-    if (underneath && underneath !== canvas) {
-      underneath.dispatchEvent(new PointerEvent('pointerdown', {
-        clientX: e.clientX, clientY: e.clientY,
-        pointerId: e.pointerId, pointerType: e.pointerType,
-        bubbles: true, cancelable: true, isPrimary: e.isPrimary,
-      }));
+    if (canvas) {
+      canvas.style.pointerEvents = 'none';
+      canvas.style.touchAction = 'auto';
     }
-    const restore = () => {
-      if (canvas) canvas.style.pointerEvents = '';
-      window.removeEventListener('pointerup', restore);
-      window.removeEventListener('touchend', restore);
-    };
-    window.addEventListener('pointerup', restore, { once: true });
-    window.addEventListener('touchend', restore, { once: true });
-    setTimeout(restore, 5000);
   }, []);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     activePointerIds.current.add(e.pointerId);
 
-    // Multi-touch detection: if 2+ pointers, cancel any drag and passthrough for zoom
+    // Multi-touch detection: if 2+ pointers, cancel any draw/drag and let chart zoom
     if (activePointerIds.current.size > 1) {
       if (isDragging.current) {
-        // Cancel in-progress drag — restore original state
         isDragging.current = false;
         setIsDraggingState(false);
         if (selectedDrawingId && dragOriginalPoints.current && onUpdateDrawing) {
@@ -1440,8 +1426,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         currentPixel.current = null;
         penCoords.current = [];
       }
-      // Let chart handle multi-touch (pinch zoom)
-      passthroughToChart(e);
+      // Disable overlay entirely so native pinch-zoom works
+      passthroughToChart();
       return;
     }
 
@@ -1451,16 +1437,14 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       const coord = fromPixel(e.clientX, e.clientY);
       if (!coord) {
         setSelectedDrawingId(null);
-        // Passthrough: let chart handle this event
-        passthroughToChart(e);
+        passthroughToChart();
         return;
       }
       const id = findNearestDrawing(coord.x, coord.y);
 
       if (!id) {
         setSelectedDrawingId(null);
-        // Passthrough: let chart handle zoom/pan
-        passthroughToChart(e);
+        passthroughToChart();
         return;
       }
 
@@ -1570,11 +1554,16 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     if (now - lastMoveTime.current < 16) return;
     lastMoveTime.current = now;
 
-    // Update crosshair position
+    // Update crosshair position and store last known coord for pointerUp fallback
     const canvas = canvasRef.current;
     if (canvas) {
       const rect = canvas.getBoundingClientRect();
       crosshairPos.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+    // Store last valid coordinate (used as fallback in pointerUp on Android)
+    const moveCoord = fromPixel(e.clientX, e.clientY);
+    if (moveCoord) {
+      lastKnownCoord.current = moveCoord;
     }
 
     // Handle drag in selection mode
@@ -1721,8 +1710,12 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     }
     if (!isDrawing.current || !startCoord.current) return;
     isDrawing.current = false;
-    const coord = fromPixel(e.clientX, e.clientY);
-    if (!coord) { startCoord.current = null; setIsDrawingState(false); return; }
+    // Use pointerUp coords, fall back to last known coord from pointerMove (Android fix)
+    let coord = fromPixel(e.clientX, e.clientY);
+    if (!coord && lastKnownCoord.current) {
+      coord = lastKnownCoord.current;
+    }
+    if (!coord) { startCoord.current = null; currentPixel.current = null; lastKnownCoord.current = null; setIsDrawingState(false); return; }
 
     const snapped = snapToOHLC(coord.time, coord.price);
     const color = defaultColors[mode] || '#ffffff';
@@ -1737,6 +1730,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       color,
     });
     startCoord.current = null;
+    currentPixel.current = null;
+    lastKnownCoord.current = null;
     currentPixel.current = null;
     setSelectedDrawingId(newId);
     renderImmediate();
@@ -1763,6 +1758,32 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     cancelAnimationFrame(laserRaf.current);
     cancelAnimationFrame(renderRafRef.current);
   }, []);
+
+  // Reset selectedDrawingId if the selected drawing no longer exists (e.g. after clear all)
+  useEffect(() => {
+    if (selectedDrawingId && !drawings.find(d => d.id === selectedDrawingId)) {
+      setSelectedDrawingId(null);
+      // Also reset any stale interaction state
+      isDrawing.current = false;
+      setIsDrawingState(false);
+      isDragging.current = false;
+      setIsDraggingState(false);
+      startCoord.current = null;
+      currentPixel.current = null;
+      lastKnownCoord.current = null;
+      dragStartCoord.current = null;
+      dragOriginalPoints.current = null;
+      dragOriginalPrice.current = null;
+      dragSnapshotRef.current = null;
+      activePointerIds.current.clear();
+      // Restore canvas to non-interactive
+      const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.style.pointerEvents = '';
+        canvas.style.touchAction = '';
+      }
+    }
+  }, [drawings, selectedDrawingId]);
 
   const isActive = drawingMode !== 'none';
 
@@ -1849,18 +1870,20 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     return () => document.removeEventListener('pointerdown', onPointerDown, { capture: true });
   }, [overlayActive, drawings, fromPixel, findNearestDrawing, onUpdateDrawing, toPixelUnclamped, scheduleRender, drawingModeRef]);
 
-  // After drag ends, restore canvas to non-interactive
+  // After any pointer up, restore canvas to non-interactive if we're idle
   const handlePointerUpFinal = useCallback((e: React.PointerEvent) => {
     handlePointerUp(e);
-    // If we just finished a drag (not a draw), restore canvas immediately
-    if (drawingModeRef.current === 'none' && !isDrawing.current) {
+    activePointerIds.current.delete(e.pointerId);
+    // Restore canvas after drag, multi-touch passthrough, or any non-draw interaction
+    if (!isDrawing.current && !isDragging.current) {
       const canvas = canvasRef.current;
       if (canvas) {
+        // Reset imperative styles so React style prop takes over
         canvas.style.pointerEvents = '';
         canvas.style.touchAction = '';
       }
     }
-  }, [handlePointerUp, drawingModeRef]);
+  }, [handlePointerUp]);
 
   return (
     <>
