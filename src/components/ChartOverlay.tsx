@@ -1391,6 +1391,29 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     return Math.sqrt((px - projX) ** 2 + (py - projY) ** 2);
   };
 
+  // Passthrough: temporarily disable overlay so chart gets the gesture
+  const passthroughToChart = useCallback((e: React.PointerEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.style.pointerEvents = 'none';
+    const underneath = document.elementFromPoint(e.clientX, e.clientY);
+    if (underneath && underneath !== canvas) {
+      underneath.dispatchEvent(new PointerEvent('pointerdown', {
+        clientX: e.clientX, clientY: e.clientY,
+        pointerId: e.pointerId, pointerType: e.pointerType,
+        bubbles: true, cancelable: true, isPrimary: e.isPrimary,
+      }));
+    }
+    const restore = () => {
+      if (canvas) canvas.style.pointerEvents = '';
+      window.removeEventListener('pointerup', restore);
+      window.removeEventListener('touchend', restore);
+    };
+    window.addEventListener('pointerup', restore, { once: true });
+    window.addEventListener('touchend', restore, { once: true });
+    setTimeout(restore, 5000);
+  }, []);
+
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     activePointerIds.current.add(e.pointerId);
 
