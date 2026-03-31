@@ -1392,6 +1392,34 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   };
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    activePointerIds.current.add(e.pointerId);
+
+    // Multi-touch detection: if 2+ pointers, cancel any drag and passthrough for zoom
+    if (activePointerIds.current.size > 1) {
+      if (isDragging.current) {
+        // Cancel in-progress drag — restore original state
+        isDragging.current = false;
+        setIsDraggingState(false);
+        if (selectedDrawingId && dragOriginalPoints.current && onUpdateDrawing) {
+          onUpdateDrawing(selectedDrawingId, { points: dragOriginalPoints.current.map(p => ({ ...p })) });
+        }
+        dragPointIndex.current = null;
+        dragStartCoord.current = null;
+        dragOriginalPoints.current = null;
+        dragOriginalPrice.current = null;
+        dragSnapshotRef.current = null;
+      }
+      if (isDrawing.current) {
+        isDrawing.current = false;
+        startCoord.current = null;
+        currentPixel.current = null;
+        penCoords.current = [];
+      }
+      // Let chart handle multi-touch (pinch zoom)
+      passthroughToChart(e);
+      return;
+    }
+
     const mode = drawingModeRef.current;
     if (mode === 'none') {
       // Selection mode: tap near a drawing to select/drag it
@@ -1445,6 +1473,11 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       scheduleRender();
       return;
     }
+
+    // Active drawing mode — preventDefault to ensure Android fires continuous pointermove
+    e.preventDefault();
+    e.stopPropagation();
+
     const coord = fromPixel(e.clientX, e.clientY);
     if (!coord) return;
 
@@ -1498,7 +1531,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       currentPixel.current = { x: coord.x, y: coord.y };
       return;
     }
-  }, [fromPixel, onAddDrawing, onFinishDrawing, onRemoveDrawing, scheduleRender, drawingModeRef, findNearestDrawing, snapToOHLC, onUpdateDrawing, drawings, toPixelUnclamped]);
+  }, [fromPixel, onAddDrawing, onFinishDrawing, onRemoveDrawing, scheduleRender, drawingModeRef, findNearestDrawing, snapToOHLC, onUpdateDrawing, drawings, toPixelUnclamped, selectedDrawingId, passthroughToChart, renderImmediate]);
 
   // Passthrough: temporarily disable overlay so chart gets the gesture
   const passthroughToChart = useCallback((e: React.PointerEvent) => {
