@@ -1771,7 +1771,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     return null;
   })();
 
-  const handlePointerLeave = useCallback(() => {
+  const handlePointerLeave = useCallback((e: React.PointerEvent) => {
+    activePointerIds.current.delete(e.pointerId);
     crosshairPos.current = null;
     scheduleRender();
   }, [scheduleRender]);
@@ -1787,18 +1788,19 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         onPointerLeave={handlePointerLeave}
         style={{ touchAction: isActive || isDraggingState ? 'none' : 'auto' }}
       />
-      {/* Floating selection toolbar with color/size */}
-      {selectedDrawingId && selectedPos && selectedDrawing && (
-        <DrawingToolbar
-          color={selectedDrawing.color}
-          lineWidth={selectedDrawing.lineWidth || 1.5}
-          onColorChange={(c) => { if (onUpdateDrawing) onUpdateDrawing(selectedDrawingId, { color: c }); }}
-          onLineWidthChange={(w) => { if (onUpdateDrawing) onUpdateDrawing(selectedDrawingId, { lineWidth: w }); }}
-          onDelete={() => { if (onRemoveDrawing) onRemoveDrawing(selectedDrawingId); setSelectedDrawingId(null); }}
-          onClone={() => { if (selectedDrawing) onAddDrawing({ ...selectedDrawing, id: `${selectedDrawing.type}_clone_${Date.now()}` }); setSelectedDrawingId(null); }}
-          onClose={() => setSelectedDrawingId(null)}
-          style={{ left: Math.max(4, selectedPos.x - 80), top: Math.max(4, selectedPos.y - 48) }}
-        />
+      {/* Fixed bottom-center floating toolbar (TradingView style) — never overlaps drawings */}
+      {selectedDrawingId && selectedDrawing && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50" onPointerDown={(e) => e.stopPropagation()}>
+          <DrawingToolbar
+            color={selectedDrawing.color}
+            lineWidth={selectedDrawing.lineWidth || 1.5}
+            onColorChange={(c) => { if (onUpdateDrawing) onUpdateDrawing(selectedDrawingId, { color: c }); }}
+            onLineWidthChange={(w) => { if (onUpdateDrawing) onUpdateDrawing(selectedDrawingId, { lineWidth: w }); }}
+            onDelete={() => { if (onRemoveDrawing) onRemoveDrawing(selectedDrawingId); setSelectedDrawingId(null); }}
+            onClone={() => { if (selectedDrawing) onAddDrawing({ ...selectedDrawing, id: `${selectedDrawing.type}_clone_${Date.now()}` }); setSelectedDrawingId(null); }}
+            onClose={() => setSelectedDrawingId(null)}
+          />
+        </div>
       )}
     </div>
   );
