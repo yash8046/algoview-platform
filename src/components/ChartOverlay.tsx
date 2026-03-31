@@ -1667,6 +1667,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   }, [fromPixel, fromPixelUnclamped, scheduleRender, drawingModeRef, magnetMode, snapToOHLC, toPixel, selectedDrawingId, onUpdateDrawing, drawings]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    activePointerIds.current.delete(e.pointerId);
     const mode = drawingModeRef.current;
     // Finish drag - commit undo snapshot
     if (isDragging.current) {
