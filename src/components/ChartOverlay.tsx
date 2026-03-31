@@ -1421,8 +1421,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         currentPixel.current = null;
         penCoords.current = [];
       }
-      // Disable overlay entirely so native pinch-zoom works
-      passthroughToChart();
+      // With touchAction:'auto', browser handles zoom natively once we stop preventing
       return;
     }
 
@@ -1432,15 +1431,13 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       const coord = fromPixel(e.clientX, e.clientY);
       if (!coord) {
         setSelectedDrawingId(null);
-        passthroughToChart();
-        return;
+        return; // Don't preventDefault — let browser handle gesture
       }
       const id = findNearestDrawing(coord.x, coord.y);
 
       if (!id) {
         setSelectedDrawingId(null);
-        passthroughToChart();
-        return;
+        return; // Don't preventDefault — let browser handle zoom/pan
       }
 
       // Prevent browser from intercepting this touch for scrolling/panning
