@@ -1690,6 +1690,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     if (mode === 'eraser') return;
     if (mode === 'laser') {
       isDrawing.current = false;
+      setIsDrawingState(false);
       const fadeOut = () => {
         laserPixels.current = laserPixels.current.filter(p => Date.now() - p.t < 1500);
         scheduleRender();
@@ -1712,16 +1713,20 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         setSelectedDrawingId(newId);
       }
       penCoords.current = [];
-      onFinishDrawing(); renderImmediate(); return;
+      renderImmediate();
+      // Defer mode reset so the canvas stays interactive through this frame
+      requestAnimationFrame(() => { setIsDrawingState(false); onFinishDrawing(); });
+      return;
     }
     if (!isDrawing.current || !startCoord.current) return;
     isDrawing.current = false;
     const coord = fromPixel(e.clientX, e.clientY);
-    if (!coord) { startCoord.current = null; return; }
+    if (!coord) { startCoord.current = null; setIsDrawingState(false); return; }
 
     const snapped = snapToOHLC(coord.time, coord.price);
     const color = defaultColors[mode] || '#ffffff';
     const newId = `${mode}_${Date.now()}`;
+    // Commit the drawing FIRST
     onAddDrawing({
       id: newId, type: mode as any,
       points: [
@@ -1732,10 +1737,11 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     });
     startCoord.current = null;
     currentPixel.current = null;
-    // Auto-select the just-drawn tool for immediate resize/reposition
     setSelectedDrawingId(newId);
-    onFinishDrawing(); renderImmediate();
-  }, [fromPixel, onAddDrawing, onFinishDrawing, scheduleRender, drawingModeRef, snapToOHLC, onCommitDragUndo]);
+    renderImmediate();
+    // Defer mode reset to next frame so drawing commits before canvas goes inactive
+    requestAnimationFrame(() => { setIsDrawingState(false); onFinishDrawing(); });
+  }, [fromPixel, onAddDrawing, onFinishDrawing, scheduleRender, drawingModeRef, snapToOHLC, onCommitDragUndo, renderImmediate]);
 
   // Subscribe to chart visible range changes
   useEffect(() => {
