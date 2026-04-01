@@ -37,7 +37,7 @@ export default function ChartsPage() {
   );
 
   return (
-    <div className="flex flex-col h-[100dvh] overflow-hidden bg-background pb-[60px]">
+    <div className="flex flex-col h-[100dvh] overflow-hidden bg-background pb-[60px]" style={{ overscrollBehavior: 'contain' }}>
       {/* SYMBOL HEADER — Only symbol dropdown, no profile, no toggle */}
       <div
         className="h-11 flex-shrink-0 flex items-center bg-card border-b border-border/40 px-2 z-20"
@@ -133,8 +133,8 @@ export default function ChartsPage() {
       </div>
 
       {/* Chart area */}
-      <div className="flex-1 min-h-0 overflow-hidden">
-        <div className="h-full w-full min-w-0 min-h-0 relative">
+      <div className="flex-1 min-h-0 overflow-hidden" style={{ overscrollBehavior: 'none' }}>
+        <div className="h-full w-full min-w-0 min-h-0 relative" style={{ touchAction: 'none' }}>
           {mode === 'stocks' ? <TradingChart toolbarLeft /> : <CryptoChart toolbarLeft />}
         </div>
       </div>
