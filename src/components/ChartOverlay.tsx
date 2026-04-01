@@ -35,20 +35,27 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const laserRaf = useRef<number>(0);
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null);
   const [isDraggingState, setIsDraggingState] = useState(false);
-  const isDragging = useRef(false);
-  const dragPending = useRef(false);
-  const dragStartPixel = useRef<{ x: number; y: number } | null>(null);
-  const dragThreshold = 5;
-  const dragPointIndex = useRef<number | null>(null);
-  const dragStartCoord = useRef<{ time: Time; price: number } | null>(null);
-  const dragOriginalPoints = useRef<{ time: number; price: number }[] | null>(null);
-  const dragOriginalPrice = useRef<number | null>(null);
-  const dragSnapshotRef = useRef<DrawingLine[] | null>(null);
+  // Active pointers map for multi-touch detection
+  const activePointers = useRef(new Map<number, { x: number; y: number }>());
+  // Pending drag: set on pointerDown near a drawing, promoted to drag after threshold
+  const pendingDragRef = useRef<{
+    id: string; px: number; py: number; time: number; price: number;
+  } | null>(null);
+  // Active drag state: set when threshold is crossed
+  const dragRef = useRef<{
+    id: string;
+    startTime: number;
+    startPrice: number;
+    origPoints: { time: number; price: number }[];
+    pointIndex: number | null;
+    origPrice: number | null;
+    snapshot: DrawingLine[];
+  } | null>(null);
+  const DRAG_THRESHOLD = 8;
   const renderRafRef = useRef<number>(0);
   const renderScheduled = useRef(false);
   const crosshairPos = useRef<{ x: number; y: number } | null>(null);
   const lastMoveTime = useRef(0);
-  const activePointerIds = useRef<Set<number>>(new Set());
   const lastKnownCoord = useRef<{ time: Time; price: number; x: number; y: number } | null>(null);
 
   const toPixel = useCallback((time: Time, price: number) => {
