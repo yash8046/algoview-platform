@@ -35,13 +35,10 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const laserRaf = useRef<number>(0);
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null);
   const [isDraggingState, setIsDraggingState] = useState(false);
-  // Active pointers map for multi-touch detection
   const activePointers = useRef(new Map<number, { x: number; y: number }>());
-  // Pending drag: set on pointerDown near a drawing, promoted to drag after threshold
   const pendingDragRef = useRef<{
     id: string; px: number; py: number; time: number; price: number;
   } | null>(null);
-  // Active drag state: set when threshold is crossed
   const dragRef = useRef<{
     id: string;
     startTime: number;
@@ -57,6 +54,9 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const crosshairPos = useRef<{ x: number; y: number } | null>(null);
   const lastMoveTime = useRef(0);
   const lastKnownCoord = useRef<{ time: Time; price: number; x: number; y: number } | null>(null);
+
+  // Stable refs for document-level listeners (avoids effect re-runs)
+  const stableRef = useRef({ fromPixel, findNearestDrawing: null as any, toPixelUnclamped, drawings, onUpdateDrawing, onCommitDragUndo, scheduleRender: null as any, renderImmediate: null as any });
 
   const toPixel = useCallback((time: Time, price: number) => {
     if (!chart || !series) return null;
