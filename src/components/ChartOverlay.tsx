@@ -1434,13 +1434,15 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
     const mode = drawingModeRef.current;
     if (mode === 'none') {
-      // Selection mode: tap near a drawing to select it; drag starts after movement threshold
+      // Selection mode: tap near a drawing to select it
+      // Do NOT preventDefault here — let the browser handle pan/zoom freely.
+      // Drag only starts after movement threshold in handlePointerMove.
       const coord = fromPixel(e.clientX, e.clientY);
       if (!coord) {
         setSelectedDrawingId(null);
         dragPending.current = false;
         dragStartPixel.current = null;
-        return; // Don't preventDefault — let browser handle gesture
+        return;
       }
       const id = findNearestDrawing(coord.x, coord.y);
 
@@ -1448,17 +1450,13 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         setSelectedDrawingId(null);
         dragPending.current = false;
         dragStartPixel.current = null;
-        return; // Don't preventDefault — let browser handle zoom/pan
+        return;
       }
 
-      // We found a drawing — capture pointer for potential drag but DON'T start drag yet
-      e.preventDefault();
-      e.stopPropagation();
+      // Record pending drag info but do NOT block browser gestures yet
       dragPending.current = true;
       dragStartPixel.current = { x: e.clientX, y: e.clientY };
-      dragStartCoord.current = { time: coord.time, price: coord.price };
       setSelectedDrawingId(id);
-      (e.target as HTMLElement)?.setPointerCapture?.(e.pointerId);
       scheduleRender();
       return;
     }
