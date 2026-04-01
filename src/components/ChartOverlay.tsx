@@ -1434,50 +1434,31 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
     const mode = drawingModeRef.current;
     if (mode === 'none') {
-      // Selection mode: tap near a drawing to select/drag it
+      // Selection mode: tap near a drawing to select it; drag starts after movement threshold
       const coord = fromPixel(e.clientX, e.clientY);
       if (!coord) {
         setSelectedDrawingId(null);
+        dragPending.current = false;
+        dragStartPixel.current = null;
         return; // Don't preventDefault — let browser handle gesture
       }
       const id = findNearestDrawing(coord.x, coord.y);
 
       if (!id) {
         setSelectedDrawingId(null);
+        dragPending.current = false;
+        dragStartPixel.current = null;
         return; // Don't preventDefault — let browser handle zoom/pan
       }
 
-      // Prevent browser from intercepting this touch for scrolling/panning
+      // We found a drawing — capture pointer for potential drag but DON'T start drag yet
       e.preventDefault();
       e.stopPropagation();
+      dragPending.current = true;
+      dragStartPixel.current = { x: e.clientX, y: e.clientY };
+      dragStartCoord.current = { time: coord.time, price: coord.price };
       setSelectedDrawingId(id);
-
-      // Start drag if we found a drawing
-      if (onUpdateDrawing) {
-        const drawing = drawings.find(d => d.id === id);
-        if (drawing && !drawing.locked) {
-          isDragging.current = true;
-          setIsDraggingState(true);
-          dragStartCoord.current = { time: coord.time, price: coord.price };
-          dragSnapshotRef.current = drawings.map(d => ({ ...d, points: d.points?.map(p => ({ ...p })) }));
-
-          if (drawing.points) {
-            dragOriginalPoints.current = drawing.points.map(p => ({ ...p }));
-            dragPointIndex.current = null;
-            for (let i = 0; i < drawing.points.length; i++) {
-              const pp = toPixelUnclamped(drawing.points[i].time as unknown as Time, drawing.points[i].price);
-              if (pp && Math.abs(coord.x - pp.x) < 14 && Math.abs(coord.y - pp.y) < 14) {
-                dragPointIndex.current = i;
-                break;
-              }
-            }
-          }
-          if (drawing.price != null) {
-            dragOriginalPrice.current = drawing.price;
-          }
-          (e.target as HTMLElement)?.setPointerCapture?.(e.pointerId);
-        }
-      }
+      (e.target as HTMLElement)?.setPointerCapture?.(e.pointerId);
       scheduleRender();
       return;
     }
