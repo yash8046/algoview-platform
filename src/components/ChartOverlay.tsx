@@ -1403,63 +1403,178 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     return Math.sqrt((px - projX) ** 2 + (py - projY) ** 2);
   };
 
-  // === CANCEL ALL DRAG/DRAW STATE ===
-  const cancelAllInteraction = useCallback(() => {
-    pendingDragRef.current = null;
-    if (dragRef.current && onUpdateDrawing) {
-      // Restore original points on cancel
-      const d = dragRef.current;
-      onUpdateDrawing(d.id, { points: d.origPoints.map(p => ({ ...p })) });
-    }
-    dragRef.current = null;
-    setIsDraggingState(false);
-    isDrawing.current = false;
-    setIsDrawingState(false);
-    startCoord.current = null;
-    currentPixel.current = null;
-    penCoords.current = [];
-  }, [onUpdateDrawing]);
+  // Keep stableRef updated with latest values for document listeners
+  useEffect(() => {
+    stableRef.current = {
+      fromPixel, findNearestDrawing, toPixelUnclamped, drawings,
+      onUpdateDrawing, onCommitDragUndo, scheduleRender, renderImmediate,
+    };
+  });
 
-  // === POINTER DOWN ===
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  // === DOCUMENT-LEVEL SELECTION/DRAG HANDLER ===
+  // Canvas is pointerEvents:'none' in selection mode, so we use document listeners
+  // to detect drawing hits and handle drag. Chart receives events freely.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !chart || !series) return;
 
-    // Multi-touch: cancel everything, let browser handle zoom
-    if (activePointers.current.size > 1) {
-      cancelAllInteraction();
-      return;
-    }
+    const cancelDrag = () => {
+      if (dragRef.current) {
+        const { onUpdateDrawing: update } = stableRef.current;
+        if (update) {
+          update(dragRef.current.id, { points: dragRef.current.origPoints.map((p: any) => ({ ...p })) });
+        }
+        dragRef.current = null;
+        setIsDraggingState(false);
+        chart.applyOptions({ handleScroll: true, handleScale: true });
+      }
+      pendingDragRef.current = null;
+    };
 
-    const mode = drawingModeRef.current;
+    const onDown = (e: PointerEvent) => {
+      if (drawingModeRef.current !== 'none') return;
 
-    // === SELECTION MODE ===
-    if (mode === 'none') {
-      // NO preventDefault, NO stopPropagation, NO setPointerCapture
-      // Browser freely handles pan/zoom. We only record a pending drag.
-      const coord = fromPixel(e.clientX, e.clientY);
-      if (!coord) {
-        setSelectedDrawingId(null);
-        pendingDragRef.current = null;
+      const rect = canvas.getBoundingClientRect();
+      if (e.clientX < rect.left || e.clientX > rect.right ||
+          e.clientY < rect.top || e.clientY > rect.bottom) return;
+
+      activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (activePointers.current.size > 1) {
+        cancelDrag();
         return;
       }
-      const id = findNearestDrawing(coord.x, coord.y);
-      if (!id) {
-        setSelectedDrawingId(null);
-        pendingDragRef.current = null;
-        return;
-      }
-      // Record pending — drag only starts after movement threshold
+
+      const { fromPixel: fp, findNearestDrawing: fnd } = stableRef.current;
+      const coord = fp(e.clientX, e.clientY);
+      if (!coord) { setSelectedDrawingId(null); pendingDragRef.current = null; return; }
+
+      const id = fnd(coord.x, coord.y);
+      if (!id) { setSelectedDrawingId(null); pendingDragRef.current = null; return; }
+
+      // Drawing hit — record pending drag. DON'T block the event.
       pendingDragRef.current = {
         id, px: e.clientX, py: e.clientY,
         time: coord.time as number, price: coord.price,
       };
       setSelectedDrawingId(id);
-      scheduleRender();
-      return;
-    }
+      stableRef.current.scheduleRender();
+    };
 
-    // === ACTIVE DRAWING MODE ===
-    // Only here do we preventDefault to get continuous pointermove on Android
+    const onMove = (e: PointerEvent) => {
+      if (drawingModeRef.current !== 'none') return;
+
+      if (activePointers.current.has(e.pointerId)) {
+        activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      }
+
+      // Multi-touch: cancel drag
+      if (activePointers.current.size > 1) {
+        cancelDrag();
+        return;
+      }
+
+      const { fromPixel: fp, toPixelUnclamped: tpu, drawings: dr, onUpdateDrawing: update, renderImmediate: ri } = stableRef.current;
+
+      // Pending → active drag (threshold check)
+      const pending = pendingDragRef.current;
+      if (pending && !dragRef.current) {
+        const dx = e.clientX - pending.px;
+        const dy = e.clientY - pending.py;
+        if (dx * dx + dy * dy < DRAG_THRESHOLD * DRAG_THRESHOLD) return;
+
+        const coord = fp(e.clientX, e.clientY);
+        if (!coord) { pendingDragRef.current = null; return; }
+
+        const drawing = dr.find((d: DrawingLine) => d.id === pending.id);
+        if (!drawing || drawing.locked) { pendingDragRef.current = null; return; }
+
+        let pointIndex: number | null = null;
+        if (drawing.points) {
+          for (let i = 0; i < drawing.points.length; i++) {
+            const pp = tpu(drawing.points[i].time as unknown as Time, drawing.points[i].price);
+            if (pp && Math.abs(coord.x - pp.x) < 14 && Math.abs(coord.y - pp.y) < 14) {
+              pointIndex = i; break;
+            }
+          }
+        }
+
+        dragRef.current = {
+          id: pending.id,
+          startTime: coord.time as number,
+          startPrice: coord.price,
+          origPoints: drawing.points ? drawing.points.map((p: any) => ({ ...p })) : [],
+          pointIndex,
+          origPrice: drawing.price ?? null,
+          snapshot: dr.map((d: DrawingLine) => ({ ...d, points: d.points?.map((p: any) => ({ ...p })) })),
+        };
+        pendingDragRef.current = null;
+        setIsDraggingState(true);
+
+        // CRITICAL: Freeze chart during drag so delta math works correctly
+        chart.applyOptions({ handleScroll: false, handleScale: false });
+      }
+
+      // Active drag — pure time/price delta
+      if (dragRef.current && update) {
+        const coord = fp(e.clientX, e.clientY);
+        if (!coord) return;
+        const g = dragRef.current;
+
+        if (g.origPoints.length > 0) {
+          if (g.pointIndex !== null) {
+            // Single anchor: set directly to pointer position
+            const newPoints = g.origPoints.map((p: any, i: number) =>
+              i === g.pointIndex ? { time: coord.time as number, price: coord.price } : { ...p }
+            );
+            update(g.id, { points: newPoints });
+          } else {
+            // Whole object: pure time/price delta
+            const dt = (coord.time as number) - g.startTime;
+            const dp = coord.price - g.startPrice;
+            update(g.id, { points: g.origPoints.map((p: any) => ({ time: p.time + dt, price: p.price + dp })) });
+          }
+        } else if (g.origPrice !== null) {
+          const dp = coord.price - g.startPrice;
+          update(g.id, { price: g.origPrice + dp });
+        }
+
+        ri();
+      }
+    };
+
+    const onUp = (e: PointerEvent) => {
+      activePointers.current.delete(e.pointerId);
+
+      if (dragRef.current) {
+        const { onCommitDragUndo: commit } = stableRef.current;
+        if (commit) commit(dragRef.current.snapshot);
+        dragRef.current = null;
+        setIsDraggingState(false);
+        chart.applyOptions({ handleScroll: true, handleScale: true });
+      }
+
+      pendingDragRef.current = null;
+    };
+
+    document.addEventListener('pointerdown', onDown, true);
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onUp);
+
+    return () => {
+      document.removeEventListener('pointerdown', onDown, true);
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onUp);
+      chart.applyOptions({ handleScroll: true, handleScale: true });
+    };
+  }, [chart, series, drawingModeRef]);
+
+  // === CANVAS POINTER HANDLERS (only for drawing tools, NOT selection/drag) ===
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    const mode = drawingModeRef.current;
+    if (mode === 'none') return; // Selection handled by document listeners
+
     e.preventDefault();
     e.stopPropagation();
 
@@ -1520,190 +1635,65 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       return;
     }
   }, [fromPixel, onAddDrawing, onFinishDrawing, onRemoveDrawing, scheduleRender,
-    drawingModeRef, findNearestDrawing, snapToOHLC, drawings, cancelAllInteraction, renderImmediate]);
+    drawingModeRef, findNearestDrawing, snapToOHLC, renderImmediate]);
 
-  // === POINTER MOVE ===
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (activePointers.current.has(e.pointerId)) {
-      activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    }
-
-    // Multi-touch active: cancel and let browser handle
-    if (activePointers.current.size > 1) {
-      pendingDragRef.current = null;
-      if (dragRef.current) {
-        // Restore original on multi-touch cancel
-        const d = dragRef.current;
-        if (onUpdateDrawing) {
-          onUpdateDrawing(d.id, { points: d.origPoints.map(p => ({ ...p })) });
-        }
-        dragRef.current = null;
-        setIsDraggingState(false);
-      }
-      return;
-    }
-
     const mode = drawingModeRef.current;
+    if (mode === 'none') return; // Selection handled by document listeners
 
-    // Throttle to ~60fps
     const now = performance.now();
     if (now - lastMoveTime.current < 16) return;
     lastMoveTime.current = now;
 
-    // Update crosshair
     const canvas = canvasRef.current;
     if (canvas) {
       const rect = canvas.getBoundingClientRect();
       crosshairPos.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     }
 
-    // Store last known coord (Android pointerUp fallback)
     const moveCoord = fromPixel(e.clientX, e.clientY);
-    if (moveCoord) {
-      lastKnownCoord.current = moveCoord;
-    }
+    if (moveCoord) lastKnownCoord.current = moveCoord;
 
-    // === ACTIVE DRAWING MODE ===
-    if (mode !== 'none' && isDrawing.current) {
-      if (!canvas) return;
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-
-      if (mode === 'laser') {
-        laserPixels.current.push({ x, y, t: Date.now() });
-        scheduleRender();
-        return;
-      }
-      if (freeDrawModesInput.includes(mode)) {
-        const coord = fromPixel(e.clientX, e.clientY);
-        if (coord) {
-          const snapped = snapToOHLC(coord.time, coord.price);
-          penCoords.current.push({ time: snapped.time, price: snapped.price });
-        }
-        scheduleRender();
-        return;
-      }
-      if (magnetMode && twoPointModes.includes(mode)) {
-        const coord = fromPixel(e.clientX, e.clientY);
-        if (coord) {
-          const snapped = snapToOHLC(coord.time, coord.price);
-          const snappedPx = toPixel(snapped.time as any, snapped.price);
-          if (snappedPx) {
-            currentPixel.current = { x: snappedPx.x, y: snappedPx.y };
-            scheduleRender();
-            return;
-          }
-        }
-      }
-      currentPixel.current = { x, y };
-      scheduleRender();
+    if (!isDrawing.current) {
+      if (selectedDrawingId !== null) scheduleRender();
       return;
     }
 
-    // === PENDING DRAG → PROMOTE TO ACTIVE DRAG ===
-    if (mode === 'none' && pendingDragRef.current && !dragRef.current) {
-      const p = pendingDragRef.current;
-      const dx = e.clientX - p.px;
-      const dy = e.clientY - p.py;
-      if (dx * dx + dy * dy < DRAG_THRESHOLD * DRAG_THRESHOLD) {
-        return; // Not enough movement — browser handles pan/zoom freely
-      }
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
 
-      // Threshold crossed — start drag
+    if (mode === 'laser') {
+      laserPixels.current.push({ x, y, t: Date.now() });
+      scheduleRender(); return;
+    }
+    if (freeDrawModesInput.includes(mode)) {
       const coord = fromPixel(e.clientX, e.clientY);
-      if (!coord) { pendingDragRef.current = null; return; }
-
-      const drawing = drawings.find(d => d.id === p.id);
-      if (!drawing || drawing.locked) { pendingDragRef.current = null; return; }
-
-      // Determine if dragging a single anchor or whole object
-      let pointIndex: number | null = null;
-      if (drawing.points) {
-        for (let i = 0; i < drawing.points.length; i++) {
-          const pp = toPixelUnclamped(drawing.points[i].time as unknown as Time, drawing.points[i].price);
-          if (pp && Math.abs(coord.x - pp.x) < 14 && Math.abs(coord.y - pp.y) < 14) {
-            pointIndex = i;
-            break;
-          }
+      if (coord) {
+        const snapped = snapToOHLC(coord.time, coord.price);
+        penCoords.current.push({ time: snapped.time, price: snapped.price });
+      }
+      scheduleRender(); return;
+    }
+    if (magnetMode && twoPointModes.includes(mode)) {
+      const coord = fromPixel(e.clientX, e.clientY);
+      if (coord) {
+        const snapped = snapToOHLC(coord.time, coord.price);
+        const snappedPx = toPixel(snapped.time as any, snapped.price);
+        if (snappedPx) {
+          currentPixel.current = { x: snappedPx.x, y: snappedPx.y };
+          scheduleRender(); return;
         }
       }
-
-      dragRef.current = {
-        id: p.id,
-        startTime: coord.time as number,
-        startPrice: coord.price,
-        origPoints: drawing.points ? drawing.points.map(pt => ({ ...pt })) : [],
-        pointIndex,
-        origPrice: drawing.price ?? null,
-        snapshot: drawings.map(d => ({ ...d, points: d.points?.map(pt => ({ ...pt })) })),
-      };
-      pendingDragRef.current = null;
-      setIsDraggingState(true);
-      // Fall through to drag handler below
     }
+    currentPixel.current = { x, y };
+    scheduleRender();
+  }, [fromPixel, scheduleRender, drawingModeRef, magnetMode, snapToOHLC, toPixel, selectedDrawingId]);
 
-    // === ACTIVE DRAG — PURE TIME/PRICE DELTA ===
-    if (mode === 'none' && dragRef.current && onUpdateDrawing) {
-      const coord = fromPixel(e.clientX, e.clientY);
-      if (!coord) return;
-      const g = dragRef.current;
-
-      if (g.origPoints.length > 0) {
-        if (g.pointIndex !== null) {
-          // Single anchor drag: set point directly to pointer position
-          const newPoints = g.origPoints.map((p, i) =>
-            i === g.pointIndex
-              ? { time: coord.time as number, price: coord.price }
-              : { ...p }
-          );
-          onUpdateDrawing(g.id, { points: newPoints });
-        } else {
-          // Whole-object drag: pure time/price delta — NO pixel conversion
-          const dt = (coord.time as number) - g.startTime;
-          const dp = coord.price - g.startPrice;
-          const newPoints = g.origPoints.map(p => ({
-            time: p.time + dt,
-            price: p.price + dp,
-          }));
-          onUpdateDrawing(g.id, { points: newPoints });
-        }
-      } else if (g.origPrice !== null) {
-        // hline drag
-        const dp = coord.price - g.startPrice;
-        onUpdateDrawing(g.id, { price: g.origPrice + dp });
-      }
-
-      renderImmediate();
-      return;
-    }
-
-    // Crosshair/selection render
-    if (mode !== 'none' || selectedDrawingId !== null) scheduleRender();
-  }, [fromPixel, scheduleRender, drawingModeRef, magnetMode, snapToOHLC, toPixel,
-    selectedDrawingId, onUpdateDrawing, drawings, toPixelUnclamped, renderImmediate]);
-
-  // === POINTER UP ===
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
-    activePointers.current.delete(e.pointerId);
     const mode = drawingModeRef.current;
-
-    // Finish drag — commit undo snapshot
-    if (dragRef.current) {
-      if (onCommitDragUndo) {
-        onCommitDragUndo(dragRef.current.snapshot);
-      }
-      dragRef.current = null;
-      setIsDraggingState(false);
-      return;
-    }
-
-    // Clean up pending drag (tap without movement = selection only)
-    if (pendingDragRef.current) {
-      pendingDragRef.current = null;
-      return;
-    }
-
+    if (mode === 'none') return; // Selection handled by document listeners
     if (mode === 'eraser') return;
 
     if (mode === 'laser') {
@@ -1740,17 +1730,11 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     if (!isDrawing.current || !startCoord.current) return;
     isDrawing.current = false;
 
-    // Use pointerUp coords, fall back to last known coord (Android fix)
     let coord = fromPixel(e.clientX, e.clientY);
-    if (!coord && lastKnownCoord.current) {
-      coord = lastKnownCoord.current;
-    }
+    if (!coord && lastKnownCoord.current) coord = lastKnownCoord.current;
     if (!coord) {
-      startCoord.current = null;
-      currentPixel.current = null;
-      lastKnownCoord.current = null;
-      setIsDrawingState(false);
-      return;
+      startCoord.current = null; currentPixel.current = null;
+      lastKnownCoord.current = null; setIsDrawingState(false); return;
     }
 
     const snapped = snapToOHLC(coord.time, coord.price);
@@ -1770,27 +1754,12 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     setSelectedDrawingId(newId);
     renderImmediate();
     requestAnimationFrame(() => { setIsDrawingState(false); onFinishDrawing(); });
-  }, [fromPixel, onAddDrawing, onFinishDrawing, scheduleRender, drawingModeRef,
-    snapToOHLC, onCommitDragUndo, renderImmediate]);
+  }, [fromPixel, onAddDrawing, onFinishDrawing, scheduleRender, drawingModeRef, snapToOHLC, renderImmediate]);
 
-  const handlePointerLeave = useCallback((e: React.PointerEvent) => {
-    activePointers.current.delete(e.pointerId);
+  const handlePointerLeave = useCallback(() => {
     crosshairPos.current = null;
     scheduleRender();
   }, [scheduleRender]);
-
-  const handlePointerCancel = useCallback((e: React.PointerEvent) => {
-    activePointers.current.delete(e.pointerId);
-    pendingDragRef.current = null;
-    if (dragRef.current) {
-      // Restore original on cancel
-      if (onUpdateDrawing) {
-        onUpdateDrawing(dragRef.current.id, { points: dragRef.current.origPoints.map(p => ({ ...p })) });
-      }
-      dragRef.current = null;
-      setIsDraggingState(false);
-    }
-  }, [onUpdateDrawing]);
 
   // Subscribe to chart visible range changes
   useEffect(() => {
@@ -1800,9 +1769,9 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     return () => { chart.timeScale().unsubscribeVisibleLogicalRangeChange(handler); };
   }, [chart, scheduleRender]);
 
-  // Force immediate render when drawings change
+  // Force render when drawings change
   useEffect(() => {
-    if (dragRef.current) return; // Skip during drag — handler already renders
+    if (dragRef.current) return;
     const id = requestAnimationFrame(() => renderImmediate());
     return () => cancelAnimationFrame(id);
   }, [drawings, renderImmediate, selectedDrawingId]);
@@ -1812,7 +1781,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     cancelAnimationFrame(renderRafRef.current);
   }, []);
 
-  // Reset state if selected drawing no longer exists (e.g. after clear all)
+  // Reset if selected drawing removed (clear all)
   useEffect(() => {
     if (selectedDrawingId && !drawings.find(d => d.id === selectedDrawingId)) {
       setSelectedDrawingId(null);
@@ -1825,15 +1794,16 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       currentPixel.current = null;
       lastKnownCoord.current = null;
       activePointers.current.clear();
+      if (chart) chart.applyOptions({ handleScroll: true, handleScale: true });
     }
-  }, [drawings, selectedDrawingId]);
+  }, [drawings, selectedDrawingId, chart]);
 
   const isActive = drawingMode !== 'none';
   const selectedDrawing = selectedDrawingId ? drawings.find(d => d.id === selectedDrawingId) : null;
 
-  // touchAction: ONLY 'none' when actively drawing (tool selected + drawing in progress)
-  // NEVER 'none' for selection or drag — browser must handle zoom/pan freely
-  const gestureActive = isActive || isDrawingState;
+  // Canvas is ONLY interactive when a drawing tool is active
+  // In selection mode (none), canvas is transparent — events go to chart for zoom/pan
+  const canvasInteractive = isActive;
 
   return (
     <>
@@ -1844,10 +1814,10 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerLeave}
-        onPointerCancel={handlePointerCancel}
+        onPointerCancel={handlePointerUp}
         style={{
-          pointerEvents: 'auto',
-          touchAction: gestureActive ? 'none' : 'auto',
+          pointerEvents: canvasInteractive ? 'auto' : 'none',
+          touchAction: canvasInteractive ? 'none' : 'auto',
         }}
       />
       {selectedDrawingId && selectedDrawing && (
