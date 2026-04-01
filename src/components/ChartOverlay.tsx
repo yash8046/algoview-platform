@@ -1417,6 +1417,10 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         dragOriginalPrice.current = null;
         dragSnapshotRef.current = null;
       }
+      if (dragPending.current) {
+        dragPending.current = false;
+        dragStartPixel.current = null;
+      }
       if (isDrawing.current) {
         isDrawing.current = false;
         setIsDrawingState(false);
