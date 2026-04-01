@@ -1790,6 +1790,8 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       setIsDrawingState(false);
       isDragging.current = false;
       setIsDraggingState(false);
+      dragPending.current = false;
+      dragStartPixel.current = null;
       startCoord.current = null;
       currentPixel.current = null;
       lastKnownCoord.current = null;
