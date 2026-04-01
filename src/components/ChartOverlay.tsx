@@ -1546,6 +1546,42 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       lastKnownCoord.current = moveCoord;
     }
 
+    // Check if drag pending should become actual drag (movement threshold)
+    if (mode === 'none' && dragPending.current && dragStartPixel.current && selectedDrawingId && onUpdateDrawing) {
+      const dx = e.clientX - dragStartPixel.current.x;
+      const dy = e.clientY - dragStartPixel.current.y;
+      if (Math.hypot(dx, dy) > dragThreshold) {
+        // Promote pending to actual drag
+        dragPending.current = false;
+        dragStartPixel.current = null;
+        isDragging.current = true;
+        setIsDraggingState(true);
+        dragSnapshotRef.current = drawings.map(d => ({ ...d, points: d.points?.map(p => ({ ...p })) }));
+        const drawing = drawings.find(d => d.id === selectedDrawingId);
+        if (drawing && !drawing.locked) {
+          if (drawing.points) {
+            dragOriginalPoints.current = drawing.points.map(p => ({ ...p }));
+            dragPointIndex.current = null;
+            const coord = fromPixel(e.clientX, e.clientY);
+            if (coord) {
+              for (let i = 0; i < drawing.points.length; i++) {
+                const pp = toPixelUnclamped(drawing.points[i].time as unknown as Time, drawing.points[i].price);
+                if (pp && Math.abs(coord.x - pp.x) < 14 && Math.abs(coord.y - pp.y) < 14) {
+                  dragPointIndex.current = i;
+                  break;
+                }
+              }
+            }
+          }
+          if (drawing.price != null) {
+            dragOriginalPrice.current = drawing.price;
+          }
+        }
+      } else {
+        return; // Not enough movement yet
+      }
+    }
+
     // Handle drag in selection mode
     if (mode === 'none' && isDragging.current && selectedDrawingId && onUpdateDrawing) {
       // Use unclamped to prevent vanishing when dragging off-screen
