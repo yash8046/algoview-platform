@@ -56,7 +56,7 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const lastKnownCoord = useRef<{ time: Time; price: number; x: number; y: number } | null>(null);
 
   // Stable refs for document-level listeners (avoids effect re-runs)
-  const stableRef = useRef({ fromPixel, findNearestDrawing: null as any, toPixelUnclamped, drawings, onUpdateDrawing, onCommitDragUndo, scheduleRender: null as any, renderImmediate: null as any });
+  const stableRef = useRef<any>({});
 
   const toPixel = useCallback((time: Time, price: number) => {
     if (!chart || !series) return null;
