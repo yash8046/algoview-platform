@@ -36,6 +36,9 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null);
   const [isDraggingState, setIsDraggingState] = useState(false);
   const isDragging = useRef(false);
+  const dragPending = useRef(false);
+  const dragStartPixel = useRef<{ x: number; y: number } | null>(null);
+  const dragThreshold = 5;
   const dragPointIndex = useRef<number | null>(null);
   const dragStartCoord = useRef<{ time: Time; price: number } | null>(null);
   const dragOriginalPoints = useRef<{ time: number; price: number }[] | null>(null);
