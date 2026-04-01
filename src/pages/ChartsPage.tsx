@@ -37,7 +37,7 @@ export default function ChartsPage() {
   );
 
   return (
-    <div className="flex flex-col h-[100dvh] overflow-hidden bg-background pb-[60px]">
+    <div className="flex flex-col h-[100dvh] overflow-hidden bg-background pb-[60px]" style={{ overscrollBehavior: 'contain' }}>
       {/* SYMBOL HEADER — Only symbol dropdown, no profile, no toggle */}
       <div
         className="h-11 flex-shrink-0 flex items-center bg-card border-b border-border/40 px-2 z-20"
