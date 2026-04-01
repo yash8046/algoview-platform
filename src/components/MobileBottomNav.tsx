@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const tabs = [
   { to: '/', label: 'Stock', icon: Activity },
   { to: '/crypto', label: 'Crypto', icon: Bitcoin },
+  { to: '/portfolio', label: 'Portfolio', icon: Briefcase },
   { to: '/charts', label: 'Charts', icon: CandlestickChart },
   { to: '/strategy-builder', label: 'Strategy', icon: Blocks },
   { to: '/backtest', label: 'Backtest', icon: FlaskConical },
