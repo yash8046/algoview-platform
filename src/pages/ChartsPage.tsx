@@ -133,8 +133,8 @@ export default function ChartsPage() {
       </div>
 
       {/* Chart area */}
-      <div className="flex-1 min-h-0 overflow-hidden">
-        <div className="h-full w-full min-w-0 min-h-0 relative">
+      <div className="flex-1 min-h-0 overflow-hidden" style={{ overscrollBehavior: 'none' }}>
+        <div className="h-full w-full min-w-0 min-h-0 relative" style={{ touchAction: 'none' }}>
           {mode === 'stocks' ? <TradingChart toolbarLeft /> : <CryptoChart toolbarLeft />}
         </div>
       </div>
