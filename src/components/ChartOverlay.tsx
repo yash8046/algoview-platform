@@ -1434,13 +1434,15 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
 
     const mode = drawingModeRef.current;
     if (mode === 'none') {
-      // Selection mode: tap near a drawing to select it; drag starts after movement threshold
+      // Selection mode: tap near a drawing to select it
+      // Do NOT preventDefault here — let the browser handle pan/zoom freely.
+      // Drag only starts after movement threshold in handlePointerMove.
       const coord = fromPixel(e.clientX, e.clientY);
       if (!coord) {
         setSelectedDrawingId(null);
         dragPending.current = false;
         dragStartPixel.current = null;
-        return; // Don't preventDefault — let browser handle gesture
+        return;
       }
       const id = findNearestDrawing(coord.x, coord.y);
 
@@ -1448,17 +1450,13 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
         setSelectedDrawingId(null);
         dragPending.current = false;
         dragStartPixel.current = null;
-        return; // Don't preventDefault — let browser handle zoom/pan
+        return;
       }
 
-      // We found a drawing — capture pointer for potential drag but DON'T start drag yet
-      e.preventDefault();
-      e.stopPropagation();
+      // Record pending drag info but do NOT block browser gestures yet
       dragPending.current = true;
       dragStartPixel.current = { x: e.clientX, y: e.clientY };
-      dragStartCoord.current = { time: coord.time, price: coord.price };
       setSelectedDrawingId(id);
-      (e.target as HTMLElement)?.setPointerCapture?.(e.pointerId);
       scheduleRender();
       return;
     }
@@ -1550,35 +1548,45 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
     if (mode === 'none' && dragPending.current && dragStartPixel.current && selectedDrawingId && onUpdateDrawing) {
       const dx = e.clientX - dragStartPixel.current.x;
       const dy = e.clientY - dragStartPixel.current.y;
-      if (Math.hypot(dx, dy) > dragThreshold) {
-        // Promote pending to actual drag
-        dragPending.current = false;
-        dragStartPixel.current = null;
-        isDragging.current = true;
-        setIsDraggingState(true);
-        dragSnapshotRef.current = drawings.map(d => ({ ...d, points: d.points?.map(p => ({ ...p })) }));
-        const drawing = drawings.find(d => d.id === selectedDrawingId);
-        if (drawing && !drawing.locked) {
-          if (drawing.points) {
-            dragOriginalPoints.current = drawing.points.map(p => ({ ...p }));
-            dragPointIndex.current = null;
-            const coord = fromPixel(e.clientX, e.clientY);
-            if (coord) {
-              for (let i = 0; i < drawing.points.length; i++) {
-                const pp = toPixelUnclamped(drawing.points[i].time as unknown as Time, drawing.points[i].price);
-                if (pp && Math.abs(coord.x - pp.x) < 14 && Math.abs(coord.y - pp.y) < 14) {
-                  dragPointIndex.current = i;
-                  break;
-                }
+      if (Math.hypot(dx, dy) < dragThreshold) {
+        return; // Not enough movement yet — let browser handle pan/zoom
+      }
+      // Threshold crossed — NOW take over the gesture
+      dragPending.current = false;
+      dragStartPixel.current = null;
+      e.preventDefault();
+      e.stopPropagation();
+      (e.target as HTMLElement)?.setPointerCapture?.(e.pointerId);
+
+      isDragging.current = true;
+      setIsDraggingState(true);
+      dragSnapshotRef.current = drawings.map(d => ({ ...d, points: d.points?.map(p => ({ ...p })) }));
+
+      // Use CURRENT pointer position as drag start (not original touch)
+      // so the delta starts from 0 and the drawing follows the finger smoothly
+      const currentCoord = fromPixel(e.clientX, e.clientY);
+      if (currentCoord) {
+        dragStartCoord.current = { time: currentCoord.time, price: currentCoord.price };
+      }
+
+      const drawing = drawings.find(d => d.id === selectedDrawingId);
+      if (drawing && !drawing.locked) {
+        if (drawing.points) {
+          dragOriginalPoints.current = drawing.points.map(p => ({ ...p }));
+          dragPointIndex.current = null;
+          if (currentCoord) {
+            for (let i = 0; i < drawing.points.length; i++) {
+              const pp = toPixelUnclamped(drawing.points[i].time as unknown as Time, drawing.points[i].price);
+              if (pp && Math.abs(currentCoord.x - pp.x) < 14 && Math.abs(currentCoord.y - pp.y) < 14) {
+                dragPointIndex.current = i;
+                break;
               }
             }
           }
-          if (drawing.price != null) {
-            dragOriginalPrice.current = drawing.price;
-          }
         }
-      } else {
-        return; // Not enough movement yet
+        if (drawing.price != null) {
+          dragOriginalPrice.current = drawing.price;
+        }
       }
     }
 
@@ -1679,10 +1687,11 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     activePointerIds.current.delete(e.pointerId);
     const mode = drawingModeRef.current;
-    // Finish drag - commit undo snapshot
+    // Finish drag - commit undo snapshot and release pointer capture
     if (isDragging.current) {
       isDragging.current = false;
       setIsDraggingState(false);
+      try { (e.target as HTMLElement)?.releasePointerCapture?.(e.pointerId); } catch {}
       if (dragSnapshotRef.current && onCommitDragUndo) {
         onCommitDragUndo(dragSnapshotRef.current);
       }
