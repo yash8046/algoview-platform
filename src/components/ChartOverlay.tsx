@@ -1693,6 +1693,13 @@ export default function ChartOverlay({ chart, series, drawingMode, drawingModeRe
       dragSnapshotRef.current = null;
       return;
     }
+    // Clean up drag pending (tap without movement)
+    if (dragPending.current) {
+      dragPending.current = false;
+      dragStartPixel.current = null;
+      dragStartCoord.current = null;
+      return;
+    }
     if (mode === 'eraser') return;
     if (mode === 'laser') {
       isDrawing.current = false;
